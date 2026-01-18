@@ -1,6 +1,9 @@
 # Project Title
 One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
 
+## goals
+building a website, helping the other volunteers with processes, to help those who need it. 
+
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
