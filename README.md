@@ -1,6 +1,9 @@
 # Project Title
 One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
 
+## goals
+building a website, helping the other volunteers with processes, to help those who need it. 
+
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
@@ -8,13 +11,15 @@ One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
 Briefly describe what the project does, who it serves, and the main value (1–2 sentences).
 
 ## Non‑Profit
-- Organization: [Non‑Profit Name]  
+- Organization: [עמותת דחיפה להגשמה]  
 - Primary stakeholder(s): Name — role — email  
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
 ## Team
-- Team lead — Name — email — GitHub  
-- Members — Name — role — GitHub  
+- Team lead — Abdullah abu lafi — abed.oct2003@gmail.com  
+- Muhammad Marmash
+- Mhammad siag
+- hamza karaky
 Include student IDs if required.
 
 ## Quick start (local)
