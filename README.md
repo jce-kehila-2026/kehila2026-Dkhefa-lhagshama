@@ -13,8 +13,10 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
 ## Team
-- Team lead — Name — email — GitHub  
-- Members — Name — role — GitHub  
+- Team lead — Abdullah abu lafi — abed.oct2003@gmail.com  
+- Muhammad Marmash
+- Mhammad siag
+- hamza karaky
 Include student IDs if required.
 
 ## Quick start (local)
