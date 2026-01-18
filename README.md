@@ -8,7 +8,7 @@ One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
 Briefly describe what the project does, who it serves, and the main value (1–2 sentences).
 
 ## Non‑Profit
-- Organization: [Non‑Profit Name]  
+- Organization: [עמותת דחיפה להגשמה]  
 - Primary stakeholder(s): Name — role — email  
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
