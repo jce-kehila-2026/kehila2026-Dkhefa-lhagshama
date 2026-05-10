@@ -22,9 +22,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-backend/privateKey.json
-.env*
+.env
+.env.local
+.env.*.local
+*.local
 
-# Firebase
+# Firebase — never commit service-account JSONs or local cache
 .firebase/
-.firebaserc
+*-firebase-adminsdk-*.json
+backend/serviceAccountKey.json
+backend/privateKey.json
+# NOTE: `.firebaserc` IS committed — it's the public project-id map, not a secret.
+
+# Build artifacts
+.next/
+out/
+coverage/
