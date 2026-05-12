@@ -1,5 +1,5 @@
 {
   "projects": {
-    "default": "PUSH-FOR-FULFILLMENT-PROJECT-ID-HERE"
+    "default": "push-for-fulfillment-staging"
   }
 }

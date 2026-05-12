@@ -38,3 +38,6 @@ backend/privateKey.json
 .next/
 out/
 coverage/
+# Firebase Agent Skills (local AI-tool config — not for team repo)
+.agents/
+skills-lock.json
