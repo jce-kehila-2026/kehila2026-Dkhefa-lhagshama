@@ -118,6 +118,6 @@ Architecture diagram + class diagram live on the wiki (Architecture & Design pag
 ## Things to ask the team before changing
 
 - Stack changes (adding a framework, swapping Firebase, etc.).
-- Schema changes — touch `sem2/generate_mdj.py` first, regenerate diagrams, update the wiki Class Diagram embed, then update Firestore rules to match.
+- Schema changes — regenerate diagrams, update the wiki Class Diagram embed, then update Firestore rules to match.
 - New risks — append to wiki Risk-Assessment page; do not edit existing rows.
 - Scope expansion past the MVP defined in the wiki Project Overview.
