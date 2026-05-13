@@ -11,7 +11,8 @@
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "type-check": "tsc --noEmit",
-    "seed": "ts-node --project tsconfig.scripts.json scripts/seed.ts"
+    "seed": "ts-node --project tsconfig.scripts.json scripts/seed.ts",
+    "set-admin": "ts-node --project tsconfig.scripts.json -r tsconfig-paths/register scripts/setAdminClaim.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -29,6 +30,7 @@
     "eslint": "^8.57.0",
     "nodemon": "^3.1.4",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.4.5"
   },
   "engines": {

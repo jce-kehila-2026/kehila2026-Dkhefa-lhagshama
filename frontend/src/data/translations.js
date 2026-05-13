@@ -399,6 +399,38 @@ const translations = {
       subtitle:'הדף שחיפשת אינו קיים או הועבר למיקום אחר.',
       btn:     'חזרה לדף הבית',
     },
+
+    // ── AUTH (CC-5) ───────────────────────────────────────────
+    auth: {
+      login: {
+        title:        'התחברות',
+        subtitle:     'התחבר/י לחשבון שלך כדי להגיש בקשה או לעקוב אחר בקשות קיימות.',
+        email:        'אימייל',
+        password:     'סיסמה',
+        submit:       'התחבר',
+        submitting:   'מתחבר...',
+        noAccount:    'אין לך חשבון?',
+        registerLink: 'הירשם/י כאן',
+        error:        'התחברות נכשלה. בדוק/י את האימייל והסיסמה.',
+      },
+      register: {
+        title:           'הרשמה',
+        subtitle:        'צור/י חשבון חדש להגשת ומעקב אחר בקשות.',
+        email:           'אימייל',
+        password:        'סיסמה',
+        confirmPassword: 'אישור סיסמה',
+        submit:          'הירשם',
+        submitting:      'יוצר חשבון...',
+        haveAccount:     'יש לך כבר חשבון?',
+        loginLink:       'התחבר/י כאן',
+        passwordMismatch:'הסיסמאות אינן תואמות',
+        passwordTooShort:'הסיסמה חייבת להכיל לפחות 6 תווים',
+        error:           'הרשמה נכשלה. אנא נסה/י שוב.',
+        emailInUse:      'אימייל זה כבר רשום במערכת.',
+      },
+      logout:           'התנתק',
+      welcome:          'שלום',
+    },
   },
 
   // ============================================================
@@ -781,6 +813,38 @@ const translations = {
       title:   'Page Not Found',
       subtitle:'The page you\'re looking for doesn\'t exist or has been moved.',
       btn:     'Back to Home',
+    },
+
+    // ── AUTH (CC-5) ───────────────────────────────────────────
+    auth: {
+      login: {
+        title:        'Sign In',
+        subtitle:     'Sign in to submit a request or track existing ones.',
+        email:        'Email',
+        password:     'Password',
+        submit:       'Sign In',
+        submitting:   'Signing in...',
+        noAccount:    "Don't have an account?",
+        registerLink: 'Register here',
+        error:        'Sign-in failed. Check your email and password.',
+      },
+      register: {
+        title:           'Register',
+        subtitle:        'Create a new account to submit and track requests.',
+        email:           'Email',
+        password:        'Password',
+        confirmPassword: 'Confirm Password',
+        submit:          'Register',
+        submitting:      'Creating account...',
+        haveAccount:     'Already have an account?',
+        loginLink:       'Sign in here',
+        passwordMismatch:"Passwords don't match",
+        passwordTooShort:'Password must be at least 6 characters',
+        error:           'Registration failed. Please try again.',
+        emailInUse:      'This email is already registered.',
+      },
+      logout:           'Sign Out',
+      welcome:          'Hello',
     },
   },
 }
