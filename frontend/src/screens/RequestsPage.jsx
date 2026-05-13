@@ -38,6 +38,10 @@ export default function RequestsPage() {
   const [submitted, setSubmitted] = useState(false)
   const [idUploaded, setIdUploaded] = useState(false)
   const [supportUploaded, setSupportUploaded] = useState(false)
+  // Storage paths of uploaded files (UC-01-b). Built up as files complete;
+  // sent to POST /api/requests as `attachmentPaths`.
+  const [idPath, setIdPath] = useState('')
+  const [supportPath, setSupportPath] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   // requestId is generated once per form session. Used as the Firestore doc id
@@ -95,7 +99,8 @@ export default function RequestsPage() {
         description: values.description,
         urgency:   values.urgency,
         consent:   values.consent === true,
-        attachmentPaths: [], // wired in UC-01-b (PR D)
+        // Storage paths of uploaded attachments (UC-01-b).
+        attachmentPaths: [idPath, supportPath].filter(Boolean),
       }
       const res = await apiFetch('/api/requests', {
         method: 'POST',
@@ -319,7 +324,11 @@ export default function RequestsPage() {
                 hint={rq.step3.idHint}
                 formats={rq.step3.idFormats}
                 required
-                onUpload={f => setIdUploaded(!!f)}
+                requestId={requestId}
+                onUpload={(r) => {
+                  setIdUploaded(!!r)
+                  setIdPath(r?.path || '')
+                }}
                 error={errors.idDoc}
               />
             </FormGroup>
@@ -328,7 +337,11 @@ export default function RequestsPage() {
                 label={rq.step3.supportLabel}
                 hint={rq.step3.supportHint}
                 formats={rq.step3.supportFormats}
-                onUpload={f => setSupportUploaded(!!f)}
+                requestId={requestId}
+                onUpload={(r) => {
+                  setSupportUploaded(!!r)
+                  setSupportPath(r?.path || '')
+                }}
               />
             </FormGroup>
             <div style={{
