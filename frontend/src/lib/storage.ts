@@ -1,20 +1,13 @@
 /**
  * Storage helpers — UC-01-b file uploads.
  *
- * Files for a given request live under `requests/{requestId}/{filename}` in
- * Firebase Storage. The Storage path is also what gets stored in the
- * request's `attachmentPaths[]` field on the Firestore doc.
- *
- * Uploads are resumable so that a flaky connection doesn't lose progress.
+ * Files for a given request live under `requests/{requestId}/{filename}`.
+ * The browser uploads to the backend, which stores the file in Firebase
+ * Storage using the Admin SDK and returns the Storage path for Firestore.
  */
-import {
-  getDownloadURL,
-  ref,
-  uploadBytesResumable,
-  type UploadTask,
-} from 'firebase/storage';
+import { getIdToken } from './auth';
 
-import { firebaseStorage } from './firebase';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
 export interface UploadHandle {
   /** Storage path, e.g. `requests/<uuid>/<filename>`. Persist this in Firestore. */
@@ -25,8 +18,8 @@ export interface UploadHandle {
   onProgress: (cb: (percent: number) => void) => () => void;
   /** Cancel the upload. */
   cancel: () => void;
-  /** The underlying Firebase upload task (advanced use only). */
-  task: UploadTask;
+  /** The underlying XMLHttpRequest (advanced use only). */
+  task: XMLHttpRequest;
 }
 
 /** Sanitize a filename so it's safe as a Storage path segment. */
@@ -36,32 +29,64 @@ function safeName(name: string): string {
 
 export function uploadAttachment(file: File, requestId: string): UploadHandle {
   const path = `requests/${requestId}/${safeName(file.name)}`;
-  const storageRef = ref(firebaseStorage, path);
-  const task = uploadBytesResumable(storageRef, file, {
-    contentType: file.type || undefined,
-  });
-
   const listeners = new Set<(p: number) => void>();
-  task.on('state_changed', (snap) => {
-    const pct = snap.totalBytes ? (snap.bytesTransferred / snap.totalBytes) * 100 : 0;
-    listeners.forEach((cb) => cb(pct));
-  });
+  const xhr = new XMLHttpRequest();
+  let resolveDone: (value: { path: string; downloadURL: string }) => void = () => {};
+  let rejectDone: (reason?: unknown) => void = () => {};
 
   const done = new Promise<{ path: string; downloadURL: string }>((resolve, reject) => {
-    task.then(
-      async () => {
-        const downloadURL = await getDownloadURL(task.snapshot.ref);
-        resolve({ path, downloadURL });
-      },
-      (err) => reject(err),
-    );
+    resolveDone = resolve;
+    rejectDone = reject;
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      const pct = event.total ? (event.loaded / event.total) * 100 : 0;
+      listeners.forEach((cb) => cb(pct));
+    };
+
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState !== XMLHttpRequest.DONE) return;
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(`upload_failed: ${xhr.status} ${xhr.responseText || xhr.statusText || ''}`));
+        return;
+      }
+
+      try {
+        const body = JSON.parse(xhr.responseText) as { path?: string; downloadURL?: string };
+        resolve({ path: body.path || path, downloadURL: body.downloadURL || '' });
+      } catch {
+        resolve({ path, downloadURL: '' });
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('upload_failed: network_error'));
+    xhr.onabort = () => reject(new Error('upload_failed: aborted'));
   });
+
+  void (async () => {
+    try {
+      const idToken = await getIdToken();
+      if (!idToken) {
+        rejectDone(new Error('missing_auth_token'));
+        return;
+      }
+
+      const url = `${API_BASE}/api/uploads/requests/${encodeURIComponent(requestId)}?filename=${encodeURIComponent(safeName(file.name))}`;
+      xhr.open('POST', url, true);
+      xhr.responseType = 'text';
+      xhr.setRequestHeader('Authorization', `Bearer ${idToken}`);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.send(file);
+    } catch (err) {
+      rejectDone(err);
+    }
+  })();
 
   return {
     path,
     done,
     onProgress: (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
-    cancel: () => task.cancel(),
-    task,
+    cancel: () => xhr.abort(),
+    task: xhr,
   };
 }
