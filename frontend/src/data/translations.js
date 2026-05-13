@@ -431,6 +431,44 @@ const translations = {
       logout:           'התנתק',
       welcome:          'שלום',
     },
+
+    // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
+    myRequests: {
+      navLink:  'הבקשות שלי',
+      title:    'הבקשות שלי',
+      subtitle: 'מעקב אחר הבקשות שהגשת',
+      empty:    'עדיין לא הגשת בקשות.',
+      submitCta:'הגש בקשה חדשה',
+      loading:  'טוען את הבקשות שלך...',
+      table: {
+        id:          'מספר בקשה',
+        category:    'קטגוריה',
+        urgency:     'דחיפות',
+        status:      'סטטוס',
+        date:        'תאריך הגשה',
+        attachments: 'מסמכים',
+      },
+      categories: {
+        education:  'חינוך',
+        employment: 'תעסוקה',
+        legal:      'משפטי',
+        social:     'חברתי',
+      },
+      urgencies: {
+        low:    'רגיל',
+        medium: 'בינוני',
+        high:   'דחוף',
+      },
+      statuses: {
+        pending:      'ממתין',
+        inReview:     'בבדיקה',
+        assigned:     'הוקצה',
+        inProgress:   'בטיפול',
+        resolved:     'הסתיים',
+        rejected:     'נדחה',
+        needsChanges: 'דורש תיקון',
+      },
+    },
   },
 
   // ============================================================
@@ -845,6 +883,44 @@ const translations = {
       },
       logout:           'Sign Out',
       welcome:          'Hello',
+    },
+
+    // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
+    myRequests: {
+      navLink:  'My Requests',
+      title:    'My Requests',
+      subtitle: 'Track the requests you have submitted',
+      empty:    "You haven't submitted any requests yet.",
+      submitCta:'Submit a new request',
+      loading:  'Loading your requests...',
+      table: {
+        id:          'Request ID',
+        category:    'Category',
+        urgency:     'Urgency',
+        status:      'Status',
+        date:        'Date submitted',
+        attachments: 'Files',
+      },
+      categories: {
+        education:  'Education',
+        employment: 'Employment',
+        legal:      'Legal',
+        social:     'Social',
+      },
+      urgencies: {
+        low:    'Low',
+        medium: 'Medium',
+        high:   'High',
+      },
+      statuses: {
+        pending:      'Pending',
+        inReview:     'In review',
+        assigned:     'Assigned',
+        inProgress:   'In progress',
+        resolved:     'Resolved',
+        rejected:     'Rejected',
+        needsChanges: 'Needs changes',
+      },
     },
   },
 }

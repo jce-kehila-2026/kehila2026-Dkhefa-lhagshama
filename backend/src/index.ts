@@ -13,17 +13,28 @@ import express, { Request, Response } from 'express';
 import { initializeFirebaseAdmin } from '@/lib/firebaseAdmin';
 import authRouter from '@/routes/auth';
 import requestsRouter from '@/routes/requests';
+import uploadsRouter from '@/routes/uploads';
 import { authenticate } from '@/middleware/auth';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
+const LOCAL_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
 
 // Initialize Firebase Admin SDK before any route handler runs.
 initializeFirebaseAdmin();
 
 const app = express();
 
-app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || origin === FRONTEND_ORIGIN || LOCAL_ORIGIN_RE.test(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`CORS blocked for origin ${origin}`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // Health check (unauthenticated). Used by deploy targets and by frontend
@@ -46,6 +57,7 @@ app.get('/api/me', authenticate, (req: Request, res: Response) => {
 // Route mounts — uncomment as each vertical-slice UC lands.
 app.use('/api/auth',     authRouter);
 app.use('/api/requests', requestsRouter);
+app.use('/api/uploads',  uploadsRouter);
 //
 // import answersRouter from '@/routes/answers';        // UC-02
 // import businessesRouter from '@/routes/businesses';  // UC-03

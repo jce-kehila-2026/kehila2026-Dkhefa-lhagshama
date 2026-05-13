@@ -9,10 +9,10 @@
  * Volunteer / businessOwner roles are assigned by admin tooling, NOT here.
  * Admin is bootstrapped via `scripts/setAdminClaim.ts`.
  */
-import { Router, type Request, type Response } from 'express';
+import { Router, type Request, type Response } from "express";
 
-import { auth as firebaseAuth } from '@/lib/firebaseAdmin';
-import { authenticate } from '@/middleware/auth';
+import { auth as firebaseAuth } from "@/lib/firebaseAdmin";
+import { authenticate } from "@/middleware/auth";
 
 const router = Router();
 
@@ -23,29 +23,28 @@ const router = Router();
  * `authenticate` middleware verifies the ID token; we then promote the user
  * to `beneficiary`. Idempotent — calling again is harmless.
  */
-router.post('/register', authenticate, async (req: Request, res: Response) => {
+router.post("/register", authenticate, async (req: Request, res: Response) => {
   if (!req.user) {
-    res.status(401).json({ error: 'not_authenticated' });
+    res.status(401).json({ error: "not_authenticated" });
     return;
   }
 
   try {
-    // If the user already has a role claim, don't downgrade it. This avoids
-    // accidentally turning an admin back into a beneficiary if they re-call.
-    const userRecord = await firebaseAuth().getUser(req.user.uid);
-    const existingRole = (userRecord.customClaims?.role as string | undefined) ?? null;
-
-    if (existingRole) {
-      res.json({ ok: true, role: existingRole, alreadyAssigned: true });
+    // If this token already carries a privileged role, do not overwrite it.
+    // Newly created self-signups usually arrive here without a role yet.
+    if (req.user.role && req.user.role !== "beneficiary") {
+      res.json({ ok: true, role: req.user.role, alreadyAssigned: true });
       return;
     }
 
-    await firebaseAuth().setCustomUserClaims(req.user.uid, { role: 'beneficiary' });
-    res.json({ ok: true, role: 'beneficiary' });
+    await firebaseAuth().setCustomUserClaims(req.user.uid, {
+      role: "beneficiary",
+    });
+    res.json({ ok: true, role: "beneficiary" });
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[auth/register] failed:', err);
-    res.status(500).json({ error: 'role_assignment_failed' });
+    console.error("[auth/register] failed:", err);
+    res.status(500).json({ error: "role_assignment_failed" });
   }
 });
 
