@@ -1,56 +1,60 @@
-# Project Title
-One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
+# Push for Fulfillment – Community Platform
 
-## goals
-building a website, helping the other volunteers with processes, to help those who need it. 
-
-## Contents
-- [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
-
-## Overview
-Briefly describe what the project does, who it serves, and the main value (1–2 sentences).
-
-## Non‑Profit
-- Organization: [עמותת דחיפה להגשמה]  
-- Primary stakeholder(s): Name — role — email  
-- Key deliverable for them: e.g., "Simple roster export and sign-up form."
+A bilingual (HE / EN) digital platform for **עמותת דחיפה להגשמה** (Push for Fulfillment NGO), which supports the Ethiopian-Israeli community in Israel. The platform consolidates assistance-request intake and case management, a catalog of community answers (NGOs, initiatives, and public bodies), and a directory of community-owned businesses — all governed by an admin backend for approvals and impact reporting.
 
 ## Team
-- Team lead — Abdullah abu lafi — abed.oct2003@gmail.com  
-- Muhammad Marmash
-- Mhammad siag
-- hamza karaky
-Include student IDs if required.
 
-## Quick start (local)
-1. git clone https://github.com/<org>/<repo>.git
-2. cd <repo>
-3. cp .env.example .env  # edit values
-4. npm install
-5. npm run dev
-Open http://localhost:3000
+| Name | Role | GitHub |
+|---|---|---|
+| Abdullah Abu Lafi | Lead · UC-05 Admin Approval | [@abdullahabulafi](https://github.com/abdullahabulafi) |
+| Muhammad Marmash | UC-01 Submit Request | [@MuhammadMarmash](https://github.com/MuhammadMarmash) |
+| Mhammad Siag | UC-04 Internal Chat | [@mhammadsiag](https://github.com/mhammadsiag) |
+| Hamza Karaky | UC-02 + UC-03 Directories | [@hamzakaraky](https://github.com/hamzakaraky) |
 
-(Or: docker-compose up --build)
+## Tech Stack
 
-## Demo / Deployment
-- Deployed app: https://your-app.example.com  
-- CI: GitHub Actions (push → deploy)
+- **Frontend:** React 18 + Next.js (Pages Router) + Tailwind CSS — `frontend/`
+- **Backend:** Node.js + Express + Firebase Admin SDK — `backend/`
+- **Auth:** Firebase Auth (Email/Password) with role-based custom claims
+- **Data:** Firestore (`europe-west2`) + Firebase Storage
+- **Deploy:** Firebase Hosting (frontend) · Cloud Run or Vercel (backend — TBD)
 
-## Handover (minimum)
-- [ ] Deployed URL + admin credentials (shared securely)  
-- [ ] HANDOVER.md with maintenance steps  
-- [ ] Add non‑profit staff as repo collaborators or transfer repo
+## Repo Layout
 
-## Privacy & Security
-List data collected (names, emails), storage location, and retention policy. Never commit secrets; use environment variables and GitHub secrets.
+```
+kehila2026-Dkhefa-lhagshama/
+├── frontend/      # Next.js + Tailwind app
+├── backend/       # Node.js + Express + Firebase Admin SDK
+├── docs/          # Internal engineering docs
+└── .github/       # PR template, Actions workflows
+```
 
-## Known limitations
-Briefly list major limitations or missing features and any workarounds.
+## Quick Start
 
-## Contacts
-- Project lead: Name — email  
-- Non‑profit contact: Name — email  
-- Instructor / TA: Name — email
+> Full setup instructions will be added after the backend scaffold is merged.
+
+```bash
+git clone https://github.com/jce-kehila-2026/kehila2026-Dkhefa-lhagshama.git
+cd kehila2026-Dkhefa-lhagshama
+
+# frontend
+cd frontend && cp .env.example .env.local && npm install && npm run dev
+
+# backend (separate terminal)
+cd backend && cp .env.example .env && npm install && npm run dev
+```
+
+## Non-Profit
+
+- **Organization:** עמותת דחיפה להגשמה
+- **Primary stakeholder:** TBD — role — email
+- **Key deliverable:** Assistance-request intake + community answers catalog + business directory
+
+## Wiki
+
+Full documentation (overview, requirements, architecture, use cases, risks, test plan):  
+https://github.com/jce-kehila-2026/kehila2026-Dkhefa-lhagshama/wiki
 
 ## License
-Specify license (e.g., MIT) and any IP/ownership notes relevant to the non‑profit.
+
+MIT
