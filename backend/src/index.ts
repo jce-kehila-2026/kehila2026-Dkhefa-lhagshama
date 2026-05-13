@@ -11,6 +11,8 @@ import cors from 'cors';
 import express, { Request, Response } from 'express';
 
 import { initializeFirebaseAdmin } from '@/lib/firebaseAdmin';
+import authRouter from '@/routes/auth';
+import { authenticate } from '@/middleware/auth';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
@@ -29,7 +31,19 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ ok: true, service: 'push-for-fulfillment-backend' });
 });
 
+// /api/me — smoke-test endpoint. Returns the authenticated user's identity
+// + role claim. Useful for client-side "am I logged in?" checks and for
+// curl-testing the auth pipeline end-to-end.
+app.get('/api/me', authenticate, (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+  res.json({ uid: req.user.uid, email: req.user.email, role: req.user.role ?? null });
+});
+
 // Route mounts — uncomment as each vertical-slice UC lands.
+app.use('/api/auth', authRouter);
 //
 // import requestsRouter from '@/routes/requests';      // UC-01
 // import answersRouter from '@/routes/answers';        // UC-02
