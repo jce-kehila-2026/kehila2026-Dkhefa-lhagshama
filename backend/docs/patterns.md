@@ -101,18 +101,84 @@ Use these consistent shapes so the frontend can react sensibly:
 | 409 | `{ error: 'duplicate_<resource>_id' }` | Firestore ALREADY_EXISTS |
 | 500 | `{ error: 'internal' }` | unexpected — also `console.error` the cause |
 
+## Frontend page structure (Next.js Pages Router)
+
+Each UC has the same shape on the frontend:
+
+```
+frontend/
+├── pages/<route>.tsx        # Thin wrapper — re-exports the screen
+└── src/
+    └── screens/<UC>Page.jsx # Implementation (use .tsx if you want types)
+```
+
+The `pages/<route>.tsx` file is a one-liner so the route surface stays readable:
+
+```tsx
+// frontend/pages/my-requests.tsx
+import MyRequestsPage from '@/screens/MyRequestsPage'
+export default function Page() { return <MyRequestsPage /> }
+```
+
+The screen file is where all the logic lives. Three things every UC screen should do:
+
+1. **Auth-guard the route** with `useAuth()` — if not signed in, redirect to `/login?next=<path>`.
+2. **Read translations** via `useLanguage()` — every visible string goes through `t.<scope>` so HE/EN switching works. Add your scope to `frontend/src/data/translations.js` for both `he:` and `en:` blocks.
+3. **Call the backend** via `apiFetch` / `apiJson` from `@/lib/apiClient` — never raw `fetch()`.
+
+```tsx
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { apiJson } from '@/lib/apiClient'
+
+export default function ExamplePage() {
+  const { t } = useLanguage()
+  const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
+  const [items, setItems] = useState([])
+
+  // Auth guard
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/login?next=${encodeURIComponent(router.pathname)}`)
+    }
+  }, [authLoading, user, router])
+
+  // Data fetch
+  useEffect(() => {
+    if (authLoading || !user) return
+    let alive = true
+    apiJson('/api/<resource>/mine')
+      .then(d => { if (alive) setItems(d.items || []) })
+      .catch(err => console.error(err))
+    return () => { alive = false }
+  }, [authLoading, user])
+
+  if (authLoading) return <div>{t.common.loading}</div>
+  return <div>{/* render items, use t.<scope>.* for labels */}</div>
+}
+```
+
+Look at `frontend/src/screens/MyRequestsPage.jsx` for the canonical reference.
+
 ## Frontend fetch pattern
 
-The Next.js side uses `apiFetch(path, init)` from `frontend/src/lib/apiClient.ts`. It automatically attaches `Authorization: Bearer ${idToken}` for the signed-in user. **Never call `fetch()` directly** from a Next.js page that needs auth.
+The Next.js side uses `apiFetch(path, init)` / `apiJson<T>(path, init)` from `frontend/src/lib/apiClient.ts`. Both automatically attach `Authorization: Bearer ${idToken}` for the signed-in user. **Never call `fetch()` directly** from a Next.js page that hits the backend.
 
 ```ts
-import { apiFetch } from '@/lib/apiClient';
+import { apiFetch, apiJson } from '@/lib/apiClient';
 
+// Fire-and-forget POST with manual response handling:
 const res = await apiFetch('/api/requests', {
   method: 'POST',
   body: JSON.stringify(payload),
 });
 if (!res.ok) { /* show validation/error UX */ }
+
+// Read with auto-throw on non-2xx:
+const { items } = await apiJson<{ items: Request[] }>('/api/requests/mine');
 ```
 
 ## End-to-end smoke test — UC-01
