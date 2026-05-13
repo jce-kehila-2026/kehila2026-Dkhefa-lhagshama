@@ -61,8 +61,8 @@ kehila2026-Dkhefa-lhagshama/
 - **Frontend:** React 18 + **Next.js (Pages Router)** + Tailwind CSS + custom `LanguageContext` for HE / EN + Lucide icons. Lives in `frontend/`.
 - **Backend:** **Node.js + Express + Firebase Admin SDK**. Lives in `backend/`. The frontend talks to the backend over HTTP via the `NEXT_PUBLIC_API_BASE_URL` env var.
 - **Auth:** Firebase Auth (Email/Password) with custom claims for roles (`beneficiary | businessOwner | volunteer | admin`).
-- **Data:** Firestore in `europe-west2` region.
-- **File storage:** Firebase Storage (deferred until UC-01 file uploads land — requires Blaze plan upgrade).
+- **Data:** Firestore in `us-east1` region.
+- **File storage:** Firebase Storage in `us-east1` (co-located with Firestore; Blaze plan is active).
 - **Deploy target:** Firebase Hosting for the frontend; Cloud Run or Vercel for the backend (decision in Week 5).
 - **Testing:** Jest / Vitest for unit tests; `@firebase/rules-unit-testing` for Firestore rules; Playwright optional for E2E.
 
