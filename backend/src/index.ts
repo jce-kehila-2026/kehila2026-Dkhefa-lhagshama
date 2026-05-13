@@ -12,6 +12,7 @@ import express, { Request, Response } from 'express';
 
 import { initializeFirebaseAdmin } from '@/lib/firebaseAdmin';
 import authRouter from '@/routes/auth';
+import requestsRouter from '@/routes/requests';
 import { authenticate } from '@/middleware/auth';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -43,15 +44,14 @@ app.get('/api/me', authenticate, (req: Request, res: Response) => {
 });
 
 // Route mounts — uncomment as each vertical-slice UC lands.
-app.use('/api/auth', authRouter);
+app.use('/api/auth',     authRouter);
+app.use('/api/requests', requestsRouter);
 //
-// import requestsRouter from '@/routes/requests';      // UC-01
 // import answersRouter from '@/routes/answers';        // UC-02
 // import businessesRouter from '@/routes/businesses';  // UC-03
 // import chatsRouter from '@/routes/chats';            // UC-04
 // import adminRouter from '@/routes/admin';            // UC-05
 //
-// app.use('/api/requests',   requestsRouter);
 // app.use('/api/answers',    answersRouter);
 // app.use('/api/businesses', businessesRouter);
 // app.use('/api/chats',      chatsRouter);
