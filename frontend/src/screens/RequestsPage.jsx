@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 const useNavigate = () => {
   const router = useRouter()
@@ -11,9 +11,11 @@ import UploadArea from '../components/UploadArea'
 import { FormGroup, Label, Input, Select, Textarea, FormRow } from '../components/FormElements'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useApp } from '../contexts/AppContext'
+import { useAuth } from '../contexts/AuthContext'
 import { useForm } from '../hooks/useForm'
 import { validateStep1, validateStep2, validateStep3, validateStep4 } from '../utils/validators'
-import { generateTrackingId, copyToClipboard } from '../utils/helpers'
+import { copyToClipboard } from '../utils/helpers'
+import { apiFetch } from '../lib/apiClient'
 
 const CATS = [
   { key:'education',  Icon: GraduationCap, bg:'#EBF3FF', color:'#1A5EA0' },
@@ -24,8 +26,10 @@ const CATS = [
 
 export default function RequestsPage() {
   const { t, isRTL, lang } = useLanguage()
-  const { addRequest, toast } = useApp()
+  const { toast } = useApp()
+  const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const router = useRouter()
   const BackArrow  = isRTL ? ArrowRight : ArrowLeft
   const NextArrow  = isRTL ? ArrowLeft  : ArrowRight
 
@@ -34,6 +38,22 @@ export default function RequestsPage() {
   const [submitted, setSubmitted] = useState(false)
   const [idUploaded, setIdUploaded] = useState(false)
   const [supportUploaded, setSupportUploaded] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  // requestId is generated once per form session. Used as the Firestore doc id
+  // (so duplicate POST attempts collide loudly) and as the Storage path prefix
+  // for file uploads (UC-01-b).
+  const requestId = useMemo(() => {
+    if (typeof window === 'undefined' || !window.crypto?.randomUUID) return null
+    return window.crypto.randomUUID()
+  }, [])
+
+  // Auth guard — if signed out, send to /login with a next= back to here.
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/login?next=${encodeURIComponent('/requests')}`)
+    }
+  }, [authLoading, user, router])
 
   const rq = t.request
   const steps = [rq.steps.personal, rq.steps.type, rq.steps.documents, rq.steps.confirm]
@@ -57,18 +77,46 @@ export default function RequestsPage() {
     else submitForm()
   }
 
-  const submitForm = () => {
-    const id = generateTrackingId()
-    addRequest({
-      ...values,
-      idUploaded,
-      trackingId: id,
-      firstName: values.firstName,
-      lastName: values.lastName,
-    })
-    setTrackingId(id)
-    setSubmitted(true)
-    toast(lang === 'he' ? 'הבקשה נשלחה בהצלחה!' : 'Request submitted successfully!', 'success')
+  const submitForm = async () => {
+    if (submitting || !requestId) return
+    setSubmitting(true)
+    try {
+      const payload = {
+        requestId,
+        firstName: values.firstName,
+        lastName:  values.lastName,
+        idNumber:  values.idNumber,
+        phone:     values.phone,
+        email:     values.email,
+        city:      values.city,
+        age:       Number(values.age) || 0,
+        gender:    values.gender || '',
+        category:  values.category,
+        description: values.description,
+        urgency:   values.urgency,
+        consent:   values.consent === true,
+        attachmentPaths: [], // wired in UC-01-b (PR D)
+      }
+      const res = await apiFetch('/api/requests', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        let detail = ''
+        try { detail = JSON.stringify(await res.json()) } catch { /* noop */ }
+        throw new Error(`submit_failed: ${res.status} ${detail}`)
+      }
+      const body = await res.json()
+      setTrackingId(body.requestId || requestId)
+      setSubmitted(true)
+      toast(lang === 'he' ? 'הבקשה נשלחה בהצלחה!' : 'Request submitted successfully!', 'success')
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[RequestsPage] submit failed:', err)
+      toast(lang === 'he' ? 'שליחת הבקשה נכשלה' : 'Submit failed — please try again.', 'error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleCopy = async () => {
