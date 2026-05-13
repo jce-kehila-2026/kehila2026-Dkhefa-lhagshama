@@ -38,10 +38,10 @@ git clone https://github.com/jce-kehila-2026/kehila2026-Dkhefa-lhagshama.git
 cd kehila2026-Dkhefa-lhagshama
 
 # frontend
-cd frontend && cp .env.example .env.local && npm install && npm run dev
+cd frontend && npm install && npm run dev
 
 # backend (separate terminal)
-cd backend && cp .env.example .env && npm install && npm run dev
+cd backend && npm install && npm run dev
 ```
 
 ## Non-Profit
