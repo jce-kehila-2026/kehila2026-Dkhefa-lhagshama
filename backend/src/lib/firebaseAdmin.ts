@@ -12,27 +12,33 @@ import * as admin from 'firebase-admin';
 
 let initialized = false;
 
+/**
+ * Resolve the Firebase Storage bucket name for the Admin SDK.
+ *
+ * Modern Firebase projects use `<project>.firebasestorage.app`; older ones
+ * use `<project>.appspot.com`. The Admin SDK wants the FULL bucket name
+ * (with suffix) — passing just the project ID yields "specified bucket
+ * does not exist". So we accept any of:
+ *
+ *   FIREBASE_STORAGE_BUCKET=push-for-fulfillment-staging.firebasestorage.app  (preferred)
+ *   FIREBASE_STORAGE_BUCKET=push-for-fulfillment-staging                      (bare — we add the suffix)
+ *
+ * and ensure the returned value always has a suffix.
+ */
 function resolveStorageBucketName(): string {
   const configured =
     process.env.FIREBASE_STORAGE_BUCKET
     ?? process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    ?? process.env.GOOGLE_CLOUD_STORAGE_BUCKET;
+    ?? process.env.GOOGLE_CLOUD_STORAGE_BUCKET
+    ?? process.env.GCLOUD_PROJECT
+    ?? 'push-for-fulfillment-staging';
 
-  if (configured) {
-    // Strip .appspot.com or .firebasestorage.app suffix to get just the bucket name
-    let bucket = configured;
-    if (bucket.endsWith('.firebasestorage.app')) {
-      bucket = bucket.replace(/\.firebasestorage\.app$/, '');
-    } else if (bucket.endsWith('.appspot.com')) {
-      bucket = bucket.replace(/\.appspot\.com$/, '');
-    }
-    return bucket;
+  // If a suffix is already present, return as-is. Otherwise append the new
+  // Firebase Storage suffix (any project created since 2024 uses this).
+  if (configured.endsWith('.firebasestorage.app') || configured.endsWith('.appspot.com')) {
+    return configured;
   }
-
-  // Default: just the base name without suffix
-  return process.env.GCLOUD_PROJECT
-    ? process.env.GCLOUD_PROJECT
-    : 'push-for-fulfillment-staging';
+  return `${configured}.firebasestorage.app`;
 }
 
 export function initializeFirebaseAdmin(): admin.app.App {
