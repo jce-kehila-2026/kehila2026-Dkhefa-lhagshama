@@ -21,16 +21,13 @@ service firebase.storage {
                        || request.auth.token.role == 'admin'
                      );
 
-      // Write: signed-in users with size + MIME limits. The Firestore
-      // request doc may not exist yet at upload time (we upload before
-      // POST /api/requests creates it), so we cannot gate writes on doc
+      // Write: signed-in users with a size limit. The Firestore request
+      // doc may not exist yet at upload time (we upload before POST
+      // /api/requests creates it), so we cannot gate writes on doc
       // ownership. The collision risk is negligible because requestId is
       // a v4 UUID generated client-side.
       allow write: if request.auth != null
-                   && request.resource.size < 10 * 1024 * 1024
-                   && request.resource.contentType.matches(
-                        'application/pdf|image/(jpeg|png)|application/(msword|vnd.openxmlformats-officedocument.wordprocessingml.document)'
-                      );
+                   && request.resource.size < 10 * 1024 * 1024;
     }
 
     // Catch-all: deny everything not explicitly allowed above.

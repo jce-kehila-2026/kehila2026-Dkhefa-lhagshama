@@ -167,4 +167,77 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
   res.status(201).json({ requestId: input.requestId });
 });
 
+// ── GET /api/requests/mine ───────────────────────────────────────────────
+// Returns the caller's own requests, newest first. Capped at 50 for now;
+// pagination can come later if we need it.
+router.get('/mine', authenticate, async (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+
+  try {
+    const snap = await db()
+      .collection('requests')
+      .where('beneficiaryId', '==', req.user.uid)
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+
+    const items = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        category:        data.category,
+        urgency:         data.urgency,
+        status:          data.status,
+        description:     data.description,
+        attachmentPaths: data.attachmentPaths ?? [],
+        // Firestore timestamps -> ISO strings for the client
+        createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? null,
+      };
+    });
+
+    res.json({ items });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[requests.mine] failed:', err);
+    res.status(500).json({ error: 'internal' });
+  }
+});
+
+// ── GET /api/requests/:id ────────────────────────────────────────────────
+// Defense-in-depth read of a single request. Rules already enforce, but we
+// also check here so the API returns a clean 403/404 instead of leaking the
+// Firestore error shape.
+router.get('/:id', authenticate, async (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+
+  const id = req.params.id;
+  try {
+    const snap = await db().collection('requests').doc(id).get();
+    if (!snap.exists) {
+      res.status(404).json({ error: 'not_found' });
+      return;
+    }
+    const data = snap.data() as { beneficiaryId?: string; handler?: string | null };
+    const isOwner   = data.beneficiaryId === req.user.uid;
+    const isHandler = data.handler === req.user.uid;
+    const isAdmin   = req.user.role === 'admin';
+    if (!isOwner && !isHandler && !isAdmin) {
+      res.status(403).json({ error: 'forbidden' });
+      return;
+    }
+    res.json({ id: snap.id, ...data });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[requests.get] failed:', err);
+    res.status(500).json({ error: 'internal' });
+  }
+});
+
 export default router;
