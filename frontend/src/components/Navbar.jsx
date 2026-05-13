@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Menu, X, Globe, ChevronDown } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Navbar() {
   const { t, toggleLang, lang } = useLanguage()
+  const { user, role, logout, loading } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const router = useRouter()
   const navigate = (to) => router.push(to)
@@ -19,16 +21,27 @@ export default function Navbar() {
     )
   }
 
-  const links = [
+  // Build link set conditional on auth state — admin + track only when signed in.
+  const baseLinks = [
     { key: 'home',       to: '/' },
     { key: 'requests',   to: '/requests' },
     { key: 'directory',  to: '/directory' },
     { key: 'volunteers', to: '/volunteer' },
     { key: 'about',      to: '/about' },
     { key: 'contact',    to: '/contact' },
-    { key: 'track',      to: '/track' },
-    { key: 'admin',      to: '/admin' },
   ]
+  const links = user
+    ? [
+        ...baseLinks,
+        { key: 'track', to: '/track' },
+        ...(role === 'admin' ? [{ key: 'admin', to: '/admin' }] : []),
+      ]
+    : baseLinks
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/')
+  }
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
@@ -89,12 +102,32 @@ export default function Navbar() {
             {lang === 'he' ? 'EN' : 'עב'}
           </button>
 
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => navigate('/requests')}
-          >
-            {t.nav.submitBtn}
-          </button>
+          {/* Auth controls */}
+          {loading ? null : user ? (
+            <>
+              <span style={{ color:'rgba(255,255,255,0.85)', fontSize:'13px' }} title={user.email || ''}>
+                {t.auth.welcome}{user.email ? `, ${user.email.split('@')[0]}` : ''}
+              </span>
+              <button className="btn btn-outline btn-sm" onClick={handleLogout}>
+                {t.auth.logout}
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => navigate('/requests')}
+              >
+                {t.nav.submitBtn}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="btn btn-outline btn-sm">
+                {t.auth.login.title}
+              </Link>
+              <Link href="/register" className="btn btn-primary btn-sm">
+                {t.auth.register.title}
+              </Link>
+            </>
+          )}
         </div>
 
         {/* MOBILE CONTROLS */}
