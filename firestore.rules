@@ -1,0 +1,47 @@
+// Firestore Security Rules — initial deny-all template.
+//
+// Per-collection allow-rules will be added as each vertical-slice UC lands
+// (UC-01 = requests; UC-02 = answers; UC-03 = businesses; UC-04 = chats/messages;
+//  UC-05 = approval gating).
+//
+// Default rule: deny everything. The Express backend writes via the Admin SDK,
+// which bypasses these rules — that's intentional. The client only ever reads
+// (and only what we explicitly allow per collection).
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions (used by per-collection rules below)
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && request.auth.token.role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    // Public read of approved catalog entries — open up per-collection as
+    // UC-02 / UC-03 land.
+    //
+    // match /answers/{answerId} {
+    //   allow read: if resource.data.status == 'approved';
+    //   allow write: if false; // admin-only via backend
+    // }
+    //
+    // match /businesses/{businessId} {
+    //   allow read: if resource.data.status == 'approved';
+    //   allow write: if false; // admin-only via backend
+    // }
+
+    // Catch-all: deny everything not explicitly allowed above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
