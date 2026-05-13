@@ -1,27 +1,41 @@
-// Firebase Storage Security Rules — initial deny-all template.
+// Firebase Storage Security Rules.
 //
-// As UC-01 lands, we'll allow signed-in users to upload to
-// `requests/{requestId}/{filename}` with size + MIME limits.
+// UC-01-b: any signed-in user may upload to `requests/{requestId}/{filename}`
+// subject to size (≤10MB) and MIME (PDF / JPEG / PNG / DOCX) limits. Reads
+// require either ownership of the matching Firestore request doc or the
+// admin role custom claim.
 
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Catch-all: deny.
+    // ── /requests/{requestId}/{filename} — UC-01 attachments ──────────
+    match /requests/{requestId}/{filename} {
+      // Read: must be signed in, and either own the matching request doc
+      // or be an admin. The request doc lookup uses the Firestore-bridge
+      // function available in Storage rules.
+      allow read: if request.auth != null
+                  && (
+                       firestore.get(/databases/(default)/documents/requests/$(requestId)).data.beneficiaryId == request.auth.uid
+                       || request.auth.token.role == 'admin'
+                     );
+
+      // Write: signed-in users with size + MIME limits. The Firestore
+      // request doc may not exist yet at upload time (we upload before
+      // POST /api/requests creates it), so we cannot gate writes on doc
+      // ownership. The collision risk is negligible because requestId is
+      // a v4 UUID generated client-side.
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches(
+                        'application/pdf|image/(jpeg|png)|application/(msword|vnd.openxmlformats-officedocument.wordprocessingml.document)'
+                      );
+    }
+
+    // Catch-all: deny everything not explicitly allowed above.
     match /{allPaths=**} {
       allow read, write: if false;
     }
-
-    // Example to add when UC-01 lands (commented out for now):
-    //
-    // match /requests/{requestId}/{filename} {
-    //   allow read:  if request.auth != null;
-    //   allow write: if request.auth != null
-    //                && request.resource.size < 10 * 1024 * 1024
-    //                && request.resource.contentType.matches(
-    //                     'application/pdf|image/(jpeg|png)|application/(msword|vnd.openxmlformats-officedocument.wordprocessingml.document)'
-    //                   );
-    // }
   }
 }
