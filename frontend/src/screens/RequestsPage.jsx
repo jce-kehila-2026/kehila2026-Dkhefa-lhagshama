@@ -53,11 +53,20 @@ export default function RequestsPage() {
   }, [])
 
   // Auth guard — if signed out, send to /login with a next= back to here.
+  // The early-return below the form definition stops the form rendering
+  // for a frame between the redirect being scheduled and the navigation
+  // committing.
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace(`/login?next=${encodeURIComponent('/requests')}`)
     }
   }, [authLoading, user, router])
+
+  // Map the UI's short gender codes (M/F/O) to the backend's canonical
+  // enum (male/female/other). The backend (UC-01-c) is the source of truth
+  // for the request-doc schema; the UI happens to use shorter codes.
+  const GENDER_MAP = { M: 'male', F: 'female', O: 'other', '': '' }
+  const toCanonicalGender = (g) => GENDER_MAP[g] ?? ''
 
   const rq = t.request
   const steps = [rq.steps.personal, rq.steps.type, rq.steps.documents, rq.steps.confirm]
@@ -94,7 +103,7 @@ export default function RequestsPage() {
         email:     values.email,
         city:      values.city,
         age:       Number(values.age) || 0,
-        gender:    values.gender || '',
+        gender:    toCanonicalGender(values.gender),
         category:  values.category,
         description: values.description,
         urgency:   values.urgency,
@@ -127,6 +136,19 @@ export default function RequestsPage() {
   const handleCopy = async () => {
     const ok = await copyToClipboard(trackingId)
     toast(ok ? t.common.copied : t.common.error, ok ? 'success' : 'error')
+  }
+
+  // ── AUTH GATE ─────────────────────────────────────────────
+  // While auth is still resolving, or after we've determined the user is
+  // signed out, render nothing so the form is never visible to a
+  // signed-out caller (the useEffect above is already scheduling the
+  // redirect; this just avoids the one-frame flash).
+  if (authLoading || !user) {
+    return (
+      <div className="page-container" style={{ padding: '80px 24px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--gray-500)' }}>{t.common.loading}</div>
+      </div>
+    )
   }
 
   // ── SUCCESS SCREEN ────────────────────────────────────────
