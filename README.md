@@ -16,7 +16,7 @@ A bilingual (HE / EN) digital platform for **עמותת דחיפה להגשמה*
 - **Frontend:** React 18 + Next.js (Pages Router) + Tailwind CSS — `frontend/`
 - **Backend:** Node.js + Express + Firebase Admin SDK — `backend/`
 - **Auth:** Firebase Auth (Email/Password) with role-based custom claims
-- **Data:** Firestore (`europe-west2`) + Firebase Storage
+- **Data:** Firestore (`us-east1`) + Firebase Storage (`us-east1`)
 - **Deploy:** Firebase Hosting (frontend) · Cloud Run or Vercel (backend — TBD)
 
 ## Repo Layout
