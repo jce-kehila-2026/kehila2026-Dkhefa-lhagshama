@@ -11,6 +11,7 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Noto+Sans+Hebrew:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <link rel="preload" as="image" href="/logo.jpg" />
       </Head>
       <body>
         <Main />
