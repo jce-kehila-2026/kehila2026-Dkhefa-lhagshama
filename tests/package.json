@@ -1,0 +1,17 @@
+{
+  "name": "push-for-fulfillment-rules-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.13.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/*.test.js"]
+  }
+}
