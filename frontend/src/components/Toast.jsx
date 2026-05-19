@@ -19,7 +19,7 @@ export default function ToastContainer() {
           <span style={{ flex:1 }}>{t.message}</span>
           <button
             onClick={() => removeToast(t.id)}
-            style={{ background:'none', border:'none', color:'rgba(255,255,255,0.6)', cursor:'pointer', padding:'2px', display:'flex', flexShrink:0 }}
+            style={{ background:'none', border:'none', color:'rgba(244,238,224,0.7)', cursor:'pointer', padding:'2px', display:'flex', flexShrink:0 }}
             aria-label="Close"
           >
             <X size={14} />
