@@ -3,10 +3,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-import PageHeader from '../components/PageHeader'
 
 export default function LoginPage() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const { login } = useAuth()
   const router = useRouter()
   const a = t.auth.login
@@ -31,11 +30,57 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <PageHeader title={a.title} subtitle={a.subtitle} />
-      <div className="page-container" style={{ maxWidth: 480, padding: '40px 1.5rem' }}>
-        <form onSubmit={onSubmit} className="card" style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, color: 'var(--gray-700)' }}>
+    <div className="auth-grid" style={{
+      minHeight: 'calc(100vh - 64px)',
+      display: 'grid',
+      gridTemplateColumns: '1fr',
+      background: 'var(--paper)',
+    }}>
+      <aside style={{
+        background: 'var(--sky-2)',
+        padding: '64px 40px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '20px',
+      }}>
+        <img
+          src="/logo.jpg"
+          alt={lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
+          width={96}
+          height={96}
+          style={{ borderRadius: '50%', objectFit: 'cover', boxShadow: 'var(--shadow)' }}
+        />
+        <div className="section-eyebrow" style={{ textAlign: 'center' }}>
+          {lang === 'he' ? 'עמותת דחיפה להגשמה' : 'Push for Fulfillment'}
+        </div>
+        <h1 className="section-display" style={{
+          fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
+          textAlign: 'center',
+          maxWidth: '24rem',
+          margin: 0,
+        }}>
+          {a.title}
+        </h1>
+        {a.subtitle && (
+          <p className="section-lede" style={{ textAlign: 'center', margin: '0 auto', maxWidth: '26rem' }}>
+            {a.subtitle}
+          </p>
+        )}
+      </aside>
+
+      <main style={{
+        padding: '64px 40px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        maxWidth: '480px',
+        width: '100%',
+        margin: '0 auto',
+      }}>
+        <form onSubmit={onSubmit} className="card" style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>
             {a.email}
             <input
               type="email"
@@ -43,10 +88,10 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{ padding: '10px 12px', border: '1px solid var(--gray-300)', borderRadius: 8, fontSize: 15 }}
+              className="form-input"
             />
           </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, color: 'var(--gray-700)' }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>
             {a.password}
             <input
               type="password"
@@ -55,26 +100,26 @@ export default function LoginPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ padding: '10px 12px', border: '1px solid var(--gray-300)', borderRadius: 8, fontSize: 15 }}
+              className="form-input"
             />
           </label>
-          {error && <div style={{ color: '#b91c1c', fontSize: 14 }}>{error}</div>}
+          {error && <div style={{ color: 'var(--ember)', fontSize: 13.5 }}>{error}</div>}
           <button
             type="submit"
             disabled={submitting}
             className="btn btn-primary"
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 4 }}
           >
             {submitting ? a.submitting : a.submit}
           </button>
-          <div style={{ fontSize: 14, textAlign: 'center', color: 'var(--gray-600)', marginTop: 4 }}>
+          <div style={{ fontSize: 13.5, textAlign: 'center', color: 'var(--ink-2)', marginTop: 4 }}>
             {a.noAccount}{' '}
-            <Link href="/register" style={{ color: 'var(--navy)', fontWeight: 600 }}>
+            <Link href="/register" style={{ color: 'var(--ember)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
               {a.registerLink}
             </Link>
           </div>
         </form>
-      </div>
-    </>
+      </main>
+    </div>
   )
 }
