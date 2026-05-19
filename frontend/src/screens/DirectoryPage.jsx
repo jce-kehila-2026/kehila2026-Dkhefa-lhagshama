@@ -60,10 +60,10 @@ export default function DirectoryPage() {
   const NGO_AREAS = ['all', 'education', 'employment', 'legal', 'social', 'housing']
 
   const tabStyle = (active) => ({
-    padding:'12px 22px', fontSize:'14.5px', fontWeight:600,
+    padding:'12px 22px', fontSize:'14.5px', fontWeight:500,
     border:'none', background:'none', cursor:'pointer',
-    color: active ? 'var(--navy)' : 'var(--gray-400)',
-    borderBottom: active ? '3px solid var(--navy)' : '3px solid transparent',
+    color: active ? 'var(--ink)' : 'var(--ink-2)',
+    borderBottom: active ? '2px solid var(--ember)' : '2px solid transparent',
     marginBottom:'-2px', transition:'all .2s', fontFamily:'inherit',
   })
 
@@ -73,7 +73,7 @@ export default function DirectoryPage() {
 
       <div className="page-container section-padding">
         {/* TABS */}
-        <div style={{ borderBottom:'2px solid var(--gray-200)', marginBottom:'28px', display:'flex', gap:'4px' }}>
+        <div style={{ borderBottom:'1px solid var(--hair)', marginBottom:'28px', display:'flex', gap:'4px' }}>
           <button style={tabStyle(activeTab === 'business')} onClick={() => setActiveTab('business')}>
             🏪 {d.tabBusiness}
           </button>
@@ -87,19 +87,20 @@ export default function DirectoryPage() {
           <>
             {/* Smart suggestion banner */}
             <div style={{
-              background:'linear-gradient(135deg, var(--navy-dark), var(--navy))',
+              background:'var(--cream)',
+              border:'1px solid var(--hair)',
               borderRadius:'var(--radius)', padding:'14px 20px',
               display:'flex', alignItems:'center', gap:'12px',
-              marginBottom:'20px', color:'rgba(255,255,255,0.88)', fontSize:'13.5px',
+              marginBottom:'20px', color:'var(--ink)', fontSize:'13.5px',
             }}>
-              <span style={{ fontSize:'20px' }}>⚡</span>
+              <span style={{ fontSize:'18px', color:'var(--ember)' }}>⚡</span>
               <span>{d.smartSuggest}</span>
             </div>
 
             {/* Filter bar */}
             <div style={{
-              background:'var(--white)', borderRadius:'var(--radius)',
-              border:'1px solid var(--gray-200)', padding:'18px 20px',
+              background:"var(--paper)", borderRadius:"var(--radius)",
+              border:"1px solid var(--hair)", padding:"18px 20px",
               boxShadow:'var(--shadow-sm)', marginBottom:'24px',
               display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap',
             }}>
@@ -114,7 +115,7 @@ export default function DirectoryPage() {
                   placeholder={d.searchPH}
                   style={{
                     width:'100%', padding:'10px 14px 10px 36px',
-                    border:'1.5px solid var(--gray-200)', borderRadius:'8px',
+                    border:'1px solid var(--hair)', borderRadius:'8px',
                     fontSize:'14px', fontFamily:'inherit', paddingInlineStart:'36px',
                   }}
                 />
@@ -196,7 +197,7 @@ export default function DirectoryPage() {
                       <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" style={{ flex:1, textDecoration:'none', display:'flex', justifyContent:'center' }}>
                         <Phone size={13} /> {biz.phone}
                       </a>
-                      <button className="btn btn-navy btn-sm">{d.moreBtn}</button>
+                      <button className="btn btn-primary btn-sm">{d.moreBtn}</button>
                     </div>
                   </div>
                 ))}
@@ -217,8 +218,8 @@ export default function DirectoryPage() {
           <>
             {/* Filter */}
             <div style={{
-              background:'var(--white)', borderRadius:'var(--radius)',
-              border:'1px solid var(--gray-200)', padding:'18px 20px',
+              background:"var(--paper)", borderRadius:"var(--radius)",
+              border:"1px solid var(--hair)", padding:"18px 20px",
               boxShadow:'var(--shadow-sm)', marginBottom:'24px',
               display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap',
             }}>
@@ -233,7 +234,7 @@ export default function DirectoryPage() {
                   placeholder={d.searchNGO}
                   style={{
                     width:'100%', padding:'10px 14px 10px 36px',
-                    border:'1.5px solid var(--gray-200)', borderRadius:'8px',
+                    border:'1px solid var(--hair)', borderRadius:'8px',
                     fontSize:'14px', fontFamily:'inherit', paddingInlineStart:'36px',
                   }}
                 />
@@ -292,7 +293,7 @@ export default function DirectoryPage() {
                       style={{ textDecoration:'none', display:'flex', alignItems:'center', gap:'6px' }}>
                       <Globe size={13} />
                     </a>
-                    <button className="btn btn-navy btn-sm" style={{ flex:1 }}>{d.referBtn}</button>
+                    <button className="btn btn-primary btn-sm" style={{ flex:1 }}>{d.referBtn}</button>
                   </div>
                 </div>
               ))}

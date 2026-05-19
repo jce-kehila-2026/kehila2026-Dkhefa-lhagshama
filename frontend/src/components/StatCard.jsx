@@ -31,10 +31,10 @@ export default function StatCard({ num, suffix = '', label, delay = 0 }) {
   return (
     <div ref={ref} style={{ textAlign:'center' }}>
       <span style={{
-        fontFamily:'Frank Ruhl Libre, serif',
+        fontFamily:'Frank Ruhl Libre, Georgia, serif',
         fontSize:'clamp(28px, 4vw, 42px)',
-        fontWeight:900,
-        color:'var(--gold-light)',
+        fontWeight:400,
+        color:'var(--ink)',
         display:'block',
         lineHeight:1,
       }}>
