@@ -149,11 +149,11 @@ export default function DirectoryPage() {
                     {biz.featured && (
                       <div style={{
                         display:'inline-flex', alignItems:'center', gap:'4px',
-                        background:'var(--gold-pale)', color:'var(--gold)',
+                        background:'var(--cream)', color:'var(--ember)',
                         fontSize:'11px', fontWeight:700, padding:'3px 10px',
                         borderRadius:'20px', marginBottom:'12px',
                       }}>
-                        <Star size={10} fill="var(--gold)" /> {lang === 'he' ? 'מומלץ' : 'Featured'}
+                        <Star size={10} fill="var(--ember)" /> {lang === 'he' ? 'מומלץ' : 'Featured'}
                       </div>
                     )}
                     {/* Header */}
@@ -167,7 +167,7 @@ export default function DirectoryPage() {
                         {biz.logo}
                       </div>
                       <div>
-                        <div style={{ fontSize:'15px', fontWeight:700, color:'var(--navy)' }}>{biz.name}</div>
+                        <div style={{ fontSize:'15px', fontWeight:700, color:'var(--ink)' }}>{biz.name}</div>
                         <div style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', color:'var(--gray-400)' }}>
                           <MapPin size={11} />
                           {lang === 'he' ? d.categories[biz.category] : d.categories[biz.category]} • {lang === 'he' ? biz.city : biz.cityEn}
@@ -188,8 +188,8 @@ export default function DirectoryPage() {
                     </div>
                     {/* Rating */}
                     <div style={{ display:'flex', alignItems:'center', gap:'4px', marginBottom:'14px' }}>
-                      <Star size={13} fill="var(--gold)" color="var(--gold)" />
-                      <span style={{ fontSize:'13px', fontWeight:600, color:'var(--navy)' }}>{biz.rating}</span>
+                      <Star size={13} fill="var(--ember)" color="var(--ember)" />
+                      <span style={{ fontSize:'13px', fontWeight:600, color:'var(--ink)' }}>{biz.rating}</span>
                       <span style={{ fontSize:'12px', color:'var(--gray-400)' }}>({biz.reviews})</span>
                     </div>
                     {/* Action */}
@@ -205,7 +205,7 @@ export default function DirectoryPage() {
             ) : (
               <div style={{ textAlign:'center', padding:'64px 0' }}>
                 <div style={{ fontSize:'40px', marginBottom:'12px' }}>🔍</div>
-                <h3 style={{ color:'var(--navy)', marginBottom:'8px' }}>{d.noResults}</h3>
+                <h3 style={{ color:'var(--ink)', marginBottom:'8px' }}>{d.noResults}</h3>
                 <p style={{ color:'var(--gray-400)' }}>{d.noResultsHint}</p>
               </div>
             )}
@@ -265,7 +265,7 @@ export default function DirectoryPage() {
                       {ngo.logo}
                     </div>
                     <div>
-                      <div style={{ fontSize:'15.5px', fontWeight:700, color:'var(--navy)', marginBottom:'3px' }}>
+                      <div style={{ fontSize:'15.5px', fontWeight:700, color:'var(--ink)', marginBottom:'3px' }}>
                         {lang === 'he' ? ngo.name : ngo.nameEn}
                       </div>
                       <div style={{ fontSize:'12.5px', color:'var(--gray-400)' }}>
@@ -308,7 +308,7 @@ export default function DirectoryPage() {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowRegForm(false)}>
           <div className="modal-box">
             <div className="modal-header">
-              <h3 style={{ fontSize:'17px', fontWeight:700, color:'var(--navy)' }}>
+              <h3 style={{ fontSize:'17px', fontWeight:700, color:'var(--ink)' }}>
                 {lang === 'he' ? '+ רישום עסק חדש' : '+ Register New Business'}
               </h3>
               <button onClick={() => setShowRegForm(false)} className="btn btn-ghost btn-sm" style={{ padding:'4px' }}>✕</button>

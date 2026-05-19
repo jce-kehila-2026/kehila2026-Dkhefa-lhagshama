@@ -94,7 +94,7 @@ export default function MyRequestsPage() {
               style={{
                 fontSize: "20px",
                 fontWeight: 700,
-                color: "var(--navy)",
+                color: "var(--ink)",
                 marginBottom: "8px",
               }}
             >
@@ -129,7 +129,7 @@ export default function MyRequestsPage() {
               style={{
                 fontSize: "22px",
                 fontWeight: 700,
-                color: "var(--navy)",
+                color: "var(--ink)",
                 marginBottom: "10px",
               }}
             >

@@ -222,7 +222,7 @@ export default function RequestsPage() {
         {/* STEP 1 */}
         {step === 1 && (
           <div style={cardStyle}>
-            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--navy)', marginBottom:'26px' }}>{rq.step1.title}</h3>
+            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'26px' }}>{rq.step1.title}</h3>
             <FormRow>
               <FormGroup>
                 <Label htmlFor="firstName" required>{rq.step1.firstName}</Label>
@@ -292,7 +292,7 @@ export default function RequestsPage() {
         {/* STEP 2 */}
         {step === 2 && (
           <div style={cardStyle}>
-            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--navy)', marginBottom:'6px' }}>{rq.step2.title}</h3>
+            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'6px' }}>{rq.step2.title}</h3>
             <p style={{ fontSize:'13.5px', color:'var(--gray-400)', marginBottom:'24px' }}>{rq.step2.subtitle}</p>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:'12px', marginBottom:'24px' }}>
               {CATS.map(({ key, Icon, bg, color }) => {
@@ -310,7 +310,7 @@ export default function RequestsPage() {
                       <Icon size={20} />
                     </div>
                     <div>
-                      <strong style={{ display:'block', fontSize:'14px', color:'var(--navy)', marginBottom:'2px' }}>{cat.label}</strong>
+                      <strong style={{ display:'block', fontSize:'14px', color:'var(--ink)', marginBottom:'2px' }}>{cat.label}</strong>
                       <span style={{ fontSize:'12px', color:'var(--gray-400)' }}>{cat.hint}</span>
                     </div>
                   </div>
@@ -339,7 +339,7 @@ export default function RequestsPage() {
         {/* STEP 3 */}
         {step === 3 && (
           <div style={cardStyle}>
-            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--navy)', marginBottom:'6px' }}>{rq.step3.title}</h3>
+            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'6px' }}>{rq.step3.title}</h3>
             <p style={{ fontSize:'13.5px', color:'var(--gray-400)', marginBottom:'24px' }}>{rq.step3.subtitle}</p>
             <FormGroup>
               <UploadArea
@@ -382,7 +382,7 @@ export default function RequestsPage() {
         {/* STEP 4 — SUMMARY */}
         {step === 4 && (
           <div style={cardStyle}>
-            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--navy)', marginBottom:'22px' }}>{rq.step4.title}</h3>
+            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'22px' }}>{rq.step4.title}</h3>
             <div style={{
               background:'var(--sky-2)', borderRadius:'10px',
               border:'1px solid var(--hair)',
@@ -398,7 +398,7 @@ export default function RequestsPage() {
                 ].map(([label, val]) => (
                   <div key={label}>
                     <div style={{ fontSize:'12px', color:'var(--gray-400)', marginBottom:'2px' }}>{label}</div>
-                    <div style={{ fontSize:'14px', fontWeight:600, color:'var(--navy)' }}>{val || '—'}</div>
+                    <div style={{ fontSize:'14px', fontWeight:600, color:'var(--ink)' }}>{val || '—'}</div>
                   </div>
                 ))}
               </div>

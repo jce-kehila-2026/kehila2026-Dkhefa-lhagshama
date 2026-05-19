@@ -59,7 +59,7 @@ export default function VolunteerPage() {
           {/* REGISTRATION FORM */}
           <div>
             <div className="gold-line" />
-            <h2 style={{ fontFamily:'Frank Ruhl Libre, serif', fontSize:'26px', fontWeight:900, color:'var(--navy)', marginBottom:'8px' }}>
+            <h2 style={{ fontFamily:'Frank Ruhl Libre, serif', fontSize:'26px', fontWeight:900, color:'var(--ink)', marginBottom:'8px' }}>
               {v.registerTitle}
             </h2>
             <p style={{ color:'var(--gray-500)', marginBottom:'24px' }}>{v.registerSub}</p>
@@ -68,14 +68,14 @@ export default function VolunteerPage() {
               <div className="card" style={{ padding:'40px', textAlign:'center' }}>
                 <div style={{
                   width:'64px', height:'64px',
-                  background:'var(--gold-pale)',
+                  background:'var(--cream)',
                   borderRadius:'50%',
                   display:'flex', alignItems:'center', justifyContent:'center',
                   margin:'0 auto 16px',
                 }}>
-                  <CheckCircle size={30} color="var(--gold)" />
+                  <CheckCircle size={30} color="var(--ember)" />
                 </div>
-                <h3 style={{ fontFamily:'Frank Ruhl Libre, serif', fontSize:'20px', color:'var(--navy)', marginBottom:'8px' }}>
+                <h3 style={{ fontFamily:'Frank Ruhl Libre, serif', fontSize:'20px', color:'var(--ink)', marginBottom:'8px' }}>
                   {lang === 'he' ? 'תודה רבה!' : 'Thank You!'}
                 </h3>
                 <p style={{ color:'var(--gray-500)', marginBottom:'20px' }}>
@@ -159,7 +159,7 @@ export default function VolunteerPage() {
           {/* ACTIVE VOLUNTEERS LIST */}
           <div>
             <div className="gold-line" />
-            <h2 style={{ fontFamily:'Frank Ruhl Libre, serif', fontSize:'26px', fontWeight:900, color:'var(--navy)', marginBottom:'8px' }}>
+            <h2 style={{ fontFamily:'Frank Ruhl Libre, serif', fontSize:'26px', fontWeight:900, color:'var(--ink)', marginBottom:'8px' }}>
               {v.activeTitle}
             </h2>
             <p style={{ color:'var(--gray-500)', marginBottom:'24px' }}>
@@ -190,7 +190,7 @@ export default function VolunteerPage() {
                   </div>
                   {/* Info */}
                   <div>
-                    <div style={{ fontSize:'15px', fontWeight:700, color:'var(--navy)', marginBottom:'3px' }}>
+                    <div style={{ fontSize:'15px', fontWeight:700, color:'var(--ink)', marginBottom:'3px' }}>
                       {lang === 'he' ? vol.name : vol.nameEn}
                     </div>
                     <div style={{ fontSize:'12.5px', color:'var(--gray-500)', marginBottom:'6px' }}>

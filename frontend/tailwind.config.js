@@ -13,9 +13,6 @@ module.exports = {
         paper: '#FAFAF7',
         ember: '#B9694E',
         hair:  'rgba(15,30,45,0.10)',
-        // Legacy aliases (removed in Phase 7)
-        navy:  { DEFAULT: '#0F1E2D', light: '#2C3D52', dark: '#0F1E2D', 50: '#DCE7F0' },
-        gold:  { DEFAULT: '#B9694E', light: '#B9694E', pale: '#F4EEE0', dark: '#B9694E' },
       },
       fontFamily: {
         display: ['"Frank Ruhl Libre"', 'Georgia', 'serif'],

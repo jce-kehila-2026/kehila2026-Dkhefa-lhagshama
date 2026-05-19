@@ -16,14 +16,8 @@
   --ember:      #B9694E;
   --hair:       rgba(15,30,45,0.10);
 
-  /* Back-compat aliases — leave for now so untouched JSX still renders.
-     Removed in Phase 7. */
-  --navy:       var(--ink);
-  --navy-light: var(--ink-2);
-  --navy-dark:  var(--ink);
-  --gold:       var(--ember);
-  --gold-light: var(--ember);
-  --gold-pale:  var(--cream);
+  /* True white — still used by a few card/input/modal class definitions
+     below. Other legacy navy/gold aliases were removed in Phase 7. */
   --white:      #FFFFFF;
 
   /* Grays — slightly cooler, sky-tinted */
@@ -87,7 +81,7 @@ body.ltr {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--gray-100); }
 ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--navy-light); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-2); }
 
 /* ─────────────────────────────────────────
    LAYOUT UTILITIES
@@ -206,7 +200,7 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   display: block;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--ink);
   margin-bottom: 7px;
 }
 .form-label .required { color: var(--danger); margin-inline-start: 3px; }
@@ -230,7 +224,7 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 .form-select:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: var(--navy);
+  border-color: var(--ink);
   box-shadow: 0 0 0 3px rgba(11,29,62,0.08);
 }
 .form-input::placeholder,

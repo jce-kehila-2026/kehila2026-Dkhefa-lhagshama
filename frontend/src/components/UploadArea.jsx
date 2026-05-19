@@ -116,7 +116,7 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px', width:'100%' }}>
             <div style={{
               width:'32px', height:'32px', border:'3px solid var(--gray-200)',
-              borderTopColor:'var(--navy)', borderRadius:'50%',
+              borderTopColor:'var(--ink)', borderRadius:'50%',
               animation:'spin 0.8s linear infinite',
             }} />
             <span style={{ fontSize:'13.5px', color:'var(--gray-500)' }}>
@@ -126,7 +126,7 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
               <div style={{
                 width: `${percent.toFixed(0)}%`,
                 height:'100%',
-                background:'var(--navy)',
+                background:'var(--ink)',
                 transition:'width 0.15s linear',
               }} />
             </div>
@@ -134,7 +134,7 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
         ) : (
           <>
             <Upload size={28} style={{ color:'var(--gray-400)', marginBottom:'10px' }} />
-            <div style={{ fontWeight:600, fontSize:'14px', color:'var(--navy)', marginBottom:'6px' }}>
+            <div style={{ fontWeight:600, fontSize:'14px', color:'var(--ink)', marginBottom:'6px' }}>
               {label} {required && <span style={{ color:'var(--danger)' }}>*</span>}
             </div>
             <div style={{ fontSize:'13px', color:'var(--gray-500)', marginBottom:'6px' }}>{hint}</div>
