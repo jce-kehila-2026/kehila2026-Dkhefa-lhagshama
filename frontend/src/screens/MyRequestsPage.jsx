@@ -155,7 +155,7 @@ export default function MyRequestsPage() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "var(--gray-50)" }}>
+                  <tr style={{ background: "var(--sky-2)" }}>
                     <th style={thStyle}>{t.myRequests.table.id}</th>
                     <th style={thStyle}>{t.myRequests.table.category}</th>
                     <th style={thStyle}>{t.myRequests.table.urgency}</th>
@@ -169,17 +169,17 @@ export default function MyRequestsPage() {
                     <tr
                       key={item.id}
                       style={{
-                        borderTop: "1px solid var(--gray-200)",
-                        background:
-                          index % 2 ? "var(--white)" : "rgba(250,250,250,0.55)",
+                        borderTop: "1px solid var(--hair)",
+                        background: "var(--paper)",
                       }}
                     >
                       <td style={tdStyle}>
                         <div
                           style={{
-                            fontFamily: "monospace",
+                            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
                             fontSize: "13px",
-                            color: "var(--navy)",
+                            color: "var(--ink)",
+                            letterSpacing: "0.04em",
                           }}
                         >
                           {item.id}
@@ -187,7 +187,7 @@ export default function MyRequestsPage() {
                         <div
                           style={{
                             marginTop: "6px",
-                            color: "var(--gray-500)",
+                            color: "var(--ink-2)",
                             fontSize: "13px",
                           }}
                         >
@@ -221,17 +221,19 @@ export default function MyRequestsPage() {
 
 const thStyle = {
   textAlign: "start",
-  padding: "16px 18px",
-  fontSize: "13px",
-  color: "var(--gray-500)",
-  fontWeight: 700,
-  letterSpacing: "0.02em",
-  borderBottom: "1px solid var(--gray-200)",
+  padding: "14px 18px",
+  fontSize: "11px",
+  color: "var(--ink-2)",
+  fontWeight: 500,
+  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  borderBottom: "1px solid var(--hair)",
 };
 
 const tdStyle = {
   padding: "16px 18px",
   verticalAlign: "top",
   fontSize: "14px",
-  color: "var(--gray-800)",
+  color: "var(--ink)",
 };
