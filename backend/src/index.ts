@@ -11,12 +11,13 @@ import cors from 'cors';
 import express, { Request, Response } from 'express';
 
 import { initializeFirebaseAdmin } from '@/lib/firebaseAdmin';
+import adminRouter from '@/routes/admin';
+import answersRouter from '@/routes/answers';
 import authRouter from '@/routes/auth';
+import businessesRouter from '@/routes/businesses';
 import chatsRouter from '@/routes/chats';
 import requestsRouter from '@/routes/requests';
 import uploadsRouter from '@/routes/uploads';
-import businessesRouter from '@/routes/businesses';
-import answersRouter from '@/routes/answers';
 import { authenticate } from '@/middleware/auth';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -64,10 +65,7 @@ app.use('/api/requests', requestsRouter);
 app.use('/api/uploads',  uploadsRouter);
 app.use('/api/businesses', businessesRouter);
 app.use('/api/answers', answersRouter);
-//
-// import adminRouter from '@/routes/admin';            // UC-05
-//
-// app.use('/api/admin',      adminRouter);
+app.use('/api/admin',    adminRouter);
 
 // Catch-all 404
 app.use((_req: Request, res: Response) => {

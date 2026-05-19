@@ -1,19 +1,13 @@
-// Firestore Security Rules — initial deny-all template.
+// Firestore Security Rules — UC-05 Admin Approval gating added.
 //
-// Per-collection allow-rules will be added as each vertical-slice UC lands
-// (UC-01 = requests; UC-02 = answers; UC-03 = businesses; UC-04 = chats/messages;
-//  UC-05 = approval gating).
-//
-// Default rule: deny everything. The Express backend writes via the Admin SDK,
-// which bypasses these rules — that's intentional. The client only ever reads
-// (and only what we explicitly allow per collection).
+// Writes always go through the Express backend (Admin SDK bypasses these rules).
+// The client SDK is read-only: public sees only status=approved; admins see all.
 
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions (used by per-collection rules below)
     function isSignedIn() {
       return request.auth != null;
     }
@@ -63,9 +57,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Public read of approved catalog entries and secure owner edits
+    // ── /answers — UC-02 community answers catalog ───────────────────────
+    // Public reads approved entries; admins see all. Owners may edit only
+    // while still pending. Create/delete are server-only.
     match /answers/{answerId} {
-      allow read: if resource.data.status == 'approved';
+      allow read: if resource.data.status == 'approved' || isAdmin();
       allow update: if isSignedIn()
         && resource.data.ownerId == request.auth.uid
         && resource.data.status == 'pending'
@@ -74,14 +70,22 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
+    // ── /businesses — UC-03 community business directory ─────────────────
     match /businesses/{businessId} {
-      allow read: if resource.data.status == 'approved';
+      allow read: if resource.data.status == 'approved' || isAdmin();
       allow update: if isSignedIn()
         && resource.data.ownerId == request.auth.uid
         && resource.data.status == 'pending'
         && request.resource.data.status == 'pending'
         && request.resource.data.ownerId == request.auth.uid;
       allow create, delete: if false;
+    }
+
+    // ── /organizations — UC-05 partner organizations ─────────────────────
+    // Public reads approved; admin-only sees pending. Writes are server-only.
+    match /organizations/{orgId} {
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      allow write: if false;
     }
 
     // Catch-all: deny everything not explicitly allowed above.
