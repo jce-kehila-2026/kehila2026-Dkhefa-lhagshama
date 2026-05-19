@@ -115,14 +115,14 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
    GOLD ACCENT LINE
 ───────────────────────────────────────── */
 .gold-line {
-  width: 52px;
-  height: 4px;
-  background: linear-gradient(90deg, var(--gold), var(--gold-light));
-  border-radius: 2px;
+  width: 48px;
+  height: 1px;
+  background: var(--ember);
+  border-radius: 0;
   margin-bottom: 16px;
 }
 .gold-line.center { margin-left: auto; margin-right: auto; }
-.gold-line.light { background: linear-gradient(90deg, var(--gold-light), #ffd060); }
+.gold-line.light { background: var(--ink-2); }
 
 /* ─────────────────────────────────────────
    BUTTONS
@@ -144,37 +144,38 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   text-decoration: none;
   white-space: nowrap;
 }
-.btn:focus-visible { box-shadow: 0 0 0 3px rgba(201,151,26,0.4); }
+.btn:focus-visible { box-shadow: 0 0 0 3px rgba(185,105,78,0.35); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
 
 .btn-primary {
-  background: var(--gold);
-  color: var(--navy-dark);
+  background: var(--ink);
+  color: var(--cream);
+  border: 1px solid var(--ink);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--gold-light);
-  transform: translateY(-2px);
+  background: var(--ink-2);
+  border-color: var(--ink-2);
   box-shadow: var(--shadow);
 }
 
-.btn-navy {
-  background: var(--navy);
-  color: #fff;
+.btn-navy { /* legacy alias — same as .btn-primary now */
+  background: var(--ink);
+  color: var(--cream);
+  border: 1px solid var(--ink);
 }
 .btn-navy:hover:not(:disabled) {
-  background: var(--navy-light);
-  transform: translateY(-2px);
+  background: var(--ink-2);
   box-shadow: var(--shadow);
 }
 
 .btn-outline {
-  background: transparent;
-  color: var(--navy);
-  border: 1.5px solid var(--gray-300);
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
 }
 .btn-outline:hover:not(:disabled) {
-  border-color: var(--navy);
-  background: var(--navy-50, #EBF0FA);
+  background: var(--ink);
+  color: var(--cream);
 }
 
 .btn-ghost {
@@ -266,11 +267,11 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   font-size: 12px;
   font-weight: 600;
 }
-.badge-pending  { background: #FEF9C3; color: #854D0E; }
-.badge-review   { background: #DBEAFE; color: #1E40AF; }
-.badge-approved { background: #DCFCE7; color: #166534; }
-.badge-rejected { background: #FEE2E2; color: #991B1B; }
-.badge-new      { background: var(--gold-pale); color: #7C5F00; }
+.badge-pending  { background: var(--sky-2);  color: var(--ink); }
+.badge-review   { background: var(--cream);  color: var(--ink); }
+.badge-approved { background: #DCEAE0; color: #2E6E45; }
+.badge-rejected { background: #F4DDD3; color: var(--ember); }
+.badge-new      { background: var(--ember); color: var(--cream); }
 
 /* ─────────────────────────────────────────
    ADMIN TABLE
@@ -284,14 +285,14 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   box-shadow: var(--shadow-sm);
 }
 .admin-table thead tr {
-  background: var(--navy);
+  background: var(--sky-2);
 }
 .admin-table th {
   padding: 13px 16px;
   text-align: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  color: rgba(255,255,255,0.85);
+  color: var(--ink);
   letter-spacing: 0.3px;
 }
 .admin-table td {
@@ -307,21 +308,21 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
    UPLOAD AREA
 ───────────────────────────────────────── */
 .upload-area {
-  border: 2px dashed var(--gray-200);
-  border-radius: var(--radius-sm);
+  border: 2px dashed var(--hair);
+  border-radius: var(--radius);
   padding: 32px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  background: var(--gray-50);
+  background: var(--sky-2);
 }
 .upload-area:hover {
-  border-color: var(--navy);
-  background: #EBF0FA;
+  border-color: var(--ember);
+  background: var(--cream);
 }
 .upload-area.has-file {
-  border-color: var(--success);
-  background: #F0FDF4;
+  border-color: var(--ink);
+  background: var(--paper);
   cursor: default;
 }
 
@@ -329,17 +330,18 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
    NAVBAR
 ───────────────────────────────────────── */
 .navbar {
-  background: var(--navy-dark);
+  background: var(--paper);
+  border-bottom: 1px solid var(--hair);
   position: sticky;
   top: 0;
   z-index: 200;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 0 rgba(15,30,45,0.04);
 }
 .nav-link {
   padding: 8px 13px;
   border-radius: 6px;
   font-size: 13.5px;
-  color: rgba(255,255,255,0.68);
+  color: var(--ink-2);
   cursor: pointer;
   transition: all 0.18s;
   background: none;
@@ -347,18 +349,19 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   font-family: inherit;
   white-space: nowrap;
 }
-.nav-link:hover { color: #fff; background: rgba(255,255,255,0.09); }
-.nav-link.active { color: var(--gold-light); }
+.nav-link:hover { color: var(--ink); background: rgba(15,30,45,0.06); }
+.nav-link.active { color: var(--ember); }
 
 /* ─────────────────────────────────────────
    HERO
 ───────────────────────────────────────── */
 .hero-gradient {
-  background: linear-gradient(160deg, var(--navy-dark) 0%, var(--navy) 55%, #1A3A72 100%);
+  background: var(--sky-2);
 }
 .hero-pattern {
-  background-image: radial-gradient(circle at 20% 50%, rgba(201,151,26,0.06) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.03) 0%, transparent 50%);
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(185,105,78,0.05) 0%, transparent 60%),
+    radial-gradient(circle at 85% 20%, rgba(15,30,45,0.04) 0%, transparent 60%);
 }
 
 /* ─────────────────────────────────────────
@@ -373,31 +376,32 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
   transition: all 0.3s;
   flex-shrink: 0;
 }
-.step-dot.done { background: var(--gold); color: var(--navy-dark); }
-.step-dot.active { background: var(--navy); color: #fff; box-shadow: 0 0 0 4px rgba(11,29,62,0.15); }
-.step-dot.todo { background: var(--gray-200); color: var(--gray-400); }
-.step-connector { flex: 1; height: 2px; background: var(--gray-200); transition: background 0.3s; }
-.step-connector.done { background: var(--gold); }
+.step-dot.done { background: var(--ink); color: var(--cream); }
+.step-dot.active { background: var(--ember); color: var(--cream); box-shadow: 0 0 0 4px rgba(185,105,78,0.18); }
+.step-dot.todo { background: var(--sky-2); color: var(--ink-2); }
+.step-connector { flex: 1; height: 1px; background: var(--hair); transition: background 0.3s; }
+.step-connector.done { background: var(--ink); }
 
 /* ─────────────────────────────────────────
    CATEGORY OPTION
 ───────────────────────────────────────── */
 .cat-option {
-  border: 2px solid var(--gray-200);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
   padding: 16px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 13px;
-  background: var(--white);
+  background: var(--paper);
 }
-.cat-option:hover { border-color: var(--navy); background: #F5F8FF; }
-.cat-option.selected { border-color: var(--navy); background: #EBF0FA; }
+.cat-option:hover { border-color: var(--ink); background: var(--sky-2); }
+.cat-option.selected { border-color: var(--ember); background: var(--sky-2); }
 
 /* ─────────────────────────────────────────
    TOAST NOTIFICATIONS
@@ -413,10 +417,10 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   pointer-events: none;
 }
 .toast {
-  background: var(--navy-dark);
-  color: #fff;
+  background: var(--ink);
+  color: var(--cream);
   padding: 14px 20px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -427,10 +431,10 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   min-width: 260px;
   max-width: 380px;
 }
-.toast.success { border-inline-start: 4px solid #22C55E; }
-.toast.error   { border-inline-start: 4px solid #EF4444; }
-.toast.info    { border-inline-start: 4px solid #3B82F6; }
-.toast.warning { border-inline-start: 4px solid var(--gold); }
+.toast.success { border-inline-start: 4px solid #4F8B6A; }
+.toast.error   { border-inline-start: 4px solid var(--ember); }
+.toast.info    { border-inline-start: 4px solid var(--ink-2); }
+.toast.warning { border-inline-start: 4px solid var(--ember); }
 @keyframes slideInToast {
   from { opacity: 0; transform: translateX(-24px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -451,16 +455,17 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 .page-btn {
   width: 34px; height: 34px;
   border-radius: 6px;
-  border: 1.5px solid var(--gray-200);
-  background: var(--white);
+  border: 1px solid var(--hair);
+  background: var(--paper);
   font-size: 13.5px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.18s;
-  color: var(--gray-600);
+  color: var(--ink-2);
 }
-.page-btn:hover { border-color: var(--navy); color: var(--navy); }
-.page-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.page-btn:hover { border-color: var(--ink); color: var(--ink); }
+.page-btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ─────────────────────────────────────────
@@ -543,7 +548,7 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
 *:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--ember);
   outline-offset: 2px;
 }
 
@@ -553,16 +558,19 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 .filter-chip {
   padding: 6px 16px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   cursor: pointer;
   transition: all 0.18s;
-  background: var(--white);
-  color: var(--gray-600);
-  border: 1.5px solid var(--gray-200);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: 1px solid var(--hair);
 }
-.filter-chip:hover { border-color: var(--navy); color: var(--navy); }
-.filter-chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.filter-chip:hover { border-color: var(--ink); color: var(--ink); }
+.filter-chip.active { background: var(--ember); color: var(--cream); border-color: var(--ember); }
 
 /* ─────────────────────────────────────────
    ANIMATIONS
@@ -579,3 +587,51 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 .delay-300 { animation-delay: 0.3s; }
 .delay-400 { animation-delay: 0.4s; }
 .delay-500 { animation-delay: 0.5s; }
+
+/* ─────────────────────────────────────────
+   EDITORIAL UTILITIES (new — Phase 1)
+───────────────────────────────────────── */
+
+/* Eyebrow: mono, uppercase, sky/cream surfaces */
+.eyebrow {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 12px;
+  display: block;
+}
+
+/* Section header composition: eyebrow + serif H1/H2 */
+.section-eyebrow {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+.section-display {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 18px;
+}
+.section-display em {
+  font-style: italic;
+  color: var(--ember);
+}
+.section-lede {
+  font-size: 1.125rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+  max-width: 38rem;
+}
+
+/* Page background */
+body { background-color: var(--paper); color: var(--ink); }
