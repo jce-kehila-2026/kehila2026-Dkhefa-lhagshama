@@ -39,6 +39,23 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ── /chats — UC-04 ───────────────────────────────────────────────────
+    // Read allowed only if the caller's uid is in participants[].
+    // Writes are server-only (Express + Admin SDK).
+    // Mitigates wiki Risk-#5 (Chat Abuse).
+    match /chats/{chatId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create, update, delete: if false;
+    }
+
+    // ── /messages — UC-04 ────────────────────────────────────────────────
+    // A message is readable only if the caller participates in its parent chat.
+    match /messages/{messageId} {
+      allow read: if isSignedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(resource.data.chatId)).data.participants;
+      allow create, update, delete: if false;
+    }
+
     // ── /auditLogs — every server-trusted write is logged ────────────────
     // Admin-only read; never client-writable.
     match /auditLogs/{logId} {

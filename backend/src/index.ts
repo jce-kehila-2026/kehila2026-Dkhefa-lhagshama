@@ -12,6 +12,7 @@ import express, { Request, Response } from 'express';
 
 import { initializeFirebaseAdmin } from '@/lib/firebaseAdmin';
 import authRouter from '@/routes/auth';
+import chatsRouter from '@/routes/chats';
 import requestsRouter from '@/routes/requests';
 import uploadsRouter from '@/routes/uploads';
 import businessesRouter from '@/routes/businesses';
@@ -58,15 +59,14 @@ app.get('/api/me', authenticate, (req: Request, res: Response) => {
 
 // Route mounts — uncomment as each vertical-slice UC lands.
 app.use('/api/auth',     authRouter);
+app.use('/api/chats',    chatsRouter);
 app.use('/api/requests', requestsRouter);
 app.use('/api/uploads',  uploadsRouter);
 app.use('/api/businesses', businessesRouter);
 app.use('/api/answers', answersRouter);
 //
-// import chatsRouter from '@/routes/chats';            // UC-04
 // import adminRouter from '@/routes/admin';            // UC-05
 //
-// app.use('/api/chats',      chatsRouter);
 // app.use('/api/admin',      adminRouter);
 
 // Catch-all 404
