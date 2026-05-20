@@ -167,6 +167,55 @@ export default function Navbar() {
             {/* Auth controls */}
             {loading ? null : user ? (
               <>
+                {/* Account chip — shows the user is signed in. Initial in a
+                    circle + email-name as a tooltip. Click → My Requests. */}
+                <Link
+                  href="/my-requests"
+                  title={user.email || ""}
+                  aria-label={`Signed in as ${user.email || ""}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "4px 10px 4px 4px",
+                    borderRadius: "999px",
+                    background: "rgba(244,238,224,0.08)",
+                    border: "1px solid rgba(244,238,224,0.18)",
+                    textDecoration: "none",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "26px",
+                      height: "26px",
+                      borderRadius: "50%",
+                      background: "var(--ember)",
+                      color: "var(--cream)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {(user.email || "?").charAt(0)}
+                  </span>
+                  <span
+                    className="account-chip-name"
+                    style={{
+                      color: "var(--cream)",
+                      fontSize: "13px",
+                      maxWidth: "120px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {(user.email || "").split("@")[0]}
+                  </span>
+                </Link>
                 <button className="btn btn-nav-outline btn-sm" onClick={handleLogout}>
                   {t.auth.logout}
                 </button>
@@ -242,6 +291,55 @@ export default function Navbar() {
             padding: "12px 16px 20px",
           }}
         >
+          {/* Signed-in indicator for mobile */}
+          {!loading && user && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 14px",
+                marginBottom: "8px",
+                background: "rgba(244,238,224,0.06)",
+                border: "1px solid rgba(244,238,224,0.14)",
+                borderRadius: "8px",
+              }}
+            >
+              <span
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: "var(--ember)",
+                  color: "var(--cream)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  flexShrink: 0,
+                }}
+              >
+                {(user.email || "?").charAt(0)}
+              </span>
+              <span
+                style={{
+                  color: "var(--cream)",
+                  fontSize: "13px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
+                  flex: 1,
+                }}
+                title={user.email || ""}
+              >
+                {user.email || ""}
+              </span>
+            </div>
+          )}
+
           {links.map((l) => (
             <NavLink
               key={l.key}
@@ -260,16 +358,51 @@ export default function Navbar() {
               {l.label || t.nav[l.key]}
             </NavLink>
           ))}
-          <button
-            className="btn btn-primary btn-full"
-            style={{ marginTop: "12px" }}
-            onClick={() => {
-              navigate("/requests");
-              setMenuOpen(false);
-            }}
-          >
-            {t.nav.submitBtn}
-          </button>
+
+          {/* Auth buttons for mobile */}
+          {!loading && (user ? (
+            <>
+              <button
+                className="btn btn-primary btn-full"
+                style={{ marginTop: "12px" }}
+                onClick={() => {
+                  navigate("/requests");
+                  setMenuOpen(false);
+                }}
+              >
+                {t.nav.submitBtn}
+              </button>
+              <button
+                className="btn btn-outline btn-full"
+                style={{ marginTop: "8px" }}
+                onClick={async () => {
+                  setMenuOpen(false);
+                  await handleLogout();
+                }}
+              >
+                {t.auth.logout}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="btn btn-outline btn-full"
+                style={{ marginTop: "12px", display: "block", textAlign: "center" }}
+                onClick={() => setMenuOpen(false)}
+              >
+                {t.auth.login.title}
+              </Link>
+              <Link
+                href="/register"
+                className="btn btn-primary btn-full"
+                style={{ marginTop: "8px", display: "block", textAlign: "center" }}
+                onClick={() => setMenuOpen(false)}
+              >
+                {t.auth.register.title}
+              </Link>
+            </>
+          ))}
         </div>
       )}
     </nav>

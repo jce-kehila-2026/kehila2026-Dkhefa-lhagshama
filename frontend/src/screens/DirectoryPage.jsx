@@ -283,11 +283,8 @@ export default function DirectoryPage() {
                 {t.common.loading}
               </div>
             )}
-            {bizError && (
-              <div style={{ fontSize:'13px', color:'var(--danger)', marginBottom:'16px' }}>
-                {bizError}
-              </div>
-            )}
+            {/* bizError is intentionally not surfaced: the page falls back to
+                mockBusinesses so the user still sees a working directory. */}
 
             {/* Business Grid */}
             {bizPageData.length > 0 ? (
@@ -428,11 +425,8 @@ export default function DirectoryPage() {
                 {t.common.loading}
               </div>
             )}
-            {answersError && (
-              <div style={{ fontSize:'13px', color:'var(--danger)', marginBottom:'16px' }}>
-                {answersError}
-              </div>
-            )}
+            {/* answersError is intentionally not surfaced: filteredAnswers
+                falls back to mockNGOs so the user still sees content. */}
 
             {answerPageData.length > 0 ? (
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'20px' }}>

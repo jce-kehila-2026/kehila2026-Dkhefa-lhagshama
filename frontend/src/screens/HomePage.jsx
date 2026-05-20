@@ -74,9 +74,10 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* STATS ROW — full-width band below the hero grid */}
+          {/* STATS ROW — 4-wide on desktop, 2×2 on phones */}
           <div style={{
-            display:'grid', gridTemplateColumns:'repeat(4, 1fr)',
+            display:'grid',
+            gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))',
             gap:'1px', background:'var(--hair)',
             borderRadius:'14px', overflow:'hidden',
             maxWidth:'720px', margin:'56px auto 0',
