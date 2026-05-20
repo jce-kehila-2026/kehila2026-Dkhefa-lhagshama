@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import {
   collection,
@@ -18,7 +17,6 @@ import { formatDate } from "../utils/helpers";
 export default function ChatListPage() {
   const { lang } = useLanguage();
   const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
 
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,13 +25,10 @@ export default function ChatListPage() {
   const isRtl = lang === "he";
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace(`/login?next=${encodeURIComponent("/chats")}`);
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
     }
-  }, [authLoading, user, router]);
-
-  useEffect(() => {
-    if (authLoading || !user) return;
 
     setLoading(true);
     setError("");
@@ -61,7 +56,7 @@ export default function ChatListPage() {
       },
       (err) => {
         console.error("[ChatListPage] onSnapshot error:", err);
-        setError("load_failed");
+        setError(err?.code === "permission-denied" ? "permission" : "load_failed");
         setLoading(false);
       }
     );
@@ -82,9 +77,44 @@ export default function ChatListPage() {
         className="page-container"
         style={{ maxWidth: "800px", padding: "42px 1.5rem 72px" }}
       >
-        {loading || authLoading ? (
+        {authLoading ? (
+          <div className="card" style={{ padding: "28px", textAlign: "center" }}>
+            {isRtl ? "טוען..." : "Loading..."}
+          </div>
+        ) : !user ? (
+          <div className="card" style={{ padding: "34px", textAlign: "center" }}>
+            <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--ink)", marginBottom: "10px" }}>
+              {isRtl ? "כניסה נדרשת" : "Sign in required"}
+            </h2>
+            <p style={{ color: "var(--gray-500)", marginBottom: "22px", lineHeight: 1.7 }}>
+              {isRtl
+                ? "כדי לראות את השיחות שלך, יש להתחבר תחילה."
+                : "You need to be signed in to view your chats."}
+            </p>
+            <Link
+              href={`/login?next=${encodeURIComponent("/chats")}`}
+              className="btn btn-primary"
+            >
+              {isRtl ? "התחבר/י" : "Sign in"}
+            </Link>
+          </div>
+        ) : loading ? (
           <div className="card" style={{ padding: "28px", textAlign: "center" }}>
             {isRtl ? "טוען שיחות..." : "Loading chats..."}
+          </div>
+        ) : error === "permission" ? (
+          <div className="card" style={{ padding: "28px", textAlign: "center" }}>
+            <p style={{ color: "var(--gray-500)", marginBottom: "16px" }}>
+              {isRtl
+                ? "אין לך הרשאה לצפות בשיחות. ייתכן שהפעלת הסתיימה."
+                : "You don't have permission to view chats. Your session may have expired."}
+            </p>
+            <Link
+              href={`/login?next=${encodeURIComponent("/chats")}`}
+              className="btn btn-primary"
+            >
+              {isRtl ? "התחבר/י מחדש" : "Sign in again"}
+            </Link>
           </div>
         ) : error ? (
           <div className="card" style={{ padding: "28px" }}>

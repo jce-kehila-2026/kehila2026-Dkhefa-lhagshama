@@ -82,7 +82,8 @@ export function useMessages(chatId: string | null): UseMessagesResult {
       },
       (err) => {
         console.error('[useMessages] onSnapshot error:', err);
-        setError('load_failed');
+        const code = (err as { code?: string })?.code;
+        setError(code === 'permission-denied' ? 'permission' : 'load_failed');
         setLoading(false);
       },
     );

@@ -14,9 +14,10 @@ export default function ChatWindowPage() {
   const router = useRouter();
   const { id: chatId } = router.query;
 
-  const { messages, loading: msgsLoading, error: msgsError } = useMessages(
-    typeof chatId === "string" ? chatId : null
-  );
+  // Only attach the listener once auth is resolved AND a user exists,
+  // so logged-out visitors never trigger a permission-denied snapshot.
+  const listenChatId = !authLoading && user && typeof chatId === "string" ? chatId : null;
+  const { messages, loading: msgsLoading, error: msgsError } = useMessages(listenChatId);
 
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
@@ -24,12 +25,6 @@ export default function ChatWindowPage() {
   const bottomRef = useRef(null);
 
   const isRtl = lang === "he";
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace(`/login?next=${encodeURIComponent(router.asPath)}`);
-    }
-  }, [authLoading, user, router]);
 
   // Auto-scroll to bottom when new messages arrive.
   useEffect(() => {
@@ -75,6 +70,33 @@ export default function ChatWindowPage() {
   }
 
   const title = isRtl ? "שיחה" : "Chat";
+
+  // Auth gate: don't render the chat UI for logged-out users.
+  if (!authLoading && !user) {
+    return (
+      <>
+        <PageHeader title={title} subtitle="" />
+        <div className="page-container" style={{ maxWidth: "760px", padding: "32px 1.5rem 72px" }}>
+          <div className="card" style={{ padding: "34px", textAlign: "center" }}>
+            <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--ink)", marginBottom: "10px" }}>
+              {isRtl ? "כניסה נדרשת" : "Sign in required"}
+            </h2>
+            <p style={{ color: "var(--gray-500)", marginBottom: "22px", lineHeight: 1.7 }}>
+              {isRtl
+                ? "כדי לפתוח את השיחה הזו, יש להתחבר תחילה."
+                : "You need to be signed in to open this chat."}
+            </p>
+            <Link
+              href={`/login?next=${encodeURIComponent(router.asPath)}`}
+              className="btn btn-primary"
+            >
+              {isRtl ? "התחבר/י" : "Sign in"}
+            </Link>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -122,7 +144,14 @@ export default function ChatWindowPage() {
                 {isRtl ? "טוען הודעות..." : "Loading messages..."}
               </p>
             )}
-            {msgsError && (
+            {msgsError === "permission" && (
+              <p style={{ textAlign: "center", color: "var(--gray-500)" }}>
+                {isRtl
+                  ? "אין לך הרשאה לצפות בשיחה זו."
+                  : "You don't have permission to view this chat."}
+              </p>
+            )}
+            {msgsError && msgsError !== "permission" && (
               <p style={{ textAlign: "center", color: "var(--red, #c0392b)" }}>
                 {isRtl ? "שגיאה בטעינת ההודעות" : "Could not load messages"}
               </p>
