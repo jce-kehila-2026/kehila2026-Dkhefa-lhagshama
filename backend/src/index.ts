@@ -19,6 +19,7 @@ import chatsRouter from '@/routes/chats';
 import requestsRouter from '@/routes/requests';
 import uploadsRouter from '@/routes/uploads';
 import usersRouter from '@/routes/users';
+import volunteersRouter from '@/routes/volunteers';
 import { authenticate } from '@/middleware/auth';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -67,7 +68,8 @@ app.use('/api/uploads',  uploadsRouter);
 app.use('/api/users',    usersRouter);
 app.use('/api/businesses', businessesRouter);
 app.use('/api/answers', answersRouter);
-app.use('/api/admin',    adminRouter);
+app.use('/api/admin',      adminRouter);
+app.use('/api/volunteers', volunteersRouter);
 
 // Catch-all 404
 app.use((_req: Request, res: Response) => {

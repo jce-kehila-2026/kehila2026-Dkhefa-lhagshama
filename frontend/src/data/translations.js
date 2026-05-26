@@ -432,6 +432,53 @@ const translations = {
       welcome:          'שלום',
     },
 
+    // === Stream 3 (volunteer signup) ===
+    volunteerSignup: {
+      // Tab toggle on register page
+      tabBeneficiary: 'נהנה מהשירות',
+      tabVolunteer:   'מתנדב/ת',
+
+      // Step 1 — account creation labels (reuses auth.register for email/pw)
+      step1Title:     'פרטי חשבון',
+
+      // Step 2 — volunteer details form
+      step2Title:     'פרטי התנדבות',
+      firstName:      'שם פרטי',
+      lastName:       'שם משפחה',
+      phone:          'מספר טלפון',
+      email:          'דואר אלקטרוני',
+      city:           'עיר מגורים',
+      profession:     'מקצוע / תחום התמחות',
+      professionPH:   'עו״ד, מהנדס, מורה...',
+      areasOfHelp:    'תחומי התנדבות',
+      languages:      'שפות',
+      languagesPH:    'עברית, אמהרית, אנגלית...',
+      availability:   'זמינות שבועית',
+      avail24:        '2–4 שעות בשבוע',
+      avail48:        '4–8 שעות בשבוע',
+      avail8plus:     '8+ שעות בשבוע',
+      motivation:     'מוטיבציה / הערות נוספות',
+      motivationPH:   'ספר/י לנו קצת על עצמך...',
+      consent:        'אני מאשר/ת את תנאי השימוש ומדיניות הפרטיות ומסכים/ה שפרטי יישמרו לצורך תיאום פעילות ההתנדבות.',
+      areasList:      ['חינוך וחניכה', 'ייעוץ משפטי', 'תעסוקה', 'שילוב חברתי', 'בריאות ורווחה', 'יזמות ועסקים'],
+
+      // Navigation
+      nextStep:       'המשך לפרטי ההתנדבות',
+      backStep:       'חזור לפרטי חשבון',
+      submit:         'שלח הגשה כמתנדב',
+      submitting:     'שולח...',
+
+      // Errors
+      minOneArea:     'יש לבחור לפחות תחום התנדבות אחד',
+      minOneLang:     'יש לציין לפחות שפה אחת',
+      consentRequired:'יש לאשר את התנאים',
+
+      // Thanks page
+      thanksTitle:    'תודה על ההגשה!',
+      thanksSubtitle: 'קיבלנו את בקשתך להצטרף כמתנדב/ת. נציג יצור איתך קשר בקרוב לתיאום.',
+      thanksBackHome: 'חזרה לדף הבית',
+    },
+
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
     myRequests: {
       navLink:  'הבקשות שלי',
@@ -883,6 +930,53 @@ const translations = {
       },
       logout:           'Sign Out',
       welcome:          'Hello',
+    },
+
+    // === Stream 3 (volunteer signup) ===
+    volunteerSignup: {
+      // Tab toggle on register page
+      tabBeneficiary: 'Beneficiary',
+      tabVolunteer:   'Volunteer',
+
+      // Step 1 — account creation labels (reuses auth.register for email/pw)
+      step1Title:     'Account Details',
+
+      // Step 2 — volunteer details form
+      step2Title:     'Volunteer Details',
+      firstName:      'First Name',
+      lastName:       'Last Name',
+      phone:          'Phone Number',
+      email:          'Email Address',
+      city:           'City',
+      profession:     'Profession / Area of Expertise',
+      professionPH:   'Lawyer, engineer, teacher...',
+      areasOfHelp:    'Areas of Help',
+      languages:      'Languages',
+      languagesPH:    'Hebrew, Amharic, English...',
+      availability:   'Weekly Availability',
+      avail24:        '2–4 hours per week',
+      avail48:        '4–8 hours per week',
+      avail8plus:     '8+ hours per week',
+      motivation:     'Motivation / Additional Notes',
+      motivationPH:   'Tell us a bit about yourself...',
+      consent:        'I agree to the Terms of Use and Privacy Policy, and consent to my details being stored for volunteer coordination purposes.',
+      areasList:      ['Education & Mentoring', 'Legal Consulting', 'Employment', 'Social Integration', 'Health & Welfare', 'Entrepreneurship & Business'],
+
+      // Navigation
+      nextStep:       'Continue to Volunteer Details',
+      backStep:       'Back to Account Details',
+      submit:         'Submit Volunteer Application',
+      submitting:     'Submitting...',
+
+      // Errors
+      minOneArea:     'Please select at least one area of help',
+      minOneLang:     'Please enter at least one language',
+      consentRequired:'You must agree to the terms to continue',
+
+      // Thanks page
+      thanksTitle:    'Thank You for Applying!',
+      thanksSubtitle: 'We received your volunteer application. A representative will contact you soon to coordinate.',
+      thanksBackHome: 'Back to Home',
     },
 
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
