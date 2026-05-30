@@ -31,7 +31,10 @@ import { authWriteLimiter, globalLimiter } from '@/middleware/rateLimit'; // #82
 
 const PORT = Number(process.env.PORT ?? 3001);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
-const LOCAL_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
+// Dev origins: localhost, 127.0.0.1, and any private-LAN IPv4 (so the app works
+// when opened via the machine's network address, e.g. http://192.168.x.x:3000).
+const LOCAL_ORIGIN_RE =
+  /^http:\/\/(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
 
 // ── CORS allowlist (#83) ──────────────────────────────────────────────────────
 // Origins are driven by CORS_ALLOWED_ORIGINS (comma-separated). FRONTEND_ORIGIN
