@@ -1,0 +1,132 @@
+# Deploy pipeline (#47) — Push for Fulfillment community platform.
+#
+# Jobs:
+#   1. frontend  — build the Next.js app and deploy it to Firebase Hosting
+#                  (framework-aware: Hosting CDN + Cloud Functions for SSR).
+#   2. backend   — DOCUMENTED PLACEHOLDER. The team has not finalised the
+#                  Express backend deploy target (Cloud Run vs Vercel). Both
+#                  options are scaffolded below — uncomment the chosen one.
+#
+# Required GitHub secrets (set in repo Settings → Secrets and variables → Actions):
+#   FIREBASE_SERVICE_ACCOUNT  — JSON key of a service account with
+#                               "Firebase Hosting Admin" + "Cloud Functions Admin"
+#                               + "Service Account User" roles. Used by the
+#                               firebase deploy action.
+#   FIREBASE_PROJECT_ID       — e.g. push-for-fulfillment-staging (see .firebaserc).
+#   NEXT_PUBLIC_API_BASE_URL  — public URL the frontend calls the backend at.
+#   (backend) GCP_SA_KEY / VERCEL_TOKEN — depending on the chosen backend target.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Avoid overlapping deploys racing each other.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Frontend → Firebase Hosting ──────────────────────────────────────────
+  frontend:
+    name: Build & deploy frontend (Firebase Hosting)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+
+      - name: Write Firebase service account key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "${{ runner.temp }}/firebase-sa.json"
+
+      - name: Deploy to Firebase Hosting
+        # Framework-aware deploy. firebase.json `hosting.source` points at
+        # `frontend/`, so the CLI builds + deploys the Next.js app (SSR via
+        # Cloud Functions). webframeworks experiment is enabled inline.
+        run: |
+          npm install -g firebase-tools
+          firebase experiments:enable webframeworks
+          firebase deploy --only hosting \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive
+        working-directory: .
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
+
+  # ── Backend → Cloud Run OR Vercel ────────────────────────────────────────
+  # TODO(#47): the team has NOT decided the backend deploy target yet.
+  #            Pick ONE of the two blocks below, fill in the secrets, and
+  #            remove the `if: false` guard. Until then this job is a no-op
+  #            so the workflow stays green.
+  backend:
+    name: Build & deploy backend (TODO — choose target)
+    runs-on: ubuntu-latest
+    needs: frontend
+    if: false # <-- remove once a deploy target is chosen
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (tsc)
+        run: npm run build
+
+      # ── OPTION A: Cloud Run ────────────────────────────────────────────
+      # Requires secret GCP_SA_KEY (service account JSON with Cloud Run Admin
+      # + Artifact Registry Writer + Service Account User). Add a Dockerfile to
+      # backend/ first.
+      #
+      # - id: auth
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     credentials_json: ${{ secrets.GCP_SA_KEY }}
+      # - uses: google-github-actions/setup-gcloud@v2
+      # - name: Deploy to Cloud Run
+      #   run: |
+      #     gcloud run deploy kehila-backend \
+      #       --source . \
+      #       --region us-east1 \
+      #       --allow-unauthenticated \
+      #       --project "${{ secrets.FIREBASE_PROJECT_ID }}"
+
+      # ── OPTION B: Vercel ───────────────────────────────────────────────
+      # Requires secrets VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+      #
+      # - name: Deploy to Vercel
+      #   run: |
+      #     npm install -g vercel
+      #     vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      #     vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      #     vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Placeholder
+        run: echo "Backend deploy target not yet chosen — see TODO(#47)."

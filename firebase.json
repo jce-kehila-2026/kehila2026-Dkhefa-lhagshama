@@ -9,17 +9,15 @@
     "rules": "storage.rules"
   },
   "hosting": {
-    "public": "frontend/out",
+    "//": "Framework-aware hosting. The frontend is a Next.js app with SSR / API routes (no `output: export`), so we point `source` at the app dir and let Firebase build + deploy it (Hosting CDN + Cloud Functions for SSR). Requires `firebase experiments:enable webframeworks`. If the team switches the frontend to a fully static export (add `output: 'export'` in next.config.js), replace `source` with `\"public\": \"frontend/out\"`.",
+    "source": "frontend",
+    "frameworksBackend": {
+      "region": "us-east1"
+    },
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
     ]
   },
   "emulators": {
