@@ -116,6 +116,31 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── /ratings — UC experience ratings (#80) ──────────────────────────────
+    // One rating per request (doc id == requestId). The owning beneficiary can
+    // read their own rating; admins read all. Writes are server-only: POST
+    // /api/ratings goes through Express (Admin SDK) which enforces that only the
+    // request's beneficiary may rate, and only when the request is resolved.
+    match /ratings/{ratingId} {
+      allow read: if isSignedIn() && (
+        resource.data.beneficiaryId == request.auth.uid
+        || isAdmin()
+      );
+      allow create, update, delete: if false;
+    }
+
+    // ── /volunteers — aggregate rating per volunteer (#80) ───────────────────
+    // The volunteer reads their own aggregate; admins read all. Writes are
+    // server-only — the aggregate is maintained in a transaction by the
+    // ratings endpoint (Admin SDK).
+    match /volunteers/{volunteerId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == volunteerId
+        || isAdmin()
+      );
+      allow create, update, delete: if false;
+    }
+
     // ── /volunteerApplications — Stream 3 volunteer signup (#70) ────────────
     // The applicant can read their own application; admins can read all.
     // Client never writes here — Express + Admin SDK handle all mutations.

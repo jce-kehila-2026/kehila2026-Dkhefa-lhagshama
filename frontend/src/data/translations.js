@@ -4,6 +4,24 @@
 
 const translations = {
   he: {
+    home: {
+      impactEyebrow: 'השפעה קהילתית',
+      impactTitle: 'יחד בונים עתיד טוב יותר',
+      impactBody: 'אנחנו מחברים בין חברי הקהילה האתיופית-ישראלית לבין הסיוע, ההזדמנויות והאנשים שיכולים לעזור — הכול במקום אחד.',
+    },
+    ratings: {
+      cardTitle: 'דרגו את החוויה שלכם',
+      cardSubtitle: 'איך היה הטיפול בבקשה שלכם? המשוב שלכם עוזר לנו להשתפר.',
+      starsLabel: 'דירוג בכוכבים',
+      starAria: (n) => `${n} מתוך 5 כוכבים`,
+      pickStars: 'אנא בחרו דירוג',
+      commentLabel: 'הערה (לא חובה)',
+      commentPH: 'ספרו לנו עוד...',
+      submit: 'שליחת דירוג',
+      thanks: 'תודה על המשוב!',
+      error: 'שליחת הדירוג נכשלה. נסו שוב.',
+      errorNotResolved: 'ניתן לדרג רק בקשות שטופלו.',
+    },
     dir: 'rtl',
     lang: 'he',
 
@@ -181,6 +199,8 @@ const translations = {
 
     // ── DIRECTORY ─────────────────────────────────────────────
     directory: {
+      filters:     'Filters',
+      filters:     'סינון',
       pageTitle:   'מדריך קהילה ועסקים',
       pageSubtitle:'מאגר עסקים קהילתיים ורשימת ארגוני שותפים',
       tabBusiness: 'עסקים קהילתיים',
@@ -578,6 +598,24 @@ const translations = {
   //  ENGLISH
   // ============================================================
   en: {
+    home: {
+      impactEyebrow: 'Community impact',
+      impactTitle: 'Building a better future together',
+      impactBody: 'We connect members of the Ethiopian-Israeli community with the support, opportunities, and people who can help — all in one place.',
+    },
+    ratings: {
+      cardTitle: 'Rate your experience',
+      cardSubtitle: 'How was your request handled? Your feedback helps us improve.',
+      starsLabel: 'Star rating',
+      starAria: (n) => `${n} out of 5 stars`,
+      pickStars: 'Please pick a rating',
+      commentLabel: 'Comment (optional)',
+      commentPH: 'Tell us more...',
+      submit: 'Submit rating',
+      thanks: 'Thanks for your feedback!',
+      error: 'Failed to submit your rating. Please try again.',
+      errorNotResolved: 'Only resolved requests can be rated.',
+    },
     dir: 'ltr',
     lang: 'en',
 

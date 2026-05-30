@@ -8,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { mockStories, mockStats, mockNGOs } from '../data/mockData'
 import StatCard from '../components/StatCard'
 import SectionHeader from '../components/SectionHeader'
+import AssetImage from '../components/AssetImage'
 
 const SERVICE_ICONS = {
   education:  <GraduationCap size={22} />,
@@ -30,16 +31,16 @@ export default function HomePage() {
           {/* Two-column grid — logo first in DOM → start side (right in HE, left in EN) */}
           <div className="hero-grid">
             <div className="hero-mark">
-              <img
-                src="/logo.jpg"
-                alt={lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
+              <AssetImage
+                slot="hero"
+                rounded="50%"
+                ratio="1 / 1"
+                priority
+                shadow="var(--shadow-lg)"
+                border="6px solid var(--paper)"
                 style={{
                   width:'min(320px, 70vw)',
                   height:'min(320px, 70vw)',
-                  borderRadius:'50%',
-                  objectFit:'cover',
-                  boxShadow:'var(--shadow-lg)',
-                  border:'6px solid var(--paper)',
                 }}
               />
             </div>
@@ -154,6 +155,46 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── COMMUNITY IMPACT BAND (#79) ─────────────────── */}
+      <section
+        style={{
+          background:'var(--cream)',
+          paddingBlock:'clamp(64px, 8vw, 96px)',
+        }}
+      >
+        <div
+          className="page-container"
+          style={{
+            display:'grid',
+            gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))',
+            gap:'clamp(32px, 5vw, 56px)',
+            alignItems:'center',
+          }}
+        >
+          <div>
+            <div className="section-eyebrow">{t.home.impactEyebrow}</div>
+            <h2
+              className="section-display"
+              style={{ fontSize:'clamp(1.6rem, 3.2vw, 2.4rem)', margin:'10px 0 14px' }}
+            >
+              {t.home.impactTitle}
+            </h2>
+            <p className="section-lede" style={{ margin:0 }}>
+              {t.home.impactBody}
+            </p>
+          </div>
+          <AssetImage
+            slot="communityImpact"
+            ratio="16 / 9"
+            shadow="var(--shadow)"
+            border="1px solid var(--hair)"
+          />
+        </div>
+      </section>
+
+      {/* Section divider */}
+      <div aria-hidden="true" style={{ height:'1px', background:'var(--hair)' }} />
 
       {/* ── SUCCESS STORIES (editorial colophon — dark) ─── */}
       <section className="section-padding" style={{ background:'var(--ink)' }}>

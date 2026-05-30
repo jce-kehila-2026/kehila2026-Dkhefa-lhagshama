@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
+import AssetImage from '../components/AssetImage'
 
 export default function LoginPage() {
   const { t, lang } = useLanguage()
@@ -45,12 +46,13 @@ export default function LoginPage() {
         alignItems: 'center',
         gap: '20px',
       }}>
-        <img
-          src="/logo.jpg"
-          alt={lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
-          width={96}
-          height={96}
-          style={{ borderRadius: '50%', objectFit: 'cover', boxShadow: 'var(--shadow)' }}
+        <AssetImage
+          slot="authAside"
+          rounded="50%"
+          ratio="1 / 1"
+          shadow="var(--shadow)"
+          priority
+          style={{ width: 96, height: 96 }}
         />
         <div className="section-eyebrow" style={{ textAlign: 'center' }}>
           {lang === 'he' ? 'עמותת דחיפה להגשמה' : 'Push for Fulfillment'}

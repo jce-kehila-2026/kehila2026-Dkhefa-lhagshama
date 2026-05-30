@@ -5,6 +5,7 @@ import { CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
+import RatingForm from "../components/RatingForm";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { apiJson } from "../lib/apiClient";
@@ -104,6 +105,71 @@ function RequestTimeline({ requestId, t }) {
   );
 }
 
+// ── Rate-your-experience card (#80) ───────────────────────────
+function RateExperienceCard({ requestId, t }) {
+  const r = t.ratings;
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const [existing, setExisting] = useState(null); // null = unknown, {} = none
+
+  // Check whether this request was already rated.
+  useEffect(() => {
+    let alive = true;
+    apiJson(`/api/ratings/${requestId}`)
+      .then((data) => { if (alive) setExisting(data); })
+      .catch(() => { if (alive) setExisting({}); });
+    return () => { alive = false; };
+  }, [requestId]);
+
+  const handleSubmit = async (stars, comment) => {
+    setSubmitting(true);
+    setError("");
+    try {
+      await apiJson("/api/ratings", {
+        method: "POST",
+        body: JSON.stringify({ requestId, stars, comment }),
+      });
+      setDone(true);
+    } catch (err) {
+      setError(err?.detail?.error === "request_not_resolved" ? r.errorNotResolved : r.error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const alreadyRated = done || (existing && typeof existing.stars === "number");
+
+  return (
+    <div
+      style={{
+        marginTop: "16px",
+        padding: "18px 20px",
+        background: "var(--paper)",
+        border: "1px solid var(--hair)",
+        borderRadius: "12px",
+      }}
+    >
+      <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--ink)", marginBottom: "6px" }}>
+        {r.cardTitle}
+      </div>
+      {alreadyRated ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--success)", fontSize: "13.5px" }}>
+          <CheckCircle size={16} /> {r.thanks}
+        </div>
+      ) : (
+        <>
+          <p style={{ fontSize: "13px", color: "var(--gray-500)", marginBottom: "12px", lineHeight: 1.6 }}>
+            {r.cardSubtitle}
+          </p>
+          <RatingForm onSubmit={handleSubmit} submitting={submitting} />
+          {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 8 }}>{error}</div>}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Row with expandable timeline ──────────────────────────────
 function RequestRow({ item, t, lang, expandedId, onToggle }) {
   const isExpanded = expandedId === item.id;
@@ -147,6 +213,9 @@ function RequestRow({ item, t, lang, expandedId, onToggle }) {
         <tr style={{ background: "var(--sky-2)", borderTop: "1px solid var(--hair)" }}>
           <td colSpan={8} style={{ padding: "16px 24px 20px" }}>
             <RequestTimeline requestId={item.id} t={t} />
+            {item.status === "resolved" && (
+              <RateExperienceCard requestId={item.id} t={t} />
+            )}
           </td>
         </tr>
       )}

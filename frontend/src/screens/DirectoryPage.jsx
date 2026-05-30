@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Star, Phone, ChevronDown, ChevronUp, MapPin } from 'lucide-react'
+import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import Pagination from '../components/Pagination'
 import { useLanguage } from '../contexts/LanguageContext'
 import { apiJson } from '../lib/apiClient'
@@ -7,124 +7,12 @@ import { mockBusinesses, mockNGOs } from '../data/mockData'
 
 const PER_PAGE = 6
 
-// === Stream 7 (directory + ratings) ===
-// SlimBar replaces the heavy PageHeader — one ink-coloured strip with the
-// page title + tab switcher side-by-side, so results start above the fold.
-function SlimBar({ title, subtitle, tabs, activeTab, onTab }) {
-  return (
-    <div style={{
-      background: 'var(--ink)',
-      borderBottom: '1px solid rgba(244,238,224,0.10)',
-    }}>
-      <div className="page-container" style={{ padding: '0 1.5rem' }}>
-        {/* Title row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: '16px',
-          paddingTop: '18px',
-          paddingBottom: '4px',
-          flexWrap: 'wrap',
-        }}>
-          <h1 style={{
-            fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-            fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
-            fontWeight: 400,
-            color: 'var(--cream)',
-            margin: 0,
-            lineHeight: 1.2,
-          }}>
-            {title}
-          </h1>
-          {subtitle && (
-            <span style={{
-              fontSize: '13px',
-              color: 'rgba(244,238,224,0.55)',
-              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              letterSpacing: '0.06em',
-            }}>
-              {subtitle}
-            </span>
-          )}
-        </div>
-        {/* Tab strip — flush to bottom of bar */}
-        <div style={{ display: 'flex', gap: '2px', marginTop: '8px' }}>
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => onTab(tab.key)}
-              style={{
-                padding: '10px 20px',
-                fontSize: '13.5px',
-                fontWeight: 500,
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                color: activeTab === tab.key ? 'var(--cream)' : 'rgba(244,238,224,0.55)',
-                borderBottom: activeTab === tab.key ? '2px solid var(--ember)' : '2px solid transparent',
-                marginBottom: '-1px',
-                transition: 'all .18s',
-                fontFamily: 'inherit',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Collapsible filter panel
-function FilterPanel({ title, children, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div style={{
-      background: 'var(--paper)',
-      borderRadius: 'var(--radius)',
-      border: '1px solid var(--hair)',
-      marginBottom: '20px',
-      overflow: 'hidden',
-      boxShadow: 'var(--shadow-sm)',
-    }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 18px',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          fontSize: '13px',
-          fontWeight: 600,
-          color: 'var(--ink)',
-          gap: '8px',
-        }}
-        aria-expanded={open}
-      >
-        <span>{title}</span>
-        {open ? <ChevronUp size={15} color="var(--ink-2)" /> : <ChevronDown size={15} color="var(--ink-2)" />}
-      </button>
-      {open && (
-        <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--hair)' }}>
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function DirectoryPage() {
   const { t, lang } = useLanguage()
   const d = t.directory
 
   const [activeTab, setActiveTab] = useState('business')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [bizSearch, setBizSearch] = useState('')
   const [bizCat, setBizCat] = useState('all')
   const [bizPage, setBizPage] = useState(1)
@@ -209,48 +97,72 @@ export default function DirectoryPage() {
 
   useEffect(() => {
     let canceled = false
+
     async function loadBusinesses() {
       setBizLoading(true)
       setBizError(null)
+
       try {
         const data = await apiJson('/api/businesses')
-        if (!canceled && data?.items) setBusinesses(data.items)
+        if (!canceled && data?.items) {
+          setBusinesses(data.items)
+        }
       } catch (err) {
-        if (!canceled) setBizError(err?.detail?.error || 'Unable to load businesses')
+        if (!canceled) {
+          setBizError(err?.detail?.error || 'Unable to load businesses')
+          // Keep the mock businesses for a working experience.
+        }
       } finally {
         if (!canceled) setBizLoading(false)
       }
     }
+
     loadBusinesses()
     return () => { canceled = true }
   }, [])
 
   useEffect(() => {
     let canceled = false
+
     async function loadAnswers() {
       setAnswersLoading(true)
       setAnswersError(null)
+
       try {
         const query = new URLSearchParams()
         if (answerCategory !== 'all') query.set('category', answerCategory)
         if (answerRegion.trim()) query.set('region', answerRegion.trim())
         if (answerAudience.trim()) query.set('audience', answerAudience.trim())
+
         const queryString = query.toString()
         const path = `/api/answers${queryString ? `?${queryString}` : ''}`
         const data = await apiJson(path)
-        if (!canceled && data?.items) setAnswers(data.items)
+        if (!canceled && data?.items) {
+          setAnswers(data.items)
+        }
       } catch (err) {
-        if (!canceled) setAnswersError(err?.detail?.error || 'Unable to load answers')
+        if (!canceled) {
+          setAnswersError(err?.detail?.error || 'Unable to load answers')
+        }
       } finally {
         if (!canceled) setAnswersLoading(false)
       }
     }
+
     loadAnswers()
     return () => { canceled = true }
   }, [answerCategory, answerRegion, answerAudience])
 
   const BIZ_CATS = ['all', 'food', 'services', 'health', 'education', 'beauty', 'tech']
   const NGO_AREAS = ['all', 'education', 'employment', 'legal', 'social', 'housing']
+
+  const tabStyle = (active) => ({
+    padding: '10px 18px', fontSize: '14.5px', fontWeight: 600,
+    border: 'none', background: 'none', cursor: 'pointer',
+    color: active ? 'var(--ink)' : 'var(--ink-2)',
+    borderBottom: active ? '2px solid var(--ember)' : '2px solid transparent',
+    marginBottom: '-1px', transition: 'color .2s', fontFamily: 'inherit',
+  })
 
   const updateRegisterField = (field, value) => {
     setRegisterForm(prev => ({ ...prev, [field]: value }))
@@ -265,11 +177,13 @@ export default function DirectoryPage() {
       city: registerForm.city.trim(),
       description: registerForm.desc.trim(),
     }
+
     if (!trimmed.name || !trimmed.ownerName || !trimmed.phone || !trimmed.city || !trimmed.description) {
       return window.alert(lang === 'he'
         ? 'אנא מלא/י את כל השדות הנדרשים בשדה המקביל.'
-        : 'Please fill in all required fields.')
+        : 'Please fill in all required fields.');
     }
+
     setRegisterSubmitting(true)
     try {
       await apiJson('/api/businesses', {
@@ -290,76 +204,86 @@ export default function DirectoryPage() {
     }
   }
 
-  const tabs = [
-    { key: 'business', label: `🏪 ${d.tabBusiness}` },
-    { key: 'ngo',      label: `🏛️ ${d.tabNGO}` },
-  ]
+  const resultsCount = activeTab === 'business' ? filteredBiz.length : filteredAnswers.length
+  const loading = activeTab === 'business' ? bizLoading : answersLoading
 
   return (
     <>
-      <SlimBar
-        title={d.pageTitle}
-        subtitle={d.pageSubtitle}
-        tabs={tabs}
-        activeTab={activeTab}
-        onTab={(key) => { setActiveTab(key); }}
-      />
-
-      <div className="page-container section-padding" style={{ paddingTop: '28px' }}>
-
-        {/* ── BUSINESS TAB ─────────────────────────────── */}
-        {activeTab === 'business' && (
-          <>
-            {/* Smart suggestion banner */}
-            <div style={{
-              background: 'var(--cream)',
-              border: '1px solid var(--hair)',
-              borderRadius: 'var(--radius)',
-              padding: '12px 18px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '16px',
-              color: 'var(--ink)',
-              fontSize: '13.5px',
-            }}>
-              <span style={{ fontSize: '16px', color: 'var(--ember)', flexShrink: 0 }}>⚡</span>
-              <span>{d.smartSuggest}</span>
+      {/* ── SLIM HEADER (#78) — replaces heavy PageHeader ──────────── */}
+      <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--hair)' }}>
+        <div className="page-container" style={{ paddingBlock: '24px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h1 className="section-display" style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', margin: '0 0 4px' }}>
+                {d.pageTitle}
+              </h1>
+              <p style={{ color: 'var(--ink-2)', fontSize: '14px', margin: 0 }}>{d.pageSubtitle}</p>
             </div>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowRegForm(true)}>
+              + {d.registerBiz}
+            </button>
+          </div>
 
-            {/* Collapsible filters */}
-            <FilterPanel title={d.filterLabel} defaultOpen>
-              {/* Search + register row */}
-              <div style={{
-                display: 'flex',
-                gap: '10px',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                marginTop: '14px',
-                marginBottom: '14px',
-              }}>
-                <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '160px' }}>
-                  <Search size={14} style={{
-                    position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                    insetInlineStart: '11px', color: 'var(--gray-400)', pointerEvents: 'none',
-                  }} />
-                  <input
-                    type="text" value={bizSearch}
-                    onChange={e => { setBizSearch(e.target.value); setBizPage(1) }}
-                    placeholder={d.searchPH}
-                    style={{
-                      width: '100%', padding: '9px 12px 9px 34px',
-                      border: '1.5px solid var(--gray-200)', borderRadius: '8px',
-                      fontSize: '13.5px', fontFamily: 'inherit',
-                      paddingInlineStart: '34px',
-                    }}
-                  />
-                </div>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowRegForm(true)}>
-                  + {d.registerBiz}
-                </button>
-              </div>
-              {/* Category chips */}
+          {/* Tabs sit on the header baseline */}
+          <div style={{ display: 'flex', gap: '4px', marginTop: '18px' }}>
+            <button style={tabStyle(activeTab === 'business')} onClick={() => { setActiveTab('business'); setFiltersOpen(false) }}>
+              {d.tabBusiness}
+            </button>
+            <button style={tabStyle(activeTab === 'ngo')} onClick={() => { setActiveTab('ngo'); setFiltersOpen(false) }}>
+              {d.tabNGO}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="page-container" style={{ paddingBlock: '24px 64px' }}>
+        {/* ── SEARCH + COLLAPSIBLE FILTER TOGGLE (always visible, above fold) ── */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
+            <Search size={16} style={{
+              position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+              insetInlineStart: '12px', color: 'var(--gray-400)', pointerEvents: 'none',
+            }} />
+            <input
+              type="text"
+              value={activeTab === 'business' ? bizSearch : answerSearch}
+              onChange={e => {
+                if (activeTab === 'business') { setBizSearch(e.target.value); setBizPage(1) }
+                else { setAnswerSearch(e.target.value); setAnswerPage(1) }
+              }}
+              placeholder={activeTab === 'business' ? d.searchPH : d.searchNGO}
+              style={{
+                width: '100%', padding: '11px 14px',
+                paddingInlineStart: '38px',
+                border: '1px solid var(--hair)', borderRadius: '10px',
+                fontSize: '14px', fontFamily: 'inherit', background: 'var(--paper)',
+              }}
+            />
+          </div>
+          <button
+            className="btn btn-outline btn-sm"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+          >
+            <SlidersHorizontal size={15} />
+            {d.filters}
+            <ChevronDown
+              size={15}
+              style={{ transition: 'transform .2s', transform: filtersOpen ? 'rotate(180deg)' : 'none' }}
+            />
+          </button>
+        </div>
+
+        {/* ── COLLAPSIBLE FILTER PANEL ──────────────────────────────── */}
+        {filtersOpen && (
+          <div style={{
+            background: 'var(--paper)', borderRadius: '12px',
+            border: '1px solid var(--hair)', padding: '16px 18px',
+            boxShadow: 'var(--shadow-sm)', marginBottom: '20px',
+            display: 'flex', flexDirection: 'column', gap: '14px',
+          }}>
+            {activeTab === 'business' ? (
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {BIZ_CATS.map(cat => (
                   <button
@@ -371,30 +295,58 @@ export default function DirectoryPage() {
                   </button>
                 ))}
               </div>
-            </FilterPanel>
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {NGO_AREAS.map(area => (
+                    <button
+                      key={area}
+                      className={`filter-chip${answerCategory === area ? ' active' : ''}`}
+                      onClick={() => { setAnswerCategory(area); setAnswerPage(1) }}
+                    >
+                      {area === 'all' ? d.filterAll : d.ngoAreas[area]}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    value={answerRegion}
+                    onChange={e => { setAnswerRegion(e.target.value); setAnswerPage(1) }}
+                    placeholder={lang === 'he' ? 'אזור' : 'Region'}
+                    style={{
+                      minWidth: '160px', flex: 1, padding: '10px 14px',
+                      border: '1px solid var(--hair)', borderRadius: '8px',
+                      fontSize: '14px', fontFamily: 'inherit',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={answerAudience}
+                    onChange={e => { setAnswerAudience(e.target.value); setAnswerPage(1) }}
+                    placeholder={lang === 'he' ? 'קהל יעד' : 'Audience'}
+                    style={{
+                      minWidth: '160px', flex: 1, padding: '10px 14px',
+                      border: '1px solid var(--hair)', borderRadius: '8px',
+                      fontSize: '14px', fontFamily: 'inherit',
+                    }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
-            {/* Results header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '8px',
-            }}>
-              <span style={{ fontSize: '13px', color: 'var(--gray-400)' }}>
-                {filteredBiz.length} {t.common.results}
-                {bizLoading && ` — ${t.common.loading}`}
-              </span>
-            </div>
+        {/* ── RESULTS COUNT ─────────────────────────────────────────── */}
+        <div style={{ fontSize: '13px', color: 'var(--gray-400)', marginBottom: '16px' }}>
+          {loading ? t.common.loading : `${resultsCount} ${t.common.results}`}
+        </div>
 
-            {/* Business Grid */}
+        {/* ── BUSINESS RESULTS ──────────────────────────────────────── */}
+        {activeTab === 'business' && (
+          <>
             {bizPageData.length > 0 ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                gap: '20px',
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
                 {bizPageData.map(biz => (
                   <div key={biz.id} className="card" style={{ padding: '24px' }}>
                     {biz.featured && (
@@ -441,16 +393,10 @@ export default function DirectoryPage() {
                       <span style={{ fontSize: '12px', color: 'var(--gray-400)' }}>({biz.reviews})</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" style={{
-                        flex: '1 1 140px', minWidth: 0, textDecoration: 'none',
-                        display: 'flex', justifyContent: 'center',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>
+                      <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" style={{ flex: '1 1 140px', minWidth: 0, textDecoration: 'none', display: 'flex', justifyContent: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         <Phone size={13} /> {biz.phone}
                       </a>
-                      <button className="btn btn-primary btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>
-                        {d.moreBtn}
-                      </button>
+                      <button className="btn btn-primary btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>{d.moreBtn}</button>
                     </div>
                   </div>
                 ))}
@@ -466,92 +412,16 @@ export default function DirectoryPage() {
           </>
         )}
 
-        {/* ── ANSWERS TAB ──────────────────────────────────── */}
+        {/* ── ANSWER RESULTS ────────────────────────────────────────── */}
         {activeTab === 'ngo' && (
           <>
-            {/* Collapsible filters */}
-            <FilterPanel title={d.filterLabel} defaultOpen>
-              <div style={{
-                display: 'flex',
-                gap: '10px',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                marginTop: '14px',
-                marginBottom: '14px',
-              }}>
-                <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '160px' }}>
-                  <Search size={14} style={{
-                    position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                    insetInlineStart: '11px', color: 'var(--gray-400)', pointerEvents: 'none',
-                  }} />
-                  <input
-                    type="text" value={answerSearch}
-                    onChange={e => { setAnswerSearch(e.target.value); setAnswerPage(1) }}
-                    placeholder={d.searchNGO}
-                    style={{
-                      width: '100%', padding: '9px 12px 9px 34px',
-                      border: '1.5px solid var(--gray-200)', borderRadius: '8px',
-                      fontSize: '13.5px', fontFamily: 'inherit',
-                      paddingInlineStart: '34px',
-                    }}
-                  />
-                </div>
-                <input
-                  type="text" value={answerRegion}
-                  onChange={e => { setAnswerRegion(e.target.value); setAnswerPage(1) }}
-                  placeholder={lang === 'he' ? 'אזור' : 'Region'}
-                  style={{
-                    flex: '0 1 140px', minWidth: '120px',
-                    padding: '9px 12px', border: '1.5px solid var(--gray-200)',
-                    borderRadius: '8px', fontSize: '13.5px', fontFamily: 'inherit',
-                  }}
-                />
-                <input
-                  type="text" value={answerAudience}
-                  onChange={e => { setAnswerAudience(e.target.value); setAnswerPage(1) }}
-                  placeholder={lang === 'he' ? 'קהל יעד' : 'Audience'}
-                  style={{
-                    flex: '0 1 140px', minWidth: '120px',
-                    padding: '9px 12px', border: '1.5px solid var(--gray-200)',
-                    borderRadius: '8px', fontSize: '13.5px', fontFamily: 'inherit',
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {NGO_AREAS.map(area => (
-                  <button
-                    key={area}
-                    className={`filter-chip${answerCategory === area ? ' active' : ''}`}
-                    onClick={() => { setAnswerCategory(area); setAnswerPage(1) }}
-                  >
-                    {area === 'all' ? d.filterAll : d.ngoAreas[area]}
-                  </button>
-                ))}
-              </div>
-            </FilterPanel>
-
-            <div style={{ fontSize: '13px', color: 'var(--gray-400)', marginBottom: '16px' }}>
-              {filteredAnswers.length} {t.common.results}
-              {answersLoading && ` — ${t.common.loading}`}
-            </div>
-
             {answerPageData.length > 0 ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '20px',
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {answerPageData.map(answer => (
                   <div key={answer.id} className="card" style={{ padding: '24px' }}>
-                    <div style={{
-                      display: 'flex', alignItems: 'flex-start',
-                      justifyContent: 'space-between', gap: '14px', marginBottom: '14px',
-                    }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', marginBottom: '14px' }}>
                       <div>
-                        <div style={{
-                          fontSize: '15.5px', fontWeight: 700,
-                          color: 'var(--ink)', marginBottom: '6px',
-                        }}>
+                        <div style={{ fontSize: '15.5px', fontWeight: 700, color: 'var(--navy)', marginBottom: '6px' }}>
                           {answer.title || (lang === 'he' ? 'שאלה' : 'Question')}
                         </div>
                         <div style={{ fontSize: '12.5px', color: 'var(--gray-400)' }}>
@@ -559,10 +429,7 @@ export default function DirectoryPage() {
                         </div>
                       </div>
                     </div>
-                    <p style={{
-                      fontSize: '13.5px', color: 'var(--gray-500)',
-                      lineHeight: 1.65, marginBottom: '14px',
-                    }}>
+                    <p style={{ fontSize: '13.5px', color: 'var(--gray-500)', lineHeight: 1.65, marginBottom: '14px' }}>
                       {answer.body || ''}
                     </p>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -578,13 +445,17 @@ export default function DirectoryPage() {
                         <span style={{
                           background: 'var(--gray-100)', color: 'var(--gray-600)',
                           padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
-                        }}>{answer.region}</span>
+                        }}>
+                          {answer.region}
+                        </span>
                       )}
                       {answer.audience && (
                         <span style={{
                           background: 'var(--gray-100)', color: 'var(--gray-600)',
                           padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
-                        }}>{answer.audience}</span>
+                        }}>
+                          {answer.audience}
+                        </span>
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -596,7 +467,7 @@ export default function DirectoryPage() {
             ) : (
               <div style={{ textAlign: 'center', padding: '64px 0' }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
-                <h3 style={{ color: 'var(--ink)', marginBottom: '8px' }}>{d.noResults}</h3>
+                <h3 style={{ color: 'var(--navy)', marginBottom: '8px' }}>{d.noResults}</h3>
                 <p style={{ color: 'var(--gray-400)' }}>{d.noResultsHint}</p>
               </div>
             )}
@@ -619,9 +490,8 @@ export default function DirectoryPage() {
               {['business_name', 'owner_name', 'phone', 'category', 'city', 'desc'].map(field => (
                 <div className="form-group" key={field}>
                   <label className="form-label">
-                    {lang === 'he'
-                      ? { business_name: 'שם העסק', owner_name: 'שם הבעלים', phone: 'טלפון', category: 'קטגוריה', city: 'עיר', desc: 'תיאור קצר' }[field]
-                      : { business_name: 'Business Name', owner_name: 'Owner Name', phone: 'Phone', category: 'Category', city: 'City', desc: 'Short Description' }[field]}
+                    {lang === 'he' ? { business_name: 'שם העסק', owner_name: 'שם הבעלים', phone: 'טלפון', category: 'קטגוריה', city: 'עיר', desc: 'תיאור קצר' }[field]
+                                   : { business_name: 'Business Name', owner_name: 'Owner Name', phone: 'Phone', category: 'Category', city: 'City', desc: 'Short Description' }[field]}
                   </label>
                   {field === 'desc' ? (
                     <textarea
