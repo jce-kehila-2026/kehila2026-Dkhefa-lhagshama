@@ -252,10 +252,10 @@ export default function DirectoryPage() {
 
           {/* Tabs sit on the header baseline */}
           <div style={{ display: 'flex', gap: '4px', marginTop: '18px' }}>
-            <button style={tabStyle(activeTab === 'business')} onClick={() => { setActiveTab('business'); setFiltersOpen(false) }}>
+            <button className="dir-tab" style={tabStyle(activeTab === 'business')} onClick={() => { setActiveTab('business'); setFiltersOpen(false) }}>
               {d.tabBusiness}
             </button>
-            <button style={tabStyle(activeTab === 'ngo')} onClick={() => { setActiveTab('ngo'); setFiltersOpen(false) }}>
+            <button className="dir-tab" style={tabStyle(activeTab === 'ngo')} onClick={() => { setActiveTab('ngo'); setFiltersOpen(false) }}>
               {d.tabNGO}
             </button>
           </div>
