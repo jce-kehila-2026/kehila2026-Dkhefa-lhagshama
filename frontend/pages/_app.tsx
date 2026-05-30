@@ -19,8 +19,14 @@ export default function App({ Component, pageProps }: AppProps) {
       <AuthProvider>
         <AppProvider>
           <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            {!isAdmin && (
+              <a href="#main-content" className="skip-link">
+                Skip to content
+              </a>
+            )}
             {!isAdmin && <Navbar />}
-            <div style={{ flex: 1 }}>
+            {/* key on route → a single calm page-enter on each navigation. */}
+            <div id="main-content" className="page-enter" key={router.pathname} style={{ flex: 1 }}>
               <Component {...pageProps} />
             </div>
             {!isAdmin && <Footer />}

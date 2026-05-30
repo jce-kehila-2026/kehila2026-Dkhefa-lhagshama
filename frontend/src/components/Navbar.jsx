@@ -141,27 +141,15 @@ export default function Navbar() {
               gap: "8px",
             }}
           >
-            {/* Language toggle */}
+            {/* Language toggle — prominent pill, the demo switches HE/EN live */}
             <button
               onClick={toggleLang}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "7px 12px",
-                borderRadius: "6px",
-                background: "transparent",
-                color: "var(--cream)",
-                border: "1px solid rgba(244,238,224,0.25)",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontFamily: "inherit",
-                transition: "all .2s",
-              }}
+              className="nav-lang-toggle"
+              aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
               title={lang === "he" ? "Switch to English" : "החלף לעברית"}
             >
-              <Globe size={14} />
-              {lang === "he" ? "EN" : "עב"}
+              <Globe size={14} aria-hidden="true" />
+              <span style={{ fontWeight: 700 }}>{lang === "he" ? "EN" : "עב"}</span>
             </button>
 
             {/* Auth controls */}
@@ -251,16 +239,9 @@ export default function Navbar() {
         >
           <button
             onClick={toggleLang}
-            style={{
-              background: "transparent",
-              border: "1px solid rgba(244,238,224,0.25)",
-              color: "var(--cream)",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontFamily: "inherit",
-            }}
+            className="nav-lang-toggle"
+            aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
+            style={{ padding: "6px 12px", fontWeight: 700 }}
           >
             {lang === "he" ? "EN" : "עב"}
           </button>
@@ -284,10 +265,10 @@ export default function Navbar() {
       {/* MOBILE MENU */}
       {menuOpen && (
         <div
-          className="hide-desktop"
+          className="hide-desktop nav-mobile-menu"
           style={{
             background: "var(--ink-2)",
-            borderTop: "1px solid rgba(244,238,224,0.12)",
+            borderBlockStart: "1px solid rgba(244,238,224,0.12)",
             padding: "12px 16px 20px",
           }}
         >

@@ -6,13 +6,19 @@
  * hard-coding paths, so swapping artwork (or wiring real photography later) is
  * a one-line change here.
  *
- * Files live under `frontend/public/` and are referenced by absolute web path.
- * `src` may be undefined for a slot that has no artwork yet — <AssetImage>
- * then renders a graceful tinted placeholder instead of a broken image.
+ * `src` may be a local web path under `frontend/public/` (e.g. '/photos/hero.jpg')
+ * or a remote URL on a host allow-listed in `next.config.js`. When a slot has no
+ * artwork yet, leave `src` undefined and <AssetImage> renders a graceful tinted
+ * placeholder instead of a broken image.
+ *
+ * The remote defaults below are verified Unsplash photos (HTTP 200 confirmed)
+ * so the flagship ships with real community imagery for the demo. Replace each
+ * `src` with the NGO's own /public/photos/* file before production launch; the
+ * alt text stays as-is.
  */
 
 export interface AssetSlot {
-  /** Web path under /public, or undefined when no artwork is wired yet. */
+  /** Local /public path or an allow-listed remote URL; undefined = placeholder. */
   src?: string;
   /** Bilingual alt text. Falls back to `en` when a locale is missing. */
   alt: { he: string; en: string };
@@ -27,6 +33,11 @@ export type AssetSlotKey =
   | 'communityImpact'
   | 'volunteerInvite';
 
+// Unsplash delivery URL helper. Verified IDs (HTTP 200) chosen for warm,
+// community-centred imagery that matches the brand's editorial palette.
+const u = (id: string, w = 1400) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
+
 export const assetManifest: Record<AssetSlotKey, AssetSlot> = {
   logo: {
     src: '/logo.jpg',
@@ -34,12 +45,12 @@ export const assetManifest: Record<AssetSlotKey, AssetSlot> = {
     ratio: '1 / 1',
   },
   hero: {
-    src: '/logo.jpg',
+    src: u('photo-1582213782179-e0d53f98f2ca'),
     alt: {
-      he: 'עמותת דחיפה להגשמה — קהילה תומכת',
-      en: 'Push for Fulfillment — a supportive community',
+      he: 'מתנדבים מסדרים ומחלקים תרומות במרכז קהילתי',
+      en: 'Volunteers sorting and handing out donations at a community centre',
     },
-    ratio: '1 / 1',
+    ratio: '4 / 5',
   },
   authAside: {
     src: '/logo.jpg',
@@ -47,19 +58,18 @@ export const assetManifest: Record<AssetSlotKey, AssetSlot> = {
     ratio: '1 / 1',
   },
   communityImpact: {
-    // No dedicated photo yet — renders a tinted placeholder.
-    src: undefined,
+    src: u('photo-1521737711867-e3b97375f902'),
     alt: {
-      he: 'חברי הקהילה האתיופית-ישראלית',
-      en: 'Members of the Ethiopian-Israeli community',
+      he: 'חברי קהילה עובדים יחד סביב שולחן משותף',
+      en: 'Community members working together around a shared table',
     },
-    ratio: '16 / 9',
+    ratio: '4 / 3',
   },
   volunteerInvite: {
-    src: undefined,
+    src: u('photo-1517486808906-6ca8b3f04846'),
     alt: {
-      he: 'מתנדבים בפעולה',
-      en: 'Volunteers in action',
+      he: 'קבוצת צעירים מחייכים יושבים יחד בחוץ',
+      en: 'A group of young people smiling together outdoors',
     },
     ratio: '16 / 9',
   },
