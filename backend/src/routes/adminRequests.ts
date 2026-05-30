@@ -191,9 +191,49 @@ router.post('/:id/assign', async (req: Request, res: Response): Promise<void> =>
 // ── POST /api/admin/requests/:id/status ──────────────────────────────────
 // Body: { status: RequestStatus }
 // Fires 'status_changed' event (visibility 'all').
+//
+// #92 — Forward-only, race-safe status transition.
+// The status lifecycle is forward-only: a request may only move to a status
+// later in (or equal to) REQUEST_STATUSES, never backwards. To stay safe under
+// concurrent admin edits, the read-check-write is wrapped in a Firestore
+// transaction: if another admin changed the status between our read and write,
+// the transaction's optimistic concurrency makes the commit fail and we surface
+// a 409 instead of silently clobbering their change.
 const statusSchema = z.object({
   status: z.enum(REQUEST_STATUSES),
 });
+
+/** Index of a status in the canonical forward-only lifecycle. -1 if unknown. */
+function statusRank(status: string | null | undefined): number {
+  if (!status) return -1;
+  return REQUEST_STATUSES.indexOf(status as RequestStatus);
+}
+
+/**
+ * A move is allowed only if the target sits at the same position or later in
+ * the forward-only lifecycle. Equal is allowed (idempotent no-op re-save);
+ * anything earlier is a backward transition and rejected.
+ */
+function isForwardTransition(from: string | null | undefined, to: RequestStatus): boolean {
+  const fromRank = statusRank(from);
+  const toRank = statusRank(to);
+  if (toRank === -1) return false;
+  // Unknown/missing current status: allow setting any valid status.
+  if (fromRank === -1) return true;
+  return toRank >= fromRank;
+}
+
+/** Thrown inside the transaction to bail out with a specific HTTP status. */
+class TransitionError extends Error {
+  constructor(
+    public readonly httpStatus: number,
+    public readonly code: string,
+    public readonly extra: Record<string, unknown> = {},
+  ) {
+    super(code);
+    this.name = 'TransitionError';
+  }
+}
 
 router.post('/:id/status', async (req: Request, res: Response): Promise<void> => {
   const parsed = statusSchema.safeParse(req.body);
@@ -205,22 +245,53 @@ router.post('/:id/status', async (req: Request, res: Response): Promise<void> =>
   const { status } = parsed.data;
   const requestId = req.params.id;
   const actorId = req.user!.uid;
+  const ref = db().collection('requests').doc(requestId);
+
+  let prevStatus: string | null = null;
 
   try {
-    const ref = db().collection('requests').doc(requestId);
-    const snap = await ref.get();
-    if (!snap.exists) {
-      res.status(404).json({ error: 'not_found' });
+    // Read-check-write in a single transaction so concurrent admins can't race
+    // past each other. Firestore retries the callback on contention; if it can't
+    // commit (another writer won), runTransaction throws and we return 409.
+    await db().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) {
+        throw new TransitionError(404, 'not_found');
+      }
+
+      prevStatus = (snap.data()!.status as string) ?? null;
+
+      if (!isForwardTransition(prevStatus, status)) {
+        throw new TransitionError(409, 'invalid_transition', {
+          from: prevStatus,
+          to: status,
+        });
+      }
+
+      tx.update(ref, {
+        status,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    });
+  } catch (err) {
+    if (err instanceof TransitionError) {
+      res.status(err.httpStatus).json({ error: err.code, ...err.extra });
       return;
     }
+    // A Firestore ABORTED error (gRPC code 10) means the transaction lost a race
+    // after exhausting retries — a genuine concurrent/stale write. Surface 409.
+    const code = (err as { code?: number }).code;
+    if (code === 10) {
+      res.status(409).json({ error: 'concurrent_update' });
+      return;
+    }
+    console.error('[adminRequests] POST /:id/status:', err);
+    res.status(500).json({ error: 'internal_error' });
+    return;
+  }
 
-    const prevStatus = (snap.data()!.status as string) ?? null;
-
-    await ref.update({
-      status,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
+  // Side effects run only after the status write committed successfully.
+  try {
     await writeRequestEvent({
       requestId,
       type: 'status_changed',
@@ -236,12 +307,13 @@ router.post('/:id/status', async (req: Request, res: Response): Promise<void> =>
       entityId: requestId,
       details: { from: prevStatus, to: status },
     });
-
-    res.json({ ok: true });
   } catch (err) {
-    console.error('[adminRequests] POST /:id/status:', err);
-    res.status(500).json({ error: 'internal_error' });
+    // The status change itself succeeded; log the bookkeeping failure but still
+    // report success so the admin UI reflects the committed state.
+    console.error('[adminRequests] POST /:id/status side-effects:', err);
   }
+
+  res.json({ ok: true });
 });
 
 // ── POST /api/admin/requests/:id/note ────────────────────────────────────

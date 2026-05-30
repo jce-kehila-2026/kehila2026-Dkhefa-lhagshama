@@ -1036,3 +1036,120 @@ body { background-color: var(--paper); color: var(--ink); }
   .admin-filter-tab,
   .skeleton { transition: none !important; animation: none !important; }
 }
+
+/* ── #87 Account-disabled page + #91/#95 admin detail edge-case UI ───────── */
+.disabled-card {
+  text-align: center;
+}
+
+.disabled-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+
+.disabled-lead {
+  margin-bottom: 24px;
+}
+
+.disabled-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background-color .18s ease, border-color .18s ease;
+}
+
+.disabled-contact:hover {
+  background: var(--paper);
+  border-color: var(--ember);
+}
+
+.disabled-contact:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.disabled-home {
+  display: block;
+  width: 100%;
+}
+
+/* #91 — deactivated ("former") volunteer tag */
+.former-tag {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fdecea;
+  color: #b3261e;
+  border: 1px solid #f5c6c0;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* #91 / #95 — non-blocking inline notices on the admin detail page */
+.admin-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.admin-notice svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.admin-notice-warn {
+  background: #fff6e9;
+  color: #8a5a00;
+  border: 1px solid #f5dca6;
+}
+
+.admin-notice-warn .admin-notice-action {
+  color: #8a5a00;
+}
+
+.admin-notice-action {
+  margin-inline-start: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.admin-notice-action:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disabled-contact {
+    transition: none;
+  }
+}

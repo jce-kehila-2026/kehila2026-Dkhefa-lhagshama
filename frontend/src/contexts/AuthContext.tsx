@@ -15,8 +15,9 @@ import {
   type ReactNode,
 } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 
-import { firebaseAuth } from '../lib/firebase';
+import { firebaseAuth, firebaseDb } from '../lib/firebase';
 import {
   loginWithEmail,
   logout as fbLogout,
@@ -69,6 +70,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return unsub;
   }, []);
+
+  // #87 — Disabled account handling.
+  // Subscribe to the signed-in user's `users/{uid}` doc. If an admin flips
+  // `disabled` to true while they're using the app, sign them out immediately
+  // and send them to /account-disabled. We use a Firestore realtime listener so
+  // the lockout is near-instant rather than waiting for the next API call.
+  useEffect(() => {
+    if (!user) return;
+
+    const ref = doc(firebaseDb, 'users', user.uid);
+    const unsub = onSnapshot(
+      ref,
+      async (snap) => {
+        if (snap.exists() && snap.data()?.disabled === true) {
+          try {
+            // Stop listening before signing out so we don't briefly re-fire.
+            unsub();
+            await fbLogout();
+          } finally {
+            if (typeof window !== 'undefined') {
+              window.location.replace('/account-disabled');
+            }
+          }
+        }
+      },
+      () => {
+        // Read errors (e.g. rules deny when no user doc exists) are non-fatal:
+        // the account simply isn't flagged disabled. Swallow and carry on.
+      },
+    );
+
+    return unsub;
+  }, [user]);
 
   const refreshClaims = useCallback(async () => {
     if (!firebaseAuth.currentUser) return;

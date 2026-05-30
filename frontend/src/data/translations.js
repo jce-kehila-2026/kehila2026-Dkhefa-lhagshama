@@ -342,6 +342,16 @@ const translations = {
         saveNote:     'שמירת הערה',
         category:     'קטגוריה',
         city:         'עיר',
+        // #91 — deactivated volunteer in-flight assignment
+        formerTag:        '(לשעבר)',
+        formerVolWarning: 'המתנדב/ת המשויך/ת אינו/ה פעיל/ה עוד. מומלץ להקצות מתנדב/ת אחר/ת לבקשה זו.',
+        // #95 — language-match warning
+        langMismatchWarning: 'שפות המתנדב/ת אינן כוללות את שפת הפונה. ניתן להמשיך, אך כדאי לוודא תקשורת תקינה.',
+        dismiss:          'הסתר',
+        // #92 — forward-only status guard
+        statusBackwardError:  'לא ניתן להחזיר בקשה לסטטוס קודם.',
+        statusConflictError:  'הסטטוס עודכן בינתיים על ידי מנהל/ת אחר/ת. רענן/י ונסה/י שוב.',
+        statusGenericError:   'עדכון הסטטוס נכשל. נסה/י שוב.',
       },
       userMgmt: {
         title:    'משתמשים',
@@ -526,6 +536,14 @@ const translations = {
       title:   'הדף לא נמצא',
       subtitle:'הדף שחיפשת אינו קיים או הועבר למיקום אחר.',
       btn:     'חזרה לדף הבית',
+    },
+
+    // ── ACCOUNT DISABLED (#87) ────────────────────────────────
+    accountDisabled: {
+      title:        'החשבון שלך הושבת',
+      body:         'הגישה לחשבון זה הושבתה. אם לדעתך מדובר בטעות, נשמח לעמוד לרשותך — אנא צרו קשר עם צוות העמותה ונסייע בהקדם.',
+      contactEmail: 'support@push4f.org',
+      backHome:     'חזרה לדף הבית',
     },
 
     // ── AUTH (CC-5) ───────────────────────────────────────────
@@ -1040,6 +1058,16 @@ const translations = {
         saveNote:     'Save note',
         category:     'Category',
         city:         'City',
+        // #91 — deactivated volunteer in-flight assignment
+        formerTag:        '(former)',
+        formerVolWarning: 'The assigned volunteer is no longer active. Consider reassigning this request to another volunteer.',
+        // #95 — language-match warning
+        langMismatchWarning: "This volunteer's languages do not include the beneficiary's language. You can proceed, but please make sure communication will work.",
+        dismiss:          'Dismiss',
+        // #92 — forward-only status guard
+        statusBackwardError:  'A request cannot be moved back to an earlier status.',
+        statusConflictError:  'The status was changed by another admin in the meantime. Please refresh and try again.',
+        statusGenericError:   'Failed to update the status. Please try again.',
       },
       userMgmt: {
         title:    'Users',
@@ -1216,6 +1244,14 @@ const translations = {
       title:   'Page Not Found',
       subtitle:'The page you\'re looking for doesn\'t exist or has been moved.',
       btn:     'Back to Home',
+    },
+
+    // ── ACCOUNT DISABLED (#87) ────────────────────────────────
+    accountDisabled: {
+      title:        'Your account has been disabled',
+      body:         'Access to this account has been disabled. If you believe this is a mistake, we are happy to help — please contact the team and we will sort it out as soon as we can.',
+      contactEmail: 'support@push4f.org',
+      backHome:     'Back to Home',
     },
 
     // ── AUTH (CC-5) ───────────────────────────────────────────
