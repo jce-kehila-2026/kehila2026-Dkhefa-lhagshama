@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { AlertCircle } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import { validateRedirect } from '../utils/validateRedirect' // #88
@@ -33,95 +34,98 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-grid" style={{
-      minHeight: 'calc(100vh - 64px)',
-      display: 'grid',
-      gridTemplateColumns: '1fr',
-      background: 'var(--paper)',
-    }}>
-      <aside style={{
-        background: 'var(--sky-2)',
-        padding: '64px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '20px',
-      }}>
-        <AssetImage
-          slot="authAside"
-          rounded="50%"
-          ratio="1 / 1"
-          shadow="var(--shadow)"
-          priority
-          style={{ width: 96, height: 96 }}
-        />
-        <div className="section-eyebrow" style={{ textAlign: 'center' }}>
-          {lang === 'he' ? 'עמותת דחיפה להגשמה' : 'Push for Fulfillment'}
+    <div className="auth-grid" style={{ minHeight: 'calc(100vh - var(--nav-h))' }}>
+      {/* Brand aside — image + welcome. Hidden on small screens. */}
+      <aside className="auth-aside">
+        <div className="auth-aside-inner">
+          <AssetImage
+            slot="authAside"
+            rounded="50%"
+            ratio="1 / 1"
+            shadow="var(--shadow)"
+            border="3px solid var(--paper)"
+            priority
+            style={{ width: 88, height: 88 }}
+          />
+          <span className="eyebrow" style={{ textAlign: 'center', margin: '20px 0 8px' }}>
+            {lang === 'he' ? 'עמותת דחיפה להגשמה' : 'Push for Fulfillment'}
+          </span>
+          <h1
+            style={{
+              fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+              fontSize: 'var(--fs-h2)', fontWeight: 400, color: 'var(--ink)',
+              lineHeight: 1.18, textAlign: 'center', maxWidth: '22rem', margin: 0, textWrap: 'balance',
+            }}
+          >
+            {a.title}
+          </h1>
+          {a.subtitle && (
+            <p className="section-lede" style={{ textAlign: 'center', margin: '14px auto 0', maxWidth: '26rem', fontSize: '1rem' }}>
+              {a.subtitle}
+            </p>
+          )}
         </div>
-        <h1 className="section-display" style={{
-          fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-          textAlign: 'center',
-          maxWidth: '24rem',
-          margin: 0,
-        }}>
-          {a.title}
-        </h1>
-        {a.subtitle && (
-          <p className="section-lede" style={{ textAlign: 'center', margin: '0 auto', maxWidth: '26rem' }}>
-            {a.subtitle}
-          </p>
-        )}
       </aside>
 
-      <main style={{
-        padding: '64px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        maxWidth: '480px',
-        width: '100%',
-        margin: '0 auto',
-      }}>
-        <form onSubmit={onSubmit} className="card" style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>
-            {a.email}
+      {/* Form column */}
+      <main className="auth-main">
+        <form onSubmit={onSubmit} className="auth-form" noValidate>
+          <h2 style={{ fontFamily: 'Frank Ruhl Libre, serif', fontWeight: 400, fontSize: '1.5rem', color: 'var(--ink)', margin: 0 }}>
+            {a.title}
+          </h2>
+
+          {error && (
+            <div className="form-banner form-banner-error" role="alert">
+              <AlertCircle size={16} aria-hidden="true" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="form-group" style={{ marginBlockEnd: 0 }}>
+            <label className="form-label" htmlFor="login-email">{a.email}</label>
             <input
+              id="login-email"
               type="email"
               autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="form-input"
+              className={`form-input${error ? ' error' : ''}`}
+              aria-invalid={Boolean(error)}
             />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>
-            {a.password}
+          </div>
+
+          <div className="form-group" style={{ marginBlockEnd: 0 }}>
+            <label className="form-label" htmlFor="login-password">{a.password}</label>
             <input
+              id="login-password"
               type="password"
               autoComplete="current-password"
               required
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
+              className={`form-input${error ? ' error' : ''}`}
+              aria-invalid={Boolean(error)}
             />
-          </label>
-          {error && <div style={{ color: 'var(--ember)', fontSize: 13.5 }}>{error}</div>}
+          </div>
+
           <button
             type="submit"
             disabled={submitting}
-            className="btn btn-primary"
-            style={{ marginTop: 4 }}
+            aria-busy={submitting}
+            className={`btn btn-primary btn-full${submitting ? ' is-loading' : ''}`}
+            style={{ marginBlockStart: 4 }}
           >
             {submitting ? a.submitting : a.submit}
           </button>
-          <div style={{ fontSize: 13.5, textAlign: 'center', color: 'var(--ink-2)', marginTop: 4 }}>
+
+          <p style={{ fontSize: 13.5, textAlign: 'center', color: 'var(--ink-2)', margin: '4px 0 0' }}>
             {a.noAccount}{' '}
-            <Link href="/register" style={{ color: 'var(--ember)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+            <Link href="/register" style={{ color: 'var(--ember)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
               {a.registerLink}
             </Link>
-          </div>
+          </p>
         </form>
       </main>
     </div>

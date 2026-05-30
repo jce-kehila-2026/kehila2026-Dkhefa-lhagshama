@@ -6,21 +6,24 @@
    CSS CUSTOM PROPERTIES
 ───────────────────────────────────────── */
 :root {
-  /* Sky palette (locked) */
+  /* ── Brand palette (locked — do not retune the hues) ────────── */
   --sky:        #BFD3E6;
   --sky-2:      #DCE7F0;
+  --sky-3:      #ECF2F8;   /* lighter sky wash — added: tints, hover fills */
   --ink:        #0F1E2D;
   --ink-2:      #2C3D52;
   --cream:      #F4EEE0;
   --paper:      #FAFAF7;
   --ember:      #B9694E;
+  --ember-700:  #9C5440;   /* pressed/hover ember on light surfaces */
+  --ember-soft: #F4DDD3;   /* ember tint for fills/badges */
   --hair:       rgba(15,30,45,0.10);
+  --line:       rgba(15,30,45,0.12);   /* alias used by some cards/inputs */
 
-  /* True white — still used by a few card/input/modal class definitions
-     below. Other legacy navy/gold aliases were removed in Phase 7. */
+  /* True white — cards, inputs, modals. */
   --white:      #FFFFFF;
 
-  /* Grays — slightly cooler, sky-tinted */
+  /* Grays — cooler, sky-tinted ramp. Body text uses 700+ for ≥4.5:1. */
   --gray-50:    #F6F7F9;
   --gray-100:   #EEF1F4;
   --gray-200:   #DDE3E9;
@@ -33,20 +36,73 @@
 
   /* Semantic */
   --success:    #2E6E45;
+  --success-soft:#DCEAE0;
   --danger:     #A04835;
-  --warning:    #B9694E;
+  --danger-soft:#F4DDD3;
+  --warning:    #8A5A00;
+  --warning-soft:#FBF0C8;
   --info:       #2C3D52;
+  --info-soft:  var(--sky-2);
 
-  /* Radius — slightly tighter, editorial */
+  /* Radius — editorial */
   --radius-sm:  8px;
   --radius:     12px;
   --radius-lg:  16px;
   --radius-xl:  24px;
 
-  /* Shadows — flatter, sky-tinted */
+  /* ── Elevation scale — layered, sky-tinted, restrained ──────── */
+  --shadow-xs:  0 1px 2px rgba(15,30,45,0.05);
   --shadow-sm:  0 1px 0 rgba(15,30,45,0.04), 0 4px 12px rgba(15,30,45,0.05);
   --shadow:     0 1px 0 rgba(15,30,45,0.04), 0 8px 24px rgba(15,30,45,0.06);
   --shadow-lg:  0 1px 0 rgba(15,30,45,0.04), 0 14px 40px rgba(15,30,45,0.10);
+  --shadow-xl:  0 2px 4px rgba(15,30,45,0.05), 0 24px 60px rgba(15,30,45,0.14);
+
+  /* ── Focus ring — single source of truth ────────────────────── */
+  --ring:       0 0 0 3px rgba(185,105,78,0.35);
+  --ring-ink:   0 0 0 3px rgba(15,30,45,0.14);
+
+  /* ── Fluid type scale (clamp). Hero capped ≤ 3.4rem per brief.
+       Used by marketing surfaces; product/admin keep fixed rem.  ── */
+  --fs-hero:    clamp(2rem, 1.3rem + 3.4vw, 3.4rem);
+  --fs-display: clamp(1.65rem, 1.2rem + 2.2vw, 2.6rem);
+  --fs-h2:      clamp(1.4rem, 1.1rem + 1.5vw, 2rem);
+  --fs-h3:      clamp(1.15rem, 1.02rem + 0.6vw, 1.4rem);
+  --fs-lede:    clamp(1.0625rem, 1rem + 0.35vw, 1.2rem);
+  --fs-body:    1rem;
+  --fs-sm:      0.875rem;
+  --fs-xs:      0.75rem;
+
+  /* ── Spacing scale (4px base, geometric-ish for rhythm) ──────── */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  24px;
+  --sp-6:  32px;
+  --sp-7:  48px;
+  --sp-8:  64px;
+  --sp-9:  96px;
+
+  /* ── Motion tokens ──────────────────────────────────────────── */
+  --ease-out:      cubic-bezier(0.22, 1, 0.36, 1);     /* ease-out-quint */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 240ms;
+  --dur-4: 360ms;
+
+  /* ── Semantic z-index scale ─────────────────────────────────── */
+  --z-base:     1;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-backdrop: 400;
+  --z-modal:    500;
+  --z-toast:    600;
+  --z-tooltip:  700;
+
+  /* Layout */
+  --maxw:  1120px;
+  --nav-h: 64px;
 }
 
 /* ─────────────────────────────────────────
@@ -65,10 +121,12 @@ html {
 
 body {
   font-family: 'Noto Sans Hebrew', 'Inter', sans-serif;
-  background-color: var(--cream);
-  color: var(--gray-800);
+  background-color: var(--paper);
+  color: var(--ink);
   line-height: 1.65;
+  font-size: var(--fs-body);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
@@ -76,6 +134,16 @@ body {
 body.ltr {
   font-family: 'Inter', 'Noto Sans Hebrew', sans-serif;
 }
+
+/* Even line breaks on headings; fewer orphans in prose. */
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
+/* Selection picks up the brand accent. */
+::selection { background: rgba(185,105,78,0.22); color: var(--ink); }
+
+/* Links inherit the editorial accent by default; underline offset for legibility. */
+a { color: inherit; }
 
 /* ─────────────────────────────────────────
    SCROLLBAR
@@ -89,13 +157,13 @@ body.ltr {
    LAYOUT UTILITIES
 ───────────────────────────────────────── */
 .page-container {
-  max-width: 1120px;
+  max-width: var(--maxw);
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding-inline: 1.5rem;
 }
 
 .section-padding {
-  padding: 72px 0;
+  padding-block: clamp(48px, 6vw, 88px);
 }
 
 /* ─────────────────────────────────────────
@@ -124,6 +192,7 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
    BUTTONS
 ───────────────────────────────────────── */
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -132,21 +201,28 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   border-radius: var(--radius-sm);
   font-size: 14.5px;
   font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
-  transition: all 0.22s ease;
-  border: none;
+  transition: background-color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              transform var(--dur-1) var(--ease-out);
+  border: 1px solid transparent;
   outline: none;
   font-family: inherit;
   text-decoration: none;
   white-space: nowrap;
+  user-select: none;
 }
-.btn:focus-visible { box-shadow: 0 0 0 3px rgba(185,105,78,0.35); }
+.btn:focus-visible { box-shadow: var(--ring); }
+.btn:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
 
 .btn-primary {
   background: var(--ink);
   color: var(--cream);
-  border: 1px solid var(--ink);
+  border-color: var(--ink);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--ink-2);
@@ -157,15 +233,28 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 .btn-navy { /* legacy alias — same as .btn-primary now */
   background: var(--ink);
   color: var(--cream);
-  border: 1px solid var(--ink);
+  border-color: var(--ink);
 }
 .btn-navy:hover:not(:disabled) {
   background: var(--ink-2);
+  border-color: var(--ink-2);
+  box-shadow: var(--shadow);
+}
+
+/* Ember accent button — primary CTA on light editorial surfaces. */
+.btn-ember {
+  background: var(--ember);
+  color: var(--cream);
+  border-color: var(--ember);
+}
+.btn-ember:hover:not(:disabled) {
+  background: var(--ember-700);
+  border-color: var(--ember-700);
   box-shadow: var(--shadow);
 }
 
 .btn-outline {
-  background: var(--paper);
+  background: var(--white);
   color: var(--ink);
   border: 1.5px solid var(--ink);
 }
@@ -180,61 +269,95 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--gray-100);
-  color: var(--gray-800);
+  color: var(--ink);
 }
 
 .btn-danger {
-  background: #FEE2E2;
+  background: var(--danger-soft);
   color: var(--danger);
+  border-color: transparent;
 }
-.btn-danger:hover:not(:disabled) { background: #FECACA; }
+.btn-danger:hover:not(:disabled) { background: #ECCBBE; }
 
 .btn-sm  { padding: 7px 16px; font-size: 13px; }
 .btn-lg  { padding: 14px 32px; font-size: 16px; }
 .btn-xl  { padding: 16px 40px; font-size: 17px; }
 .btn-full { width: 100%; }
 
+/* Loading state: hide label, show a centered spinner. Add aria-busy in JSX. */
+.btn.is-loading { color: transparent !important; pointer-events: none; }
+.btn.is-loading::after {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(50% - 8px);
+  inset-inline-start: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-block-start-color: transparent;
+  color: var(--cream);
+  opacity: 0.9;
+  animation: btnSpin 0.6s linear infinite;
+}
+.btn-outline.is-loading::after,
+.btn-ghost.is-loading::after { color: var(--ink); }
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+
 /* ─────────────────────────────────────────
    FORMS
 ───────────────────────────────────────── */
-.form-group { margin-bottom: 20px; }
+.form-group { margin-block-end: 20px; }
 .form-label {
   display: block;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--ink);
-  margin-bottom: 7px;
+  margin-block-end: 7px;
 }
 .form-label .required { color: var(--danger); margin-inline-start: 3px; }
-.form-hint { font-size: 12px; color: var(--gray-400); margin-top: 5px; }
+/* Hints must read at ≥4.5:1; gray-500 clears it on white, gray-400 did not. */
+.form-hint { font-size: 12.5px; color: var(--gray-500); margin-block-start: 5px; }
 
 .form-input,
 .form-select,
 .form-textarea {
   width: 100%;
   padding: 11px 14px;
-  border: 1.5px solid var(--gray-200);
+  border: 1.5px solid var(--gray-300);
   border-radius: var(--radius-sm);
-  font-size: 14px;
-  color: var(--gray-800);
+  font-size: 15px;
+  color: var(--ink);
   background: var(--white);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out);
   font-family: inherit;
   direction: inherit;
 }
+.form-input:hover:not(:focus),
+.form-select:hover:not(:focus),
+.form-textarea:hover:not(:focus) { border-color: var(--gray-400); }
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
   outline: none;
   border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgba(11,29,62,0.08);
+  box-shadow: var(--ring-ink);
 }
 .form-input::placeholder,
-.form-textarea::placeholder { color: var(--gray-400); }
+.form-textarea::placeholder { color: var(--gray-500); opacity: 1; }
 .form-input.error,
-.form-select.error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(185,28,28,0.08); }
-.form-error { font-size: 12px; color: var(--danger); margin-top: 5px; display: flex; align-items: center; gap: 5px; }
-.form-textarea { resize: vertical; min-height: 100px; }
+.form-select.error,
+.form-textarea.error,
+[aria-invalid="true"].form-input,
+[aria-invalid="true"].form-textarea {
+  border-color: var(--danger);
+}
+.form-input.error:focus,
+.form-select.error:focus,
+.form-textarea.error:focus { box-shadow: 0 0 0 3px rgba(160,72,53,0.18); }
+.form-error { font-size: 12.5px; color: var(--danger); margin-block-start: 6px; display: flex; align-items: center; gap: 5px; }
+.form-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 .form-select { cursor: pointer; }
 
 /* ─────────────────────────────────────────
@@ -244,12 +367,26 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   background: var(--white);
   border-radius: var(--radius);
   border: 1px solid var(--gray-200);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
-  transition: all 0.25s ease;
+  transition: box-shadow var(--dur-3) var(--ease-out),
+              transform var(--dur-3) var(--ease-out),
+              border-color var(--dur-3) var(--ease-out);
 }
-.card:hover { box-shadow: var(--shadow); transform: translateY(-3px); }
 .card-body { padding: 24px; }
+
+/* Opt-in lift for cards that are actually clickable (links/buttons).
+   Static info cards stay still — motion should signal affordance. */
+.card-interactive { cursor: pointer; }
+.card-interactive:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-3px);
+  border-color: var(--sky);
+}
+.card-interactive:focus-within { box-shadow: var(--ring-ink); }
+
+/* Flat variant for panels that sit on tinted backgrounds. */
+.card-flat { box-shadow: none; border-color: var(--hair); }
 
 /* ─────────────────────────────────────────
    STATUS BADGES
@@ -259,15 +396,17 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   align-items: center;
   gap: 5px;
   padding: 4px 11px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
 }
-.badge-pending  { background: var(--sky-2);  color: var(--ink); }
-.badge-review   { background: var(--cream);  color: var(--ink); }
-.badge-approved { background: #DCEAE0; color: #2E6E45; }
-.badge-rejected { background: #F4DDD3; color: var(--ember); }
-.badge-new      { background: var(--ember); color: var(--cream); }
+.badge-pending  { background: var(--sky-2);     color: var(--ink); }
+.badge-review   { background: var(--warning-soft);color: var(--warning); }
+.badge-approved { background: var(--success-soft);color: var(--success); }
+.badge-rejected { background: var(--danger-soft); color: var(--danger); }
+.badge-new      { background: var(--ember);      color: var(--cream); }
 
 /* ─────────────────────────────────────────
    ADMIN TABLE
@@ -279,26 +418,32 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  font-size: 13.5px;
 }
-.admin-table thead tr {
+.admin-table thead th {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: var(--z-base);
   background: var(--sky-2);
-}
-.admin-table th {
   padding: 13px 16px;
-  text-align: inherit;
+  text-align: start;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink);
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
+  border-block-end: 1px solid var(--gray-200);
+  white-space: nowrap;
 }
 .admin-table td {
   padding: 13px 16px;
-  font-size: 13.5px;
-  border-bottom: 1px solid var(--gray-100);
+  border-block-end: 1px solid var(--gray-100);
   color: var(--gray-700);
+  vertical-align: middle;
 }
-.admin-table tbody tr:last-child td { border-bottom: none; }
-.admin-table tbody tr:hover td { background: var(--gray-50); }
+.admin-table tbody tr { transition: background-color var(--dur-1) var(--ease-out); }
+.admin-table tbody tr:nth-child(even) { background: rgba(220,231,240,0.28); }
+.admin-table tbody tr:last-child td { border-block-end: none; }
+.admin-table tbody tr:hover { background: rgba(185,105,78,0.06); }
 
 /* ─────────────────────────────────────────
    UPLOAD AREA
@@ -326,20 +471,29 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
    NAVBAR (dark editorial — ink background, cream text)
 ───────────────────────────────────────── */
 .navbar {
-  background: var(--ink);
-  border-bottom: 1px solid var(--ink-2);
+  /* Ink with a touch of translucency + blur so content scrolls under it. */
+  background: rgba(15,30,45,0.88);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-block-end: 1px solid rgba(244,238,224,0.10);
   position: sticky;
   top: 0;
-  z-index: 200;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+  z-index: var(--z-sticky);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+/* Solid fallback where blur is unsupported. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .navbar { background: var(--ink); }
 }
 .nav-link {
+  position: relative;
   padding: 8px 13px;
   border-radius: 6px;
   font-size: 13.5px;
-  color: rgba(244,238,224,0.78);
+  font-weight: 500;
+  color: rgba(244,238,224,0.82);
   cursor: pointer;
-  transition: all 0.18s;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out);
   background: none;
   border: none;
   font-family: inherit;
@@ -347,7 +501,48 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   text-decoration: none;
 }
 .nav-link:hover { color: var(--cream); background: rgba(244,238,224,0.08); }
-.nav-link.active { color: var(--ember); }
+.nav-link:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(244,238,224,0.5); }
+/* Active route: ember text + a grown underline anchored to the link. */
+.nav-link.active { color: var(--cream); }
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  inset-block-end: 2px;
+  inset-inline: 13px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ember);
+  animation: navUnderline var(--dur-3) var(--ease-out);
+}
+@keyframes navUnderline {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+/* Language toggle pill — sits on the dark nav, stays legible. */
+.nav-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(244,238,224,0.10);
+  color: var(--cream);
+  border: 1px solid rgba(244,238,224,0.28);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background-color var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
+}
+.nav-lang-toggle:hover { background: rgba(244,238,224,0.18); border-color: rgba(244,238,224,0.5); }
+.nav-lang-toggle:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(244,238,224,0.55); }
+
+/* Mobile menu slide/fade entrance. */
+.nav-mobile-menu { animation: navMenuIn var(--dur-3) var(--ease-out); transform-origin: top; }
+@keyframes navMenuIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* Nav-only button variants — work on dark ink background */
 .btn-nav-primary {
@@ -382,31 +577,22 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
     radial-gradient(circle at 85% 20%, rgba(15,30,45,0.04) 0%, transparent 60%);
 }
 
-/* Hero 2-col grid — logo (start side: right in HE, left in EN) + copy.
-   First child in DOM goes to inline-start automatically thanks to writing direction. */
+/* Hero 2-col grid — portrait (start side: right in HE, left in EN) + copy.
+   First child in DOM goes to inline-start automatically via writing direction. */
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-  gap: 56px;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(32px, 5vw, 64px);
   align-items: center;
 }
-.hero-mark {
-  display: flex;
-  justify-content: center;
-}
-.hero-copy {
-  min-width: 0;
-  text-align: start;
-}
-.hero-copy .section-lede { max-width: 100%; }
-@media (max-width: 768px) {
-  .hero-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-    text-align: center;
-  }
-  .hero-copy { text-align: center; }
-  .hero-copy > div:last-child { justify-content: center; }
+.hero-mark { display: flex; justify-content: center; }
+.hero-copy { min-width: 0; text-align: start; }
+.hero-copy .section-lede { max-width: 38rem; }
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+  /* Copy first on mobile so the value proposition leads above the fold. */
+  .hero-mark { order: 2; }
+  .hero-copy { order: 1; }
 }
 
 /* ─────────────────────────────────────────
@@ -453,36 +639,46 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 ───────────────────────────────────────── */
 .toast-container {
   position: fixed;
-  bottom: 24px;
-  left: 24px;
-  z-index: 9999;
+  inset-block-end: 24px;
+  inset-inline-start: 24px;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 10px;
   pointer-events: none;
 }
 .toast {
+  position: relative;
   background: var(--ink);
   color: var(--cream);
-  padding: 14px 20px;
+  padding: 14px 18px;
   border-radius: var(--radius);
   font-size: 14px;
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: var(--shadow-lg);
-  animation: slideInToast 0.3s ease;
+  box-shadow: var(--shadow-xl);
+  animation: slideInToast var(--dur-3) var(--ease-out);
   pointer-events: all;
   min-width: 260px;
   max-width: 380px;
 }
-.toast.success { border-inline-start: 4px solid #4F8B6A; }
-.toast.error   { border-inline-start: 4px solid var(--ember); }
-.toast.info    { border-inline-start: 4px solid var(--ink-2); }
-.toast.warning { border-inline-start: 4px solid var(--ember); }
+/* Status is carried by a leading dot, not a side stripe (Absolute Ban). */
+.toast::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--sky);
+}
+.toast.success::before { background: #6FB58C; }
+.toast.error::before   { background: var(--ember); }
+.toast.warning::before { background: #E2B85C; }
+.toast.info::before    { background: var(--sky); }
 @keyframes slideInToast {
-  from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ─────────────────────────────────────────
@@ -554,11 +750,14 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
    SKELETON LOADER
 ───────────────────────────────────────── */
 .skeleton {
-  background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+  background: linear-gradient(100deg, var(--gray-200) 30%, var(--gray-100) 50%, var(--gray-200) 70%);
   background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
+  animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--radius-sm);
 }
+.skeleton-text { height: 0.85em; border-radius: 4px; margin-block: 0.35em; }
+.skeleton-title { height: 1.4em; width: 60%; border-radius: 6px; }
+.skeleton-block { width: 100%; }
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -608,24 +807,56 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   outline-offset: 2px;
 }
 
+/* Skip link — keyboard users jump past the nav to main content. */
+.skip-link {
+  position: absolute;
+  inset-inline-start: 12px;
+  inset-block-start: -200px;
+  z-index: var(--z-tooltip);
+  background: var(--ink);
+  color: var(--cream);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: inset-block-start var(--dur-2) var(--ease-out);
+}
+.skip-link:focus { inset-block-start: 12px; outline: 2px solid var(--cream); }
+
+/* ── Global reduced-motion: collapse choreography to instant/crossfade ── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active:not(:disabled),
+  .card-interactive:hover,
+  .stat-card:hover { transform: none !important; }
+}
+
 /* ─────────────────────────────────────────
    FILTER BUTTONS
 ───────────────────────────────────────── */
 .filter-chip {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 500;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: all 0.18s;
-  background: var(--paper);
-  color: var(--ink-2);
-  border: 1px solid var(--hair);
+  transition: background-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out);
+  background: var(--white);
+  color: var(--gray-600);
+  border: 1px solid var(--gray-300);
 }
 .filter-chip:hover { border-color: var(--ink); color: var(--ink); }
+.filter-chip:focus-visible { outline: none; box-shadow: var(--ring); }
 .filter-chip.active { background: var(--ember); color: var(--cream); border-color: var(--ember); }
 
 /* ─────────────────────────────────────────
@@ -648,7 +879,8 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
    EDITORIAL UTILITIES (new — Phase 1)
 ───────────────────────────────────────── */
 
-/* Eyebrow: mono, uppercase, sky/cream surfaces */
+/* Eyebrow: mono, uppercase. A deliberate brand device — use it as a label
+   (the org name, a section kicker), NOT above every section. */
 .eyebrow {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 0.75rem;
@@ -656,11 +888,11 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-2);
-  margin-bottom: 12px;
+  margin-block-end: 12px;
   display: block;
 }
 
-/* Section header composition: eyebrow + serif H1/H2 */
+/* Section header composition: eyebrow + serif display heading. */
 .section-eyebrow {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 0.75rem;
@@ -668,34 +900,291 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-2);
-  margin-bottom: 14px;
+  margin-block-end: 14px;
 }
 .section-display {
   font-family: 'Frank Ruhl Libre', Georgia, serif;
   font-weight: 400;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.15;
+  font-size: var(--fs-display);
+  line-height: 1.14;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  margin-bottom: 18px;
+  margin-block-end: 18px;
+  text-wrap: balance;
 }
 .section-display em {
   font-style: italic;
   color: var(--ember);
 }
+/* Lede sits at ink-2 for ≥4.5:1 on paper/cream/sky-2; readable, not pale. */
 .section-lede {
-  font-size: 1.125rem;
-  line-height: 1.65;
+  font-size: var(--fs-lede);
+  line-height: 1.6;
   color: var(--ink-2);
-  max-width: 38rem;
+  max-width: 40rem;
 }
 
-/* Page background */
-body { background-color: var(--paper); color: var(--ink); }
+/* ── Page-enter: a single calm fade-rise applied at the route level.
+   Not a per-section staggered reflex; one gentle settle on load.    ── */
+.page-enter { animation: pageEnter var(--dur-4) var(--ease-out) both; }
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-/* Auth two-column responsive grid (Login + Register) */
+/* Reveal-on-scroll helper. Default is VISIBLE; the class only adds a
+   gentle entrance so content never ships blank in headless renders. */
+.reveal { animation: revealUp var(--dur-4) var(--ease-out) both; }
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Hairline divider used between editorial bands. */
+.rule { height: 1px; background: var(--hair); border: 0; }
+
+/* ═════════════════════════════════════════════════════════════
+   HOME PAGE composition — varied layouts, no identical card grid
+═════════════════════════════════════════════════════════════ */
+
+/* Services: one large feature + a column of compact rows. */
+.services-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: clamp(20px, 3vw, 32px);
+  align-items: stretch;
+}
+@media (max-width: 820px) { .services-layout { grid-template-columns: 1fr; } }
+
+.service-feature {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: clamp(28px, 4vw, 40px);
+  text-align: start;
+  background: var(--white);
+  font-family: inherit;
+}
+.service-feature-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: var(--fs-h3);
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+.service-feature-desc {
+  font-size: 0.95rem;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 34ch;
+}
+.service-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-block-start: auto;
+  padding-block-start: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ember);
+}
+.service-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: var(--sky-2);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.service-icon-lead { width: 56px; height: 56px; background: var(--cream); color: var(--ember); }
+
+.service-rows { display: flex; flex-direction: column; gap: 12px; }
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  background: var(--white);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: start;
+  transition: border-color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              transform var(--dur-2) var(--ease-out);
+}
+.service-row:hover { border-color: var(--sky); box-shadow: var(--shadow-sm); transform: translateX(0); }
+.service-row:focus-visible { outline: none; box-shadow: var(--ring-ink); }
+.service-row-title { display: block; font-weight: 700; color: var(--ink); font-size: 0.98rem; }
+.service-row-desc {
+  display: block; font-size: 0.85rem; color: var(--gray-600); line-height: 1.5;
+  margin-block-start: 3px;
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.service-row-arrow { color: var(--gray-400); flex-shrink: 0; margin-inline-start: auto; transition: color var(--dur-2) var(--ease-out); }
+.service-row:hover .service-row-arrow { color: var(--ember); }
+
+/* Impact band: copy + image, image on the end side. */
+.impact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 5vw, 56px);
+  align-items: center;
+}
+@media (max-width: 768px) { .impact-grid { grid-template-columns: 1fr; } }
+
+/* How it works: numbered, connected sequence. */
+.steps-flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 4vw, 40px);
+}
+@media (max-width: 720px) { .steps-flow { grid-template-columns: 1fr; gap: 24px; } }
+.step-item { position: relative; display: flex; gap: 16px; align-items: flex-start; }
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: 'Frank Ruhl Libre', serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.step-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 6px 0 6px;
+}
+.step-desc { font-size: 0.92rem; color: var(--ink-2); line-height: 1.6; margin: 0; }
+/* Connector line drawn from each step toward the next (LTR + RTL safe). */
+.step-line {
+  position: absolute;
+  inset-block-start: 20px;
+  inset-inline-start: calc(40px + 16px);
+  inline-size: calc(100% - 40px);
+  block-size: 1px;
+  background: var(--hair);
+}
+@media (max-width: 720px) { .step-line { display: none; } }
+
+/* Partner pills — quiet, consistent. */
+.partner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--white);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  transition: box-shadow var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
+}
+.partner-pill:hover { box-shadow: var(--shadow-sm); border-color: var(--sky); }
+.partner-mark {
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  background: var(--ink); color: var(--cream);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 14px;
+}
+.partner-name { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
+.partner-area {
+  display: block; font-size: 11px; color: var(--ink-2); margin-block-start: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* Directory empty state — calm, teaches the next action. */
+.dir-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--white);
+  border: 1px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+}
+.dir-empty-icon {
+  color: var(--gray-400);
+  background: var(--sky-2);
+  border-radius: 50%;
+  padding: 14px;
+  box-sizing: content-box;
+}
+
+/* ── Auth surfaces (Login + Register) ───────────────────────── */
+.auth-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--paper);
+}
 @media (min-width: 900px) {
-  .auth-grid { grid-template-columns: 1fr 1fr !important; }
+  .auth-grid { grid-template-columns: 1.05fr 1fr; }
 }
+.auth-aside {
+  display: none;
+  background:
+    radial-gradient(120% 120% at 80% 0%, rgba(185,105,78,0.08), transparent 55%),
+    var(--sky-2);
+  padding: clamp(40px, 5vw, 72px);
+  align-items: center;
+  justify-content: center;
+}
+@media (min-width: 900px) { .auth-aside { display: flex; } }
+.auth-aside-inner { display: flex; flex-direction: column; align-items: center; max-width: 30rem; }
+.auth-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 40px);
+}
+.auth-form {
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(24px, 4vw, 36px);
+}
+
+/* Inline form banner (errors/notices) — full border, never a side stripe. */
+.form-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.form-banner svg { flex-shrink: 0; }
+.form-banner-error   { background: var(--danger-soft);  color: var(--danger);  border: 1px solid #E8C4B6; }
+.form-banner-success { background: var(--success-soft); color: var(--success); border: 1px solid #BFD8C8; }
+.form-banner-info    { background: var(--sky-2);        color: var(--ink);     border: 1px solid var(--sky); }
 /* ═════════════════════════════════════════════════════════════
    ADMIN SHELL (Stream 4) — dark sidebar, data tables, stat cards
    Reuses existing tokens: --ink, --ember, --cream, --paper,

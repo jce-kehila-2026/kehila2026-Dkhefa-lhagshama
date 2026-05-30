@@ -10,15 +10,26 @@ export default function Footer() {
   const { t } = useLanguage()
   const f = t.footer
 
+  const colHeadStyle = {
+    color: 'var(--cream)',
+    fontSize: '11px',
+    fontWeight: 600,
+    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    marginBottom: '18px',
+  }
+  const linkStyle = { color: 'rgba(244,238,224,0.78)', fontSize: '13.5px', textDecoration: 'none', transition: 'color .2s' }
+
   return (
-    <footer style={{ background:'var(--ink)', color:'rgba(244,238,224,0.75)', paddingTop:'56px' }}>
+    <footer style={{ background:'var(--ink)', color:'rgba(244,238,224,0.78)', paddingTop:'56px' }}>
       <div className="page-container">
         <div style={{
           display:'grid',
           gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))',
           gap:'40px',
           paddingBottom:'48px',
-          borderBottom:'1px solid rgba(244,238,224,0.1)',
+          borderBottom:'1px solid rgba(244,238,224,0.12)',
         }}>
           {/* BRAND */}
           <div>
@@ -56,15 +67,7 @@ export default function Footer() {
 
           {/* QUICK LINKS */}
           <div>
-            <h4 style={{
-  color:'var(--cream)',
-  fontSize:'11px',
-  fontWeight:500,
-  fontFamily:'ui-monospace, "SF Mono", Menlo, monospace',
-  letterSpacing:'0.12em',
-  textTransform:'uppercase',
-  marginBottom:'18px',
-}}>{f.quickLinks}</h4>
+            <h4 style={colHeadStyle}>{f.quickLinks}</h4>
             {[
               { to:'/', label: t.nav.home },
               { to:'/requests', label: t.nav.requests },
@@ -73,9 +76,9 @@ export default function Footer() {
               { to:'/track', label: t.nav.track },
             ].map(l => (
               <div key={l.to} style={{ marginBottom:'9px' }}>
-                <Link to={l.to} style={{ color:'rgba(244,238,224,0.7)', fontSize:'13.5px', textDecoration:'none', transition:'color .2s' }}
+                <Link to={l.to} style={linkStyle}
                   onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
-                  onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.7)'}
+                  onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.78)'}
                 >{l.label}</Link>
               </div>
             ))}
@@ -83,20 +86,12 @@ export default function Footer() {
 
           {/* SERVICES */}
           <div>
-            <h4 style={{
-  color:'var(--cream)',
-  fontSize:'11px',
-  fontWeight:500,
-  fontFamily:'ui-monospace, "SF Mono", Menlo, monospace',
-  letterSpacing:'0.12em',
-  textTransform:'uppercase',
-  marginBottom:'18px',
-}}>{f.services}</h4>
+            <h4 style={colHeadStyle}>{f.services}</h4>
             {Object.values(t.services.items).map((s, i) => (
               <div key={i} style={{ marginBottom:'9px' }}>
-                <Link to="/requests" style={{ color:'rgba(244,238,224,0.7)', fontSize:'13.5px', textDecoration:'none', transition:'color .2s' }}
+                <Link to="/requests" style={linkStyle}
                   onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
-                  onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.7)'}
+                  onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.78)'}
                 >{s.title}</Link>
               </div>
             ))}
@@ -104,15 +99,7 @@ export default function Footer() {
 
           {/* CONTACT */}
           <div>
-            <h4 style={{
-  color:'var(--cream)',
-  fontSize:'11px',
-  fontWeight:500,
-  fontFamily:'ui-monospace, "SF Mono", Menlo, monospace',
-  letterSpacing:'0.12em',
-  textTransform:'uppercase',
-  marginBottom:'18px',
-}}>{f.contact}</h4>
+            <h4 style={colHeadStyle}>{f.contact}</h4>
             {[
               { Icon: Phone, text: '03-000-0000' },
               { Icon: Mail,  text: 'info@push4ful.org.il' },

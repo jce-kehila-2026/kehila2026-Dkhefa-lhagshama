@@ -252,12 +252,9 @@ export default function DirectoryPage() {
                 else { setAnswerSearch(e.target.value); setAnswerPage(1) }
               }}
               placeholder={activeTab === 'business' ? d.searchPH : d.searchNGO}
-              style={{
-                width: '100%', padding: '11px 14px',
-                paddingInlineStart: '38px',
-                border: '1px solid var(--hair)', borderRadius: '10px',
-                fontSize: '14px', fontFamily: 'inherit', background: 'var(--paper)',
-              }}
+              className="form-input"
+              style={{ paddingInlineStart: '38px' }}
+              aria-label={activeTab === 'business' ? d.searchPH : d.searchNGO}
             />
           </div>
           <button
@@ -338,17 +335,37 @@ export default function DirectoryPage() {
         )}
 
         {/* ── RESULTS COUNT ─────────────────────────────────────────── */}
-        <div style={{ fontSize: '13px', color: 'var(--gray-400)', marginBottom: '16px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '16px', fontWeight: 500 }}>
           {loading ? t.common.loading : `${resultsCount} ${t.common.results}`}
         </div>
 
+        {/* ── LOADING SKELETON ──────────────────────────────────────── */}
+        {loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }} aria-hidden="true">
+            {Array.from({ length: PER_PAGE }).map((_, i) => (
+              <div key={i} className="card" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '14px' }}>
+                  <div className="skeleton" style={{ width: 52, height: 52, borderRadius: 10 }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skeleton skeleton-title" style={{ marginBottom: 8 }} />
+                    <div className="skeleton skeleton-text" style={{ width: '50%' }} />
+                  </div>
+                </div>
+                <div className="skeleton skeleton-text" />
+                <div className="skeleton skeleton-text" style={{ width: '85%' }} />
+                <div className="skeleton skeleton-text" style={{ width: '40%', marginBlockStart: 14, height: '2em' }} />
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ── BUSINESS RESULTS ──────────────────────────────────────── */}
-        {activeTab === 'business' && (
+        {!loading && activeTab === 'business' && (
           <>
             {bizPageData.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
                 {bizPageData.map(biz => (
-                  <div key={biz.id} className="card" style={{ padding: '24px' }}>
+                  <div key={biz.id} className="card card-interactive" style={{ padding: '24px' }}>
                     {biz.featured && (
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -402,10 +419,10 @@ export default function DirectoryPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '64px 0' }}>
-                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
-                <h3 style={{ color: 'var(--ink)', marginBottom: '8px' }}>{d.noResults}</h3>
-                <p style={{ color: 'var(--gray-400)' }}>{d.noResultsHint}</p>
+              <div className="dir-empty">
+                <Search size={28} aria-hidden="true" className="dir-empty-icon" />
+                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.noResults}</h3>
+                <p style={{ color: 'var(--gray-500)', margin: 0 }}>{d.noResultsHint}</p>
               </div>
             )}
             <Pagination total={filteredBiz.length} perPage={PER_PAGE} current={bizPage} onChange={setBizPage} />
@@ -413,15 +430,15 @@ export default function DirectoryPage() {
         )}
 
         {/* ── ANSWER RESULTS ────────────────────────────────────────── */}
-        {activeTab === 'ngo' && (
+        {!loading && activeTab === 'ngo' && (
           <>
             {answerPageData.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {answerPageData.map(answer => (
-                  <div key={answer.id} className="card" style={{ padding: '24px' }}>
+                  <div key={answer.id} className="card card-interactive" style={{ padding: '24px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', marginBottom: '14px' }}>
                       <div>
-                        <div style={{ fontSize: '15.5px', fontWeight: 700, color: 'var(--navy)', marginBottom: '6px' }}>
+                        <div style={{ fontSize: '15.5px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
                           {answer.title || (lang === 'he' ? 'שאלה' : 'Question')}
                         </div>
                         <div style={{ fontSize: '12.5px', color: 'var(--gray-400)' }}>
@@ -465,10 +482,10 @@ export default function DirectoryPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '64px 0' }}>
-                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
-                <h3 style={{ color: 'var(--navy)', marginBottom: '8px' }}>{d.noResults}</h3>
-                <p style={{ color: 'var(--gray-400)' }}>{d.noResultsHint}</p>
+              <div className="dir-empty">
+                <Search size={28} aria-hidden="true" className="dir-empty-icon" />
+                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.noResults}</h3>
+                <p style={{ color: 'var(--gray-500)', margin: 0 }}>{d.noResultsHint}</p>
               </div>
             )}
             <Pagination total={filteredAnswers.length} perPage={PER_PAGE} current={answerPage} onChange={setAnswerPage} />
