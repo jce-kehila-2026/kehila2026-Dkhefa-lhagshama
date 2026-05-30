@@ -90,12 +90,21 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     // Run the write + aggregate update in a transaction so concurrent
     // re-submissions can't corrupt the volunteer aggregate.
     await db().runTransaction(async (tx) => {
+      // ── All reads first: Firestore requires every read in a transaction to
+      // run before any write. We read the existing rating AND the volunteer
+      // aggregate up front, then perform the writes below. ──
       const existingSnap = await tx.get(ratingRef);
       const existing = existingSnap.exists
         ? (existingSnap.data() as { stars?: number })
         : null;
       const previousStars = existing?.stars ?? null;
 
+      const volunteerRef = volunteerId
+        ? db().collection('volunteers').doc(volunteerId)
+        : null;
+      const volunteerSnap = volunteerRef ? await tx.get(volunteerRef) : null;
+
+      // ── Writes ──
       tx.set(ratingRef, {
         requestId: input.requestId,
         beneficiaryId: uid,
@@ -107,10 +116,8 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       }, { merge: true });
 
       // Maintain the volunteer aggregate when a volunteer is attached.
-      if (volunteerId) {
-        const volunteerRef = db().collection('volunteers').doc(volunteerId);
-        const volunteerSnap = await tx.get(volunteerRef);
-        const agg = volunteerSnap.exists
+      if (volunteerRef) {
+        const agg = volunteerSnap?.exists
           ? (volunteerSnap.data()?.ratingAggregate as
               | { count?: number; sum?: number }
               | undefined)

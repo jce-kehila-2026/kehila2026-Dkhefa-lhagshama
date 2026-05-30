@@ -9,6 +9,12 @@ import { EmptyState, ErrorState, TableSkeleton, adminErrorMessage } from '@/comp
 
 const ENTITY_FILTERS = ['all', 'businesses', 'organizations', 'answers']
 
+// Businesses/answers store translatable fields as { he, en } objects. Render
+// the active-language value (falling back to he) so the approval queue never
+// tries to render a raw object as a React child.
+const L = (v, lang) =>
+  v && typeof v === 'object' && !Array.isArray(v) ? (v[lang] ?? v.he ?? '') : (v ?? '')
+
 // Distinct badge tone per entity type so the queue is scannable at a glance.
 const ENTITY_TONE = {
   businesses: 'badge-amber',
@@ -126,7 +132,7 @@ export default function AdminApprovalsPage() {
                   {labels[item.entityType] || item.entityType}
                 </span>
                 <h3 className="admin-approval-name">
-                  {item.name || item.title || item.id}
+                  {L(item.name, lang) || L(item.title, lang) || item.id}
                 </h3>
               </div>
               <div className="admin-row-actions">

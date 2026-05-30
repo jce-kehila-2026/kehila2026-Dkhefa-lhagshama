@@ -11,8 +11,11 @@ run() { echo "  → $*"; ( "$@" ); }
 
 # Only run the relevant gate for the area that changed — keeps commits fast.
 if echo "$staged" | grep -q '^frontend/'; then
-  echo "[pre-commit] frontend changed — typecheck + lint"
-  ( cd "$repo_root/frontend" && run npx tsc --noEmit && run npm run -s lint )
+  echo "[pre-commit] frontend changed — typecheck"
+  # NOTE: `npm run lint` (next lint) is broken under Next 16 — `next lint` was
+  # removed and treats "lint" as a project dir. tsc is the meaningful gate here;
+  # re-add an eslint call once the lint script is migrated to the ESLint CLI.
+  ( cd "$repo_root/frontend" && run npx tsc --noEmit )
 fi
 
 if echo "$staged" | grep -q '^backend/'; then

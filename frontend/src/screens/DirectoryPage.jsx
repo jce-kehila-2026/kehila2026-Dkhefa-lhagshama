@@ -58,7 +58,10 @@ export default function DirectoryPage() {
 
   // ── FILTER BUSINESSES ─────────────────────────────────────
   const filteredBiz = useMemo(() => {
-    let data = businesses.filter(b => b.approved)
+    // GET /api/businesses already returns only status==='approved' businesses,
+    // so we don't re-filter on the legacy `approved` boolean — admin-approved
+    // submissions set status but not that boolean, and would wrongly drop out.
+    let data = businesses
     if (bizCat !== 'all') data = data.filter(b => b.category === bizCat)
     if (bizSearch.trim()) {
       const q = bizSearch.toLowerCase()
