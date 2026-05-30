@@ -8,4 +8,9 @@ module.exports = {
   testMatch: ['<rootDir>/rules/**/*.test.js'],
   // Rules tests talk to the emulator over the network; give them headroom.
   testTimeout: 20000,
+  // Run suites serially. The firestore and storage suites both connect to the
+  // shared emulator and clear it in afterEach; running them in parallel workers
+  // lets one suite's clearFirestore() wipe the other's seeded data mid-test.
+  // Each suite also uses a distinct projectId for extra isolation.
+  maxWorkers: 1,
 };
