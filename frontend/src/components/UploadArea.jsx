@@ -27,6 +27,10 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
   // Cancel an in-flight upload if the component unmounts.
   useEffect(() => () => { if (handleRef.current) handleRef.current.cancel() }, [])
 
+  // #84 — client-side MIME allowlist (mirrors server + storage.rules)
+  const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+
   const handleFile = async (rawFile) => {
     if (!rawFile) return
     setErrMsg('')
@@ -44,6 +48,12 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
         setUploading(false); setFile(f)
         if (onUpload) onUpload({ file: f, path: '', downloadURL: '' })
       }, 600)
+      return
+    }
+
+    // #84 — Client-side MIME allowlist check.
+    if (!ALLOWED_TYPES.has(f.type)) {
+      setErrMsg('Only JPEG, PNG, PDF, or DOCX files are allowed.')
       return
     }
 
@@ -157,7 +167,7 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
       <input
         type="file"
         id={`file-${label}`}
-        accept=".jpg,.jpeg,.png,.pdf"
+        accept=".jpg,.jpeg,.png,.pdf,.docx"
         style={{ display:'none' }}
         onChange={e => handleFile(e.target.files[0])}
       />

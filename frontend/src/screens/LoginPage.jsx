@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
+import { validateRedirect } from '../utils/validateRedirect' // #88
 
 export default function LoginPage() {
   const { t, lang } = useLanguage()
@@ -21,8 +22,9 @@ export default function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
-      const next = typeof router.query.next === 'string' ? router.query.next : '/'
-      router.push(next)
+      // #88 — validateRedirect ensures `next` is a same-origin relative path only
+      const safe = validateRedirect(router.query.next, '/')
+      router.push(safe)
     } catch (err) {
       setError(a.error)
       setSubmitting(false)

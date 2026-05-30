@@ -424,12 +424,20 @@ const translations = {
         haveAccount:     'יש לך כבר חשבון?',
         loginLink:       'התחבר/י כאן',
         passwordMismatch:'הסיסמאות אינן תואמות',
-        passwordTooShort:'הסיסמה חייבת להכיל לפחות 6 תווים',
+        passwordTooShort:'הסיסמה חייבת להכיל לפחות 8 תווים', // #85
+        passwordNoDigit: 'הסיסמה חייבת להכיל לפחות ספרה אחת', // #85
         error:           'הרשמה נכשלה. אנא נסה/י שוב.',
         emailInUse:      'אימייל זה כבר רשום במערכת.',
+        verifyEmailSent: 'נשלח אימייל אימות — אנא בדוק/י את תיבת הדואר שלך.', // #86
       },
       logout:           'התנתק',
       welcome:          'שלום',
+      // #86 — email-verification banner shown in RequestsPage
+      verifyBanner: {
+        text:   'כדי להגיש בקשה, עליך לאמת את כתובת הדואר האלקטרוני שלך.',
+        resend: 'שלח שוב',
+        sent:   'נשלח!',
+      },
     },
 
     // === Stream 3 (volunteer signup) ===
@@ -980,12 +988,20 @@ const translations = {
         haveAccount:     'Already have an account?',
         loginLink:       'Sign in here',
         passwordMismatch:"Passwords don't match",
-        passwordTooShort:'Password must be at least 6 characters',
+        passwordTooShort:'Password must be at least 8 characters', // #85
+        passwordNoDigit: 'Password must contain at least one digit', // #85
         error:           'Registration failed. Please try again.',
         emailInUse:      'This email is already registered.',
+        verifyEmailSent: 'Verification email sent — please check your inbox.', // #86
       },
       logout:           'Sign Out',
       welcome:          'Hello',
+      // #86 — email-verification banner shown in RequestsPage
+      verifyBanner: {
+        text:   'You must verify your email address before submitting a request.',
+        resend: 'Resend',
+        sent:   'Sent!',
+      },
     },
 
     // === Stream 3 (volunteer signup) ===

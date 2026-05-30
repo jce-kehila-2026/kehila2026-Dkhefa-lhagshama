@@ -16,6 +16,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useApp } from '../contexts/AppContext'
+import { validateRedirect } from '../utils/validateRedirect'
 import { apiFetch } from '../lib/apiClient'
 
 // ── Shared input style ────────────────────────────────────────────────────────
@@ -81,6 +83,7 @@ function TabToggle({ active, labels, onChange }) {
 // ── BENEFICIARY FORM (original flow) ─────────────────────────────────────────
 function BeneficiaryForm({ t }) {
   const { register } = useAuth()
+  const { toast } = useApp()
   const router = useRouter()
   const a = t.auth.register
 
@@ -93,14 +96,19 @@ function BeneficiaryForm({ t }) {
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (password.length < 6) { setError(a.passwordTooShort); return }
+    // #85 — password policy: min 8 chars + ≥1 digit
+    if (password.length < 8) { setError(a.passwordTooShort); return }
+    if (!/\d/.test(password)) { setError(a.passwordNoDigit); return }
     if (password !== confirm) { setError(a.passwordMismatch); return }
 
     setSubmitting(true)
     try {
       await register(email, password)
-      const next = typeof router.query.next === 'string' ? router.query.next : '/'
-      router.push(next)
+      // #86 — auth.ts already sent the verification email; surface it as a toast
+      toast(a.verifyEmailSent, 'info')
+      // #88 — validate the `next` param before pushing
+      const safe = validateRedirect(router.query.next, '/')
+      router.push(safe)
     } catch (err) {
       const msg = err && err.message ? String(err.message) : ''
       if (msg.includes('email-already-in-use')) setError(a.emailInUse)

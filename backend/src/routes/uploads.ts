@@ -10,6 +10,22 @@ import { sanitizeFilename } from '@/lib/sanitizeFilename'; // #96 — replaces i
 const router = Router();
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// ── Upload hardening (#84) ─────────────────────────────────────────────────
+/** Allowed MIME types for attachments. */
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+]);
+
+/** Maximum individual file size: 10 MB. */
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+/** Maximum number of files per request (counted via Storage list). */
+const MAX_FILES_PER_REQUEST = 5;
+// ───────────────────────────────────────────────────────────────────────────
+
 router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', limit: '12mb' }), async (req: Request, res: Response) => {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });
@@ -23,17 +39,49 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   }
 
   const filenameParam = typeof req.query.filename === 'string' ? req.query.filename : 'upload.bin';
-  const filename = sanitizeFilename(filenameParam); // #96
-  const contentType = typeof req.headers['content-type'] === 'string' ? req.headers['content-type'] : 'application/octet-stream';
+  const filename = sanitizeFilename(filenameParam); // #96 — path-traversal-safe filename
+
+  // Strip the base MIME type (ignore params like "; boundary=...")
+  const rawContentType = typeof req.headers['content-type'] === 'string'
+    ? req.headers['content-type']
+    : 'application/octet-stream';
+  const contentType = rawContentType.split(';')[0].trim().toLowerCase();
+
+  // ── MIME allowlist (#84) ──────────────────────────────────────────────────
+  if (!ALLOWED_MIME_TYPES.has(contentType)) {
+    res.status(415).json({
+      error: 'unsupported_media_type',
+      detail: `Allowed types: ${[...ALLOWED_MIME_TYPES].join(', ')}`,
+    });
+    return;
+  }
 
   if (!Buffer.isBuffer(req.body)) {
     res.status(400).json({ error: 'validation', detail: 'expected binary request body' });
     return;
   }
 
-  if (req.body.length > 10 * 1024 * 1024) {
-    res.status(413).json({ error: 'file_too_large' });
+  // ── Size guard (#84) ──────────────────────────────────────────────────────
+  if (req.body.length > MAX_FILE_BYTES) {
+    res.status(413).json({ error: 'file_too_large', detail: `Max ${MAX_FILE_BYTES / 1024 / 1024} MB` });
     return;
+  }
+
+  // ── Per-request quota (#84) — count existing files in this requestId ──────
+  try {
+    const prefix = `requests/${requestId}/`;
+    const [existingFiles] = await storage().getFiles({ prefix, maxResults: MAX_FILES_PER_REQUEST + 1 });
+    if (existingFiles.length >= MAX_FILES_PER_REQUEST) {
+      res.status(429).json({
+        error: 'quota_exceeded',
+        detail: `Maximum ${MAX_FILES_PER_REQUEST} files per request`,
+      });
+      return;
+    }
+  } catch (quotaCheckErr) {
+    // Non-fatal: log but proceed. Storage list errors should not block uploads.
+    // eslint-disable-next-line no-console
+    console.warn('[uploads] quota check failed (proceeding):', quotaCheckErr);
   }
 
   const path = `requests/${requestId}/${filename}`;
@@ -42,7 +90,7 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   try {
     // eslint-disable-next-line no-console
     console.log(`[uploads] saving file: path=${path}, size=${req.body.length}, contentType=${contentType}`);
-    
+
     await bucketFile.save(req.body, {
       resumable: false,
       metadata: {

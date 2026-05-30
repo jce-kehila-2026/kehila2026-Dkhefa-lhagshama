@@ -6,6 +6,7 @@
  */
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut as fbSignOut,
   type UserCredential,
@@ -40,6 +41,15 @@ export async function registerWithEmail(email: string, password: string): Promis
     // problem so the caller can decide whether to delete the account.
     const detail = await res.text();
     throw new Error(`role_assignment_failed: ${detail}`);
+  }
+
+  // #86 — send email verification immediately after successful registration.
+  // Non-fatal: if this fails (e.g. network hiccup), the user can request
+  // another one from the RequestsPage banner.
+  try {
+    await sendEmailVerification(cred.user);
+  } catch {
+    // swallow — user will see the banner and can resend
   }
 
   return cred;
