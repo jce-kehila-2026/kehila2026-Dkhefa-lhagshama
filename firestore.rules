@@ -116,6 +116,17 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── /volunteerApplications — Stream 3 volunteer signup (#70) ────────────
+    // The applicant can read their own application; admins can read all.
+    // Client never writes here — Express + Admin SDK handle all mutations.
+    match /volunteerApplications/{appId} {
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid
+        || isAdmin()
+      );
+      allow create, update, delete: if false;
+    }
+
     // Catch-all: deny everything not explicitly allowed above.
     match /{document=**} {
       allow read, write: if false;

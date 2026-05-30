@@ -5,6 +5,7 @@ import express, { Router, type Request, type Response } from 'express';
 import { storage } from '@/lib/firebaseAdmin';
 import { writeRequestEvent } from '@/lib/requestEvents';
 import { authenticate } from '@/middleware/auth';
+import { sanitizeFilename } from '@/lib/sanitizeFilename'; // #96 — replaces inline safeName
 
 const router = Router();
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -25,10 +26,6 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_FILES_PER_REQUEST = 5;
 // ───────────────────────────────────────────────────────────────────────────
 
-function safeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]+/g, '_');
-}
-
 router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', limit: '12mb' }), async (req: Request, res: Response) => {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });
@@ -42,7 +39,8 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   }
 
   const filenameParam = typeof req.query.filename === 'string' ? req.query.filename : 'upload.bin';
-  const filename = safeName(filenameParam);
+  const filename = sanitizeFilename(filenameParam); // #96 — path-traversal-safe filename
+
   // Strip the base MIME type (ignore params like "; boundary=...")
   const rawContentType = typeof req.headers['content-type'] === 'string'
     ? req.headers['content-type']
@@ -92,7 +90,7 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   try {
     // eslint-disable-next-line no-console
     console.log(`[uploads] saving file: path=${path}, size=${req.body.length}, contentType=${contentType}`);
-    
+
     await bucketFile.save(req.body, {
       resumable: false,
       metadata: {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Upload, CheckCircle, X } from 'lucide-react'
 import { uploadAttachment } from '../lib/storage'
+import { sanitizeFilename } from '../utils/sanitizeFilename' // #96
 
 /**
  * UploadArea — drag-drop or click-to-pick a single file, upload to Firebase
@@ -30,9 +31,15 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
   const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 
-  const handleFile = async (f) => {
-    if (!f) return
+  const handleFile = async (rawFile) => {
+    if (!rawFile) return
     setErrMsg('')
+
+    // #96 — sanitize filename before processing so the sanitized name is used
+    // consistently in both the UI display and the Storage path.
+    const safeName = sanitizeFilename(rawFile.name)
+    // Reconstruct a File with the sanitized name (browser File is immutable).
+    const f = new File([rawFile], safeName, { type: rawFile.type })
 
     // No requestId → simulate (keeps Storybook-style isolation working).
     if (!requestId) {
