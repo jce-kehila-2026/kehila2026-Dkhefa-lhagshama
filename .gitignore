@@ -43,8 +43,16 @@ coverage/
 .agents/
 skills-lock.json
 
+# AI-assistant artifacts — kept locally for context, never tracked in the repo.
+# (CLAUDE.md matches at any depth: root, frontend/, backend/.)
+CLAUDE.md
+.claude/
+
 # Superpowers brainstorm/visual companion artifacts (local only)
 docs/superpowers/
 .superpowers/
 # Auto-generated command message logs
 2026-*-command-message*.txt
+
+# Local test-account credentials (do not commit plaintext passwords)
+TEST-ACCOUNTS.md
