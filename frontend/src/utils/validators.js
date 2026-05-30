@@ -32,8 +32,14 @@ export const validateStep1 = (data, t) => {
   const errors = {}
   if (!isRequired(data.firstName)) errors.firstName = t.request.validation.required
   if (!isRequired(data.lastName))  errors.lastName  = t.request.validation.required
-  if (!isRequired(data.idNumber))  errors.idNumber  = t.request.validation.required
-  else if (!isValidIsraeliId(data.idNumber)) errors.idNumber = t.request.validation.invalidId
+
+  // #66 — idType-aware ID validation
+  const idType = data.idType || 'israeli_id'
+  if (idType === 'israeli_id') {
+    if (!isRequired(data.idNumber))         errors.idNumber = t.request.validation.required
+    else if (!isValidIsraeliId(data.idNumber)) errors.idNumber = t.request.validation.invalidId
+  }
+
   if (!isRequired(data.phone))     errors.phone     = t.request.validation.required
   else if (!isValidPhone(data.phone)) errors.phone  = t.request.validation.invalidPhone
   if (!isRequired(data.email))     errors.email     = t.request.validation.required

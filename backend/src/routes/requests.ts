@@ -264,6 +264,70 @@ router.get('/mine', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+// ── GET /api/requests/:id/events ────────────────────────────────────────
+// Returns the timeline events for a single request (#68).
+// Visibility gate: the beneficiary (owner) sees all events with visibility
+// 'all'; volunteers and admins see all. Events are ordered oldest-first so
+// the client can render them top-to-bottom as a timeline.
+//
+// Mounted BEFORE /:id so Express matches the literal segment "events" first.
+router.get('/:id/events', authenticate, async (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+
+  const id = req.params.id;
+
+  // First verify the caller may read the parent request.
+  try {
+    const snap = await db().collection('requests').doc(id).get();
+    if (!snap.exists) {
+      res.status(404).json({ error: 'not_found' });
+      return;
+    }
+    const data = snap.data() as { beneficiaryId?: string; handler?: string | null };
+    const isOwner   = data.beneficiaryId === req.user.uid;
+    const isHandler = data.handler       === req.user.uid;
+    const isAdmin   = req.user.role      === 'admin';
+
+    if (!isOwner && !isHandler && !isAdmin) {
+      res.status(403).json({ error: 'forbidden' });
+      return;
+    }
+
+    // Determine which visibility levels this caller may see.
+    const canSeeInternal = isAdmin || isHandler;
+
+    const eventsSnap = await db()
+      .collection('requestEvents')
+      .where('requestId', '==', id)
+      .orderBy('createdAt', 'asc')
+      .get();
+
+    const events = eventsSnap.docs
+      .map((d) => {
+        const ev = d.data();
+        return {
+          id:         d.id,
+          type:       ev.type,
+          visibility: ev.visibility,
+          actorId:    ev.actorId,
+          details:    ev.details ?? {},
+          createdAt:  ev.createdAt?.toDate?.()?.toISOString?.() ?? null,
+        };
+      })
+      // Filter internal events unless the caller may see them.
+      .filter((ev) => canSeeInternal || ev.visibility !== 'internal');
+
+    res.json({ events });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[requests.events] failed:', err);
+    res.status(500).json({ error: 'internal' });
+  }
+});
+
 // ── GET /api/requests/:id ────────────────────────────────────────────────
 // Defense-in-depth read of a single request. Rules already enforce, but we
 // also check here so the API returns a clean 403/404 instead of leaking the
