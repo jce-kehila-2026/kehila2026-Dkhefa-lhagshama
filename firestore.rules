@@ -127,6 +127,15 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ── /volunteers — approved volunteer roster (#73) ───────────────────────
+    // A volunteer reads their own profile; admins read all. Writes are
+    // server-only: the admin approve/deactivate endpoints (Admin SDK) set
+    // `active` + the role claim — the client never writes here.
+    match /volunteers/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update, delete: if false;
+    }
+
     // Catch-all: deny everything not explicitly allowed above.
     match /{document=**} {
       allow read, write: if false;

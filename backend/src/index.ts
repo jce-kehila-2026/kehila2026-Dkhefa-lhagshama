@@ -20,6 +20,10 @@ import requestsRouter from '@/routes/requests';
 import uploadsRouter from '@/routes/uploads';
 import usersRouter from '@/routes/users';
 import volunteersRouter from '@/routes/volunteers';
+import adminVolunteersRouter from '@/routes/adminVolunteers';
+import adminRequestsRouter from '@/routes/adminRequests';
+import adminUsersRouter from '@/routes/adminUsers';
+import adminStatsRouter from '@/routes/adminStats';
 import { authenticate } from '@/middleware/auth';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -68,6 +72,13 @@ app.use('/api/uploads',  uploadsRouter);
 app.use('/api/users',    usersRouter);
 app.use('/api/businesses', businessesRouter);
 app.use('/api/answers', answersRouter);
+// Admin sub-routers (Stream 4). Mount BEFORE the generic adminRouter so the
+// specific /api/admin/volunteers|requests|users|stats paths resolve to their
+// dedicated routers; adminRouter keeps /api/admin/pending|approve|reject|etc.
+app.use('/api/admin/volunteers', adminVolunteersRouter);
+app.use('/api/admin/requests',   adminRequestsRouter);
+app.use('/api/admin/users',      adminUsersRouter);
+app.use('/api/admin/stats',      adminStatsRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/volunteers', volunteersRouter);
 
