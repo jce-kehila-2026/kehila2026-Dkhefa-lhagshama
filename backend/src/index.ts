@@ -1,81 +1,123 @@
+/**
+ * Express bootstrap for the Push for Fulfillment backend.
+ *
+ * Routes live under `src/routes/<uc>.ts` and are mounted in this file.
+ * Authenticated routes use the `authenticate` middleware which verifies the
+ * Firebase ID token sent in the Authorization header.
+ */
 import 'dotenv/config';
-import 'module-alias/register';
-import express from 'express';
+
 import cors from 'cors';
+import express, { Request, Response } from 'express';
 import helmet from 'helmet'; // #83
 
-import { env } from '@/config/env';
-import authRouter from '@/routes/auth';
-import requestsRouter from '@/routes/requests';
-import uploadsRouter from '@/routes/uploads';
-import chatsRouter from '@/routes/chats';
-import answersRouter from '@/routes/answers';
-import referralsRouter from '@/routes/referrals';
-import businessesRouter from '@/routes/businesses';
+import { initializeFirebaseAdmin } from '@/lib/firebaseAdmin';
 import adminRouter from '@/routes/admin';
-import usersRouter from '@/routes/users'; // #63
-import volunteersRouter from '@/routes/volunteers';
-import ratingsRouter from '@/routes/ratings';
 import adminVolunteersRouter from '@/routes/adminVolunteers';
 import adminRequestsRouter from '@/routes/adminRequests';
 import adminUsersRouter from '@/routes/adminUsers';
 import adminStatsRouter from '@/routes/adminStats';
-import { globalLimiter, authWriteLimiter } from '@/middleware/rateLimit'; // #82
+import answersRouter from '@/routes/answers';
+import authRouter from '@/routes/auth';
+import businessesRouter from '@/routes/businesses';
+import chatsRouter from '@/routes/chats';
+import ratingsRouter from '@/routes/ratings';
+import requestsRouter from '@/routes/requests';
+import uploadsRouter from '@/routes/uploads';
+import usersRouter from '@/routes/users';
+import volunteersRouter from '@/routes/volunteers';
 import { authenticate } from '@/middleware/auth';
-import { requireAdmin } from '@/middleware/requireAdmin';
+import { authWriteLimiter, globalLimiter } from '@/middleware/rateLimit'; // #82
+
+const PORT = Number(process.env.PORT ?? 3001);
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
+const LOCAL_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
+
+// ── CORS allowlist (#83) ──────────────────────────────────────────────────────
+// Origins are driven by CORS_ALLOWED_ORIGINS (comma-separated). FRONTEND_ORIGIN
+// is always allowed for backwards-compat, and localhost/127.0.0.1 dev origins
+// keep working regardless.
+const ALLOWED_ORIGINS = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
+);
+ALLOWED_ORIGINS.add(FRONTEND_ORIGIN);
+
+// Initialize Firebase Admin SDK before any route handler runs.
+initializeFirebaseAdmin();
 
 const app = express();
 
-// ── Security middleware ───────────────────────────────────────────────────
-app.use(helmet()); // #83 — secure HTTP headers
+// ── Security headers (#83) ────────────────────────────────────────────────────
+// helmet() sets X-DNS-Prefetch-Control, X-Frame-Options, HSTS, X-XSS-Protection,
+// X-Content-Type-Options, Referrer-Policy, Permissions-Policy, etc.
+app.use(helmet());
 
-// CORS allowlist (#83). Origins from env (comma-separated) plus localhost dev.
-const allowedOrigins = new Set(
-	[
-		env.frontendOrigin,
-		'http://localhost:3000',
-		'http://127.0.0.1:3000',
-	].filter(Boolean) as string[],
-);
+// ── CORS allowlist (#83) — driven by CORS_ALLOWED_ORIGINS env ─────────────────
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.has(origin) || LOCAL_ORIGIN_RE.test(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`CORS blocked for origin ${origin}`));
+  },
+  credentials: true,
+}));
 
-app.use(
-	cors({
-		origin(origin, cb) {
-			if (!origin || allowedOrigins.has(origin)) {
-				cb(null, true);
-				return;
-			}
-			cb(new Error(`CORS: origin not allowed: ${origin}`));
-		},
-		credentials: true,
-	}),
-);
+// ── Global rate limiter (#82) — 300 req / 15 min per IP ──────────────────────
+app.use(globalLimiter);
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
 
-// Rate limiting (#82) — global limiter on all /api routes.
-app.use('/api', globalLimiter);
+// Health check (unauthenticated). Used by deploy targets and by frontend
+// startup to verify connectivity.
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ ok: true, service: 'push-for-fulfillment-backend' });
+});
 
-// ── Health ────────────────────────────────────────────────────────────────
-app.use('/health', (_req, res) => res.json({ ok: true }));
-app.use('/api/health', (_req, res) => res.json({ ok: true }));
+// /api/me — smoke-test endpoint. Returns the authenticated user's identity
+// + role claim. Useful for client-side "am I logged in?" checks and for
+// curl-testing the auth pipeline end-to-end.
+app.get('/api/me', authenticate, (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+  res.json({ uid: req.user.uid, email: req.user.email, role: req.user.role ?? null });
+});
 
+// Route mounts — uncomment as each vertical-slice UC lands.
+// Auth + write routes get the stricter 30 req/15 min limiter (#82).
 app.use('/api/auth',       authWriteLimiter, authRouter);
 app.use('/api/chats',      authWriteLimiter, chatsRouter);
 app.use('/api/requests',   authWriteLimiter, requestsRouter);
 app.use('/api/uploads',    authWriteLimiter, uploadsRouter);
 app.use('/api/users',      authWriteLimiter, usersRouter);
-app.use('/api/ratings',    authWriteLimiter, ratingsRouter);
+app.use('/api/ratings',    authWriteLimiter, ratingsRouter); // #80
+app.use('/api/businesses', businessesRouter);
+app.use('/api/answers',    answersRouter);
+// Admin sub-routers (Stream 4: #73 #74 #75 #76 #77). Each enforces
+// authenticate + requireRole('admin') internally. Mount BEFORE the generic
+// adminRouter so /api/admin/{volunteers,requests,users,stats} resolve to their
+// dedicated routers; adminRouter keeps /api/admin/pending|approve|reject|etc.
+app.use('/api/admin/volunteers', authWriteLimiter, adminVolunteersRouter);
+app.use('/api/admin/requests',   authWriteLimiter, adminRequestsRouter);
+app.use('/api/admin/users',      authWriteLimiter, adminUsersRouter);
+app.use('/api/admin/stats',      authWriteLimiter, adminStatsRouter);
+app.use('/api/admin',      authWriteLimiter, adminRouter);
 app.use('/api/volunteers', authWriteLimiter, volunteersRouter);
 
-// Admin sub-routers (#73 #74 #75 #76 #77) — specific paths before the generic
-// adminRouter so they win. Each is gated by authenticate + requireAdmin.
-app.use('/api/admin/volunteers', authWriteLimiter, authenticate, requireAdmin, adminVolunteersRouter);
-app.use('/api/admin/requests',   authWriteLimiter, authenticate, requireAdmin, adminRequestsRouter);
-app.use('/api/admin/users',      authWriteLimiter, authenticate, requireAdmin, adminUsersRouter);
-app.use('/api/admin/stats',      authWriteLimiter, authenticate, requireAdmin, adminStatsRouter);
-app.use('/api/admin',            authWriteLimiter, adminRouter);
+// Catch-all 404
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'not_found' });
+});
 
-app.use('/api/answers',    answersRouter);
-app.use('/api/referrals',  referralsRouter);
-app.use('/api/businesses', businessesRouter);
+app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`[backend] listening on http://localhost:${PORT}`);
+  // eslint-disable-next-line no-console
+  console.log(`[backend] CORS allowing origins: ${[...ALLOWED_ORIGINS].join(', ')} (+ localhost)`);
+});
