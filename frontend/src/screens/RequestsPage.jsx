@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 const useNavigate = () => {
   const router = useRouter()
   return (to) => router.push(to)
 }
-import { CheckCircle, Copy, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Printer } from 'lucide-react'
+import { CheckCircle, Copy, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import StepIndicator from '../components/StepIndicator'
 import UploadArea from '../components/UploadArea'
@@ -15,8 +15,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { useForm } from '../hooks/useForm'
 import { validateStep1, validateStep2, validateStep3, validateStep4 } from '../utils/validators'
 import { copyToClipboard } from '../utils/helpers'
-import { apiFetch } from '../lib/apiClient'
+import { apiFetch, apiJson } from '../lib/apiClient'
 
+// ── Constants ──────────────────────────────────────────────────
 const CATS = [
   { key:'education',  Icon: GraduationCap, bg:'#EBF3FF', color:'#1A5EA0' },
   { key:'employment', Icon: Briefcase,     bg:'#E8F5EC', color:'#15803D' },
@@ -24,10 +25,29 @@ const CATS = [
   { key:'social',     Icon: Users,         bg:'#F5EBF8', color:'#6D28D9' },
 ]
 
+// localStorage key for draft persistence (#93)
+const DRAFT_KEY = 'rq_draft_v1'
+
+function loadDraft() {
+  try {
+    const raw = typeof window !== 'undefined' && window.localStorage?.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function saveDraft(values) {
+  try { window.localStorage?.setItem(DRAFT_KEY, JSON.stringify(values)) } catch { /* noop */ }
+}
+
+function clearDraft() {
+  try { window.localStorage?.removeItem(DRAFT_KEY) } catch { /* noop */ }
+}
+
+// ── Component ─────────────────────────────────────────────────
 export default function RequestsPage() {
   const { t, isRTL, lang } = useLanguage()
   const { toast } = useApp()
-  const { user, loading: authLoading } = useAuth()
+  const { user, role, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const router = useRouter()
   const BackArrow  = isRTL ? ArrowRight : ArrowLeft
@@ -37,47 +57,121 @@ export default function RequestsPage() {
   const [trackingId, setTrackingId] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [idUploaded, setIdUploaded] = useState(false)
-  const [supportUploaded, setSupportUploaded] = useState(false)
-  // Storage paths of uploaded files (UC-01-b). Built up as files complete;
-  // sent to POST /api/requests as `attachmentPaths`.
   const [idPath, setIdPath] = useState('')
   const [supportPath, setSupportPath] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // requestId is generated once per form session. Used as the Firestore doc id
-  // (so duplicate POST attempts collide loudly) and as the Storage path prefix
-  // for file uploads (UC-01-b).
+  // #67 — profile prefill state
+  const [profileLoaded, setProfileLoaded] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [showSaveProfile, setShowSaveProfile] = useState(false)
+
+  // Client-generated UUID — stable per form session (#93 + upload path prefix)
   const requestId = useMemo(() => {
     if (typeof window === 'undefined' || !window.crypto?.randomUUID) return null
     return window.crypto.randomUUID()
   }, [])
 
-  // Auth guard — if signed out, send to /login with a next= back to here.
-  // The early-return below the form definition stops the form rendering
-  // for a frame between the redirect being scheduled and the navigation
-  // committing.
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace(`/login?next=${encodeURIComponent('/requests')}`)
-    }
-  }, [authLoading, user, router])
-
-  // Map the UI's short gender codes (M/F/O) to the backend's canonical
-  // enum (male/female/other). The backend (UC-01-c) is the source of truth
-  // for the request-doc schema; the UI happens to use shorter codes.
   const GENDER_MAP = { M: 'male', F: 'female', O: 'other', '': '' }
   const toCanonicalGender = (g) => GENDER_MAP[g] ?? ''
 
   const rq = t.request
+  const s2 = t.stream2
   const steps = [rq.steps.personal, rq.steps.type, rq.steps.documents, rq.steps.confirm]
 
-  const { values, errors, touched, handleChange, setValue, setFieldErrors } = useForm({
-    firstName:'', lastName:'', idNumber:'', phone:'', email:'',
+  // ── Form state (#93 draft) ────────────────────────────────────
+  const draft = loadDraft()
+  const { values, errors, touched, handleChange, setValue, setFieldErrors, reset } = useForm({
+    firstName:'', lastName:'',
+    idType: 'israeli_id', idNumber:'', idNote:'',
+    phone:'', email:'',
     city:'', age:'', gender:'',
     category:'', description:'', urgency:'low',
+    deadline: '',
     consent: false,
+    ...(draft || {}),
   })
 
+  // Show draft-restored toast once on mount if we had a draft
+  const [draftRestored] = useState(() => !!draft)
+  useEffect(() => {
+    if (draftRestored) {
+      toast(s2.draftRestored, 'info')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist draft to localStorage on every values change (#93)
+  useEffect(() => {
+    if (!submitted) saveDraft(values)
+  }, [values, submitted])
+
+  // Auth guard — redirect to login if not signed in (#93 — next= so draft is kept)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      saveDraft(values) // save before redirect so it's restored on return
+      router.replace(`/login?next=${encodeURIComponent('/requests')}`)
+    }
+  }, [authLoading, user, router, values])
+
+  // #67 — auto-fill from profile on mount (only once, after auth resolves)
+  const fillFromProfile = useCallback(async () => {
+    if (profileLoaded || profileLoading || !user) return
+    setProfileLoading(true)
+    try {
+      const data = await apiJson('/api/users/me')
+      const p = data.profile || {}
+      if (p.firstName)   setValue('firstName', p.firstName)
+      if (p.lastName)    setValue('lastName',  p.lastName)
+      if (p.phone)       setValue('phone',     p.phone)
+      if (p.city)        setValue('city',      p.city)
+      if (p.age)         setValue('age',       String(p.age))
+      if (p.gender) {
+        // Canonical gender from DB (male/female/other) → UI code (M/F/O)
+        const reverseMap = { male:'M', female:'F', other:'O' }
+        setValue('gender', reverseMap[p.gender] || '')
+      }
+      // Email is editable but prefill from auth or profile
+      const emailSrc = p.email || user.email || ''
+      if (emailSrc) setValue('email', emailSrc)
+      setProfileLoaded(true)
+    } catch {
+      // Profile fetch failure is non-fatal; the user can fill manually
+    } finally {
+      setProfileLoading(false)
+    }
+  }, [profileLoaded, profileLoading, user, setValue])
+
+  // Silent auto-fill on mount (after auth resolves)
+  useEffect(() => {
+    if (user && !profileLoaded && !draft) {
+      fillFromProfile()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  // #67 — save profile after submit
+  const offerSaveProfile = useCallback(async () => {
+    try {
+      await apiFetch('/api/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          firstName: values.firstName,
+          lastName:  values.lastName,
+          phone:     values.phone,
+          city:      values.city,
+          age:       Number(values.age) || undefined,
+          gender:    toCanonicalGender(values.gender) || undefined,
+        }),
+      })
+      toast(s2.autoFill.saved, 'success')
+    } catch {
+      toast(s2.autoFill.saveError, 'error')
+    }
+    setShowSaveProfile(false)
+  }, [values, s2.autoFill.saved, s2.autoFill.saveError, toast, toCanonicalGender])
+
+  // ── Validation / navigation ─────────────────────────────────
   const goNext = () => {
     let errs = {}
     if (step === 1) errs = validateStep1(values, t)
@@ -90,6 +184,7 @@ export default function RequestsPage() {
     else submitForm()
   }
 
+  // ── Submit ────────────────────────────────────────────────────
   const submitForm = async () => {
     if (submitting || !requestId) return
     setSubmitting(true)
@@ -98,7 +193,9 @@ export default function RequestsPage() {
         requestId,
         firstName: values.firstName,
         lastName:  values.lastName,
+        idType:    values.idType || 'israeli_id',
         idNumber:  values.idNumber,
+        idNote:    values.idNote || '',
         phone:     values.phone,
         email:     values.email,
         city:      values.city,
@@ -107,8 +204,8 @@ export default function RequestsPage() {
         category:  values.category,
         description: values.description,
         urgency:   values.urgency,
-        consent:   values.consent === true,
-        // Storage paths of uploaded attachments (UC-01-b).
+        consent:   true,
+        deadline:  values.deadline || undefined,
         attachmentPaths: [idPath, supportPath].filter(Boolean),
       }
       const res = await apiFetch('/api/requests', {
@@ -118,12 +215,23 @@ export default function RequestsPage() {
       if (!res.ok) {
         let detail = ''
         try { detail = JSON.stringify(await res.json()) } catch { /* noop */ }
+        // #93 — 401 on submit → save draft + prompt re-login
+        if (res.status === 401) {
+          saveDraft(values)
+          toast(s2.reloginPrompt, 'warning')
+          router.push(`/login?next=${encodeURIComponent('/requests')}`)
+          return
+        }
         throw new Error(`submit_failed: ${res.status} ${detail}`)
       }
       const body = await res.json()
-      setTrackingId(body.requestId || requestId)
+      const newId = body.requestId || requestId
+      clearDraft()
+      setTrackingId(newId)
       setSubmitted(true)
-      toast(lang === 'he' ? 'הבקשה נשלחה בהצלחה!' : 'Request submitted successfully!', 'success')
+      setShowSaveProfile(true)
+      // #94 — replace route so back-button doesn't re-open the form
+      router.replace(`/my-requests?new=${newId}`)
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[RequestsPage] submit failed:', err)
@@ -138,11 +246,7 @@ export default function RequestsPage() {
     toast(ok ? t.common.copied : t.common.error, ok ? 'success' : 'error')
   }
 
-  // ── AUTH GATE ─────────────────────────────────────────────
-  // While auth is still resolving, or after we've determined the user is
-  // signed out, render nothing so the form is never visible to a
-  // signed-out caller (the useEffect above is already scheduling the
-  // redirect; this just avoids the one-frame flash).
+  // ── Auth / role gates ─────────────────────────────────────────
   if (authLoading || !user) {
     return (
       <div className="page-container" style={{ padding: '80px 24px', textAlign: 'center' }}>
@@ -151,66 +255,38 @@ export default function RequestsPage() {
     )
   }
 
-  // ── SUCCESS SCREEN ────────────────────────────────────────
-  if (submitted) {
+  // #90 — Admin notice: block admins from submitting
+  if (role === 'admin') {
     return (
       <>
         <PageHeader title={rq.pageTitle} subtitle={rq.pageSubtitle} />
         <div className="page-container" style={{ maxWidth:'580px', padding:'56px 1.5rem' }}>
-          <div className="card" style={{ padding:'48px 40px', textAlign:'center' }}>
-            <div className="section-eyebrow" style={{ textAlign:'center', marginBottom:'12px' }}>
-              {lang === 'he' ? 'בקשה נשלחה' : 'Request received'}
-            </div>
+          <div className="card" style={{ padding:'40px 36px', textAlign:'center' }}>
             <div style={{
-              width:'72px', height:'72px',
+              width:'64px', height:'64px',
               background:'var(--cream)',
               borderRadius:'50%',
               display:'flex', alignItems:'center', justifyContent:'center',
               margin:'0 auto 20px',
             }}>
-              <CheckCircle size={34} color="var(--ember)" />
+              <AlertTriangle size={28} color="var(--ember)" />
             </div>
-            <h2 className="section-display" style={{ fontSize:'1.75rem', marginBottom:'12px' }}>
-              {rq.success.title}
+            <h2 className="section-display" style={{ fontSize:'1.5rem', marginBottom:'12px' }}>
+              {s2.adminNotice.title}
             </h2>
-            <p style={{ color:'var(--ink-2)', fontSize:'15px', marginBottom:'24px', lineHeight:1.7 }}>
-              {rq.success.subtitle}
+            <p style={{ color:'var(--ink-2)', fontSize:'15px', marginBottom:'28px', lineHeight:1.7 }}>
+              {s2.adminNotice.body}
             </p>
-
-            {/* Tracking number */}
-            <div style={{
-              background:'var(--ink)', color:'var(--cream)',
-              padding:'14px 28px', borderRadius:'10px',
-              display:'inline-flex', alignItems:'center', gap:'12px',
-              fontFamily:'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize:'18px', letterSpacing:'2px',
-              marginBottom:'28px',
-            }}>
-              {trackingId}
-              <button onClick={handleCopy} style={{
-                background:'rgba(244,238,224,0.15)', border:'none',
-                borderRadius:'6px', padding:'5px', cursor:'pointer',
-                display:'flex', color:'var(--cream)',
-              }}>
-                <Copy size={15} />
-              </button>
-            </div>
-
-            <div style={{ display:'flex', gap:'12px', justifyContent:'center', flexWrap:'wrap' }}>
-              <button className="btn btn-primary" onClick={() => navigate('/')}>
-                {rq.success.backHome}
-              </button>
-              <button className="btn btn-outline" onClick={() => navigate('/track')}>
-                {rq.success.trackBtn}
-              </button>
-            </div>
+            <button className="btn btn-outline" onClick={() => navigate('/')}>
+              {s2.adminNotice.switchBtn}
+            </button>
           </div>
         </div>
       </>
     )
   }
 
-  // ── FORM CARD WRAPPER ─────────────────────────────────────
+  // ── Card style ────────────────────────────────────────────────
   const cardStyle = { background:'var(--paper)', borderRadius:'var(--radius-lg)', boxShadow:'var(--shadow-sm)', border:'1px solid var(--hair)', padding:'36px' }
 
   return (
@@ -219,10 +295,23 @@ export default function RequestsPage() {
       <div className="page-container" style={{ maxWidth:'780px', padding:'48px 1.5rem 72px' }}>
         <StepIndicator steps={steps} currentStep={step} />
 
-        {/* STEP 1 */}
+        {/* STEP 1 — PERSONAL DETAILS */}
         {step === 1 && (
           <div style={cardStyle}>
-            <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'26px' }}>{rq.step1.title}</h3>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'26px' }}>
+              <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', margin:0 }}>{rq.step1.title}</h3>
+              {/* #67 — auto-fill button */}
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={fillFromProfile}
+                disabled={profileLoading}
+                style={{ fontSize:'12.5px', padding:'6px 14px' }}
+              >
+                {profileLoading ? t.common.loading : s2.autoFill.fillBtn}
+              </button>
+            </div>
+
             <FormRow>
               <FormGroup>
                 <Label htmlFor="firstName" required>{rq.step1.firstName}</Label>
@@ -235,23 +324,72 @@ export default function RequestsPage() {
                   placeholder={rq.step1.lastNamePH} error={errors.lastName} />
               </FormGroup>
             </FormRow>
-            <FormRow>
+
+            {/* #66 — ID type selector */}
+            <FormGroup>
+              <Label required>{s2.idType.label}</Label>
+              <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
+                {[
+                  ['israeli_id', s2.idType.israeliId],
+                  ['passport',   s2.idType.passport],
+                  ['none',       s2.idType.none],
+                ].map(([val, label]) => (
+                  <label key={val} style={{
+                    display:'flex', alignItems:'center', gap:'7px',
+                    padding:'9px 16px', borderRadius:'8px',
+                    border:`1px solid ${values.idType === val ? 'var(--ember)' : 'var(--hair)'}`,
+                    background: values.idType === val ? 'var(--sky-2)' : 'var(--paper)',
+                    cursor:'pointer', fontSize:'13.5px', transition:'all .18s',
+                  }}>
+                    <input type="radio" name="idType" value={val}
+                      checked={values.idType === val}
+                      onChange={handleChange}
+                      style={{ accentColor:'var(--ember)' }} />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </FormGroup>
+
+            {values.idType === 'israeli_id' && (
               <FormGroup>
                 <Label htmlFor="idNumber" required>{rq.step1.idNumber}</Label>
                 <Input id="idNumber" name="idNumber" value={values.idNumber} onChange={handleChange}
                   placeholder={rq.step1.idPH} maxLength={9} error={errors.idNumber} />
               </FormGroup>
+            )}
+
+            {(values.idType === 'passport' || values.idType === 'none') && (
+              <FormRow>
+                {values.idType === 'passport' && (
+                  <FormGroup>
+                    <Label htmlFor="idNumber">{rq.step1.idNumber}</Label>
+                    <Input id="idNumber" name="idNumber" value={values.idNumber} onChange={handleChange}
+                      placeholder="AB123456" maxLength={40} error={errors.idNumber} />
+                  </FormGroup>
+                )}
+                <FormGroup style={values.idType === 'none' ? {} : {}}>
+                  <Label htmlFor="idNote">{s2.idType.noteLabel}</Label>
+                  <Input id="idNote" name="idNote" value={values.idNote || ''} onChange={handleChange}
+                    placeholder={s2.idType.notePH} maxLength={400} />
+                </FormGroup>
+              </FormRow>
+            )}
+
+            <FormRow>
               <FormGroup>
                 <Label htmlFor="phone" required>{rq.step1.phone}</Label>
                 <Input id="phone" name="phone" type="tel" value={values.phone} onChange={handleChange}
                   placeholder={rq.step1.phonePH} error={errors.phone} />
               </FormGroup>
+              <FormGroup>
+                <Label htmlFor="email" required>{rq.step1.email}</Label>
+                <Input id="email" name="email" type="email" value={values.email} onChange={handleChange}
+                  placeholder={rq.step1.emailPH} error={errors.email}
+                  hint={s2.autoFill.emailNote} />
+              </FormGroup>
             </FormRow>
-            <FormGroup>
-              <Label htmlFor="email" required>{rq.step1.email}</Label>
-              <Input id="email" name="email" type="email" value={values.email} onChange={handleChange}
-                placeholder={rq.step1.emailPH} error={errors.email} />
-            </FormGroup>
+
             <FormRow>
               <FormGroup>
                 <Label htmlFor="city" required>{rq.step1.city}</Label>
@@ -266,6 +404,7 @@ export default function RequestsPage() {
                   placeholder={rq.step1.agePH} min={1} max={120} />
               </FormGroup>
             </FormRow>
+
             <FormGroup>
               <Label>{rq.step1.gender}</Label>
               <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
@@ -289,7 +428,7 @@ export default function RequestsPage() {
           </div>
         )}
 
-        {/* STEP 2 */}
+        {/* STEP 2 — REQUEST TYPE */}
         {step === 2 && (
           <div style={cardStyle}>
             <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'6px' }}>{rq.step2.title}</h3>
@@ -325,18 +464,31 @@ export default function RequestsPage() {
                 onChange={handleChange} placeholder={rq.step2.descPH}
                 rows={4} error={errors.description} />
             </FormGroup>
-            <FormGroup>
-              <Label htmlFor="urgency">{rq.step2.urgency}</Label>
-              <Select id="urgency" name="urgency" value={values.urgency} onChange={handleChange}>
-                <option value="low">{rq.step2.urgencyLow}</option>
-                <option value="medium">{rq.step2.urgencyMed}</option>
-                <option value="high">{rq.step2.urgencyHigh}</option>
-              </Select>
-            </FormGroup>
+            <FormRow>
+              <FormGroup>
+                <Label htmlFor="urgency">{rq.step2.urgency}</Label>
+                <Select id="urgency" name="urgency" value={values.urgency} onChange={handleChange}>
+                  <option value="low">{rq.step2.urgencyLow}</option>
+                  <option value="medium">{rq.step2.urgencyMed}</option>
+                  <option value="high">{rq.step2.urgencyHigh}</option>
+                </Select>
+              </FormGroup>
+              {/* #68 — deadline picker */}
+              <FormGroup>
+                <Label htmlFor="deadline">{s2.deadline.label}</Label>
+                <Input
+                  id="deadline" name="deadline" type="date"
+                  value={values.deadline || ''}
+                  onChange={handleChange}
+                  min={new Date().toISOString().split('T')[0]}
+                  hint={s2.deadline.hint}
+                />
+              </FormGroup>
+            </FormRow>
           </div>
         )}
 
-        {/* STEP 3 */}
+        {/* STEP 3 — DOCUMENTS */}
         {step === 3 && (
           <div style={cardStyle}>
             <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'6px' }}>{rq.step3.title}</h3>
@@ -362,7 +514,6 @@ export default function RequestsPage() {
                 formats={rq.step3.supportFormats}
                 requestId={requestId}
                 onUpload={(r) => {
-                  setSupportUploaded(!!r)
                   setSupportPath(r?.path || '')
                 }}
               />
@@ -379,7 +530,7 @@ export default function RequestsPage() {
           </div>
         )}
 
-        {/* STEP 4 — SUMMARY */}
+        {/* STEP 4 — SUMMARY + CONSENT */}
         {step === 4 && (
           <div style={cardStyle}>
             <h3 style={{ fontSize:'19px', fontWeight:700, color:'var(--ink)', marginBottom:'22px' }}>{rq.step4.title}</h3>
@@ -390,11 +541,12 @@ export default function RequestsPage() {
             }}>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px 20px' }}>
                 {[
-                  [rq.step4.fullName,    `${values.firstName} ${values.lastName}`],
-                  [rq.step4.phone,       values.phone],
-                  [rq.step4.city,        values.city],
-                  [rq.step4.category,    values.category ? rq.step2.cats[values.category]?.label : '—'],
-                  [rq.step4.urgency,     values.urgency === 'high' ? rq.step2.urgencyHigh : values.urgency === 'medium' ? rq.step2.urgencyMed : rq.step2.urgencyLow],
+                  [rq.step4.fullName,  `${values.firstName} ${values.lastName}`],
+                  [rq.step4.phone,     values.phone],
+                  [rq.step4.city,      values.city],
+                  [rq.step4.category,  values.category ? rq.step2.cats[values.category]?.label : '—'],
+                  [rq.step4.urgency,   values.urgency === 'high' ? rq.step2.urgencyHigh : values.urgency === 'medium' ? rq.step2.urgencyMed : rq.step2.urgencyLow],
+                  ...(values.deadline ? [[t.myRequests.table.deadline, values.deadline]] : []),
                 ].map(([label, val]) => (
                   <div key={label}>
                     <div style={{ fontSize:'12px', color:'var(--gray-400)', marginBottom:'2px' }}>{label}</div>
@@ -424,22 +576,47 @@ export default function RequestsPage() {
               </label>
               {errors.consent && <div className="form-error" style={{ marginTop:'8px' }}>{errors.consent}</div>}
             </FormGroup>
+
+            {/* #67 — save-to-profile offer */}
+            {showSaveProfile && (
+              <div style={{
+                marginTop:'16px', padding:'14px 16px',
+                background:'var(--sky-2)', borderRadius:'8px',
+                display:'flex', gap:'12px', alignItems:'center',
+                border:'1px solid var(--hair)',
+              }}>
+                <span style={{ flex:1, fontSize:'13px', color:'var(--ink-2)' }}>
+                  {s2.autoFill.saveToProfile}
+                </span>
+                <button className="btn btn-outline btn-sm" onClick={offerSaveProfile}
+                  style={{ fontSize:'12.5px', padding:'6px 14px' }}>
+                  {t.common.save}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowSaveProfile(false)}
+                  style={{ fontSize:'12.5px', padding:'6px 10px' }}>
+                  {t.common.cancel}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* NAV BUTTONS */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'24px' }}>
           {step > 1 ? (
-            <button className="btn btn-outline" onClick={() => setStep(s => s - 1)}>
+            <button className="btn btn-outline" onClick={() => setStep(s => s - 1)} disabled={submitting}>
               <BackArrow size={16} /> {rq.nav.back}
             </button>
           ) : <div />}
           <button
             className="btn btn-primary btn-lg"
             onClick={goNext}
+            disabled={submitting}
           >
             {step === 4 ? (
-              <><CheckCircle size={16} /> {rq.nav.submit}</>
+              submitting
+                ? <>{t.common.loading}</>
+                : <><CheckCircle size={16} /> {rq.nav.submit}</>
             ) : (
               <>{rq.nav.next} <NextArrow size={16} /></>
             )}

@@ -494,6 +494,7 @@ const translations = {
         status:      'סטטוס',
         date:        'תאריך הגשה',
         attachments: 'מסמכים',
+        deadline:    'מועד אחרון',
       },
       categories: {
         education:  'חינוך',
@@ -515,6 +516,61 @@ const translations = {
         rejected:     'נדחה',
         needsChanges: 'דורש תיקון',
       },
+      // #68 — timeline
+      timeline: {
+        title:            'היסטוריית הבקשה',
+        noEvents:         'אין אירועים עדיין',
+        types: {
+          created:          'הבקשה נוצרה',
+          attachment_added: 'מסמך צורף',
+          assigned:         'הוקצה מטפל',
+          status_changed:   'הסטטוס עודכן',
+          note_added:       'הוסף הערה',
+          rated:            'דירוג נוסף',
+        },
+      },
+      // #68 — deadline pill
+      dueIn: (days) => days === 0 ? 'היום' : days < 0 ? `עבר לפני ${Math.abs(days)} ימים` : `בעוד ${days} ימים`,
+      overdue: 'עבר המועד',
+    },
+
+    // === Stream 2 (UC-01 form) ===
+    // Keys added by Stream 2 agent. Do not reorder or reformat existing keys.
+    stream2: {
+      // #66 — ID-type selector
+      idType: {
+        label:       'סוג מזהה',
+        israeliId:   'תעודת זהות ישראלית',
+        passport:    'דרכון / מסמך זר',
+        none:        'ללא מסמך מזהה',
+        noteLabel:   'הסבר (אופציונלי)',
+        notePH:      'פרט מדוע אין תעודת זהות...',
+      },
+      // #67 — auto-fill
+      autoFill: {
+        fillBtn:        'מלא מהפרופיל שלי',
+        saveToProfile:  'שמור פרטים לפרופיל',
+        saved:          'הפרטים נשמרו בפרופיל',
+        saveError:      'שמירת הפרופיל נכשלה',
+        emailNote:      'ניתן לשנות את כתובת האימייל',
+      },
+      // #68 — deadline picker
+      deadline: {
+        label:  'מועד אחרון להסתיימות הטיפול (אופציונלי)',
+        hint:   'השאר ריק אם אין מועד מוגדר',
+      },
+      // #90 — admin notice
+      adminNotice: {
+        title:    'חשבון ניהול מחובר',
+        body:     'לא ניתן להגיש בקשה מחשבון מנהל. אנא עבור לחשבון מוטב.',
+        switchBtn:'עבור לחשבון מוטב',
+      },
+      // #93 — draft restored
+      draftRestored:  'הטיוטה שלך שוחזרה לאחר הפסקת הפגישה',
+      draftCleared:   'הטיוטה נמחקה',
+      reloginPrompt:  'הפגישה פגה תוקף. אנא התחבר שוב — הטיוטה תישמר.',
+      // #94 — success after submit redirect
+      newRequestBadge: 'בקשה חדשה',
     },
   },
 
@@ -994,6 +1050,7 @@ const translations = {
         status:      'Status',
         date:        'Date submitted',
         attachments: 'Files',
+        deadline:    'Deadline',
       },
       categories: {
         education:  'Education',
@@ -1015,6 +1072,61 @@ const translations = {
         rejected:     'Rejected',
         needsChanges: 'Needs changes',
       },
+      // #68 — timeline
+      timeline: {
+        title:            'Request Timeline',
+        noEvents:         'No events yet',
+        types: {
+          created:          'Request created',
+          attachment_added: 'Document attached',
+          assigned:         'Handler assigned',
+          status_changed:   'Status updated',
+          note_added:       'Note added',
+          rated:            'Rating added',
+        },
+      },
+      // #68 — deadline pill
+      dueIn: (days) => days === 0 ? 'Due today' : days < 0 ? `Overdue by ${Math.abs(days)} days` : `Due in ${days} days`,
+      overdue: 'Overdue',
+    },
+
+    // === Stream 2 (UC-01 form) ===
+    // Keys added by Stream 2 agent. Do not reorder or reformat existing keys.
+    stream2: {
+      // #66 — ID-type selector
+      idType: {
+        label:      'ID Type',
+        israeliId:  'Israeli ID',
+        passport:   'Passport / Foreign Document',
+        none:       'No ID Document',
+        noteLabel:  'Explanation (optional)',
+        notePH:     'Explain why you do not have an ID...',
+      },
+      // #67 — auto-fill
+      autoFill: {
+        fillBtn:       'Auto-fill from my profile',
+        saveToProfile: 'Save details to profile',
+        saved:         'Details saved to profile',
+        saveError:     'Failed to save profile',
+        emailNote:     'You may change your email address',
+      },
+      // #68 — deadline picker
+      deadline: {
+        label: 'Desired completion deadline (optional)',
+        hint:  'Leave empty if no specific date is required',
+      },
+      // #90 — admin notice
+      adminNotice: {
+        title:    'Admin account signed in',
+        body:     'You cannot submit a request from an admin account. Please switch to a beneficiary account.',
+        switchBtn:'Switch account',
+      },
+      // #93 — draft restored
+      draftRestored: 'Your draft was restored after your session expired',
+      draftCleared:  'Draft cleared',
+      reloginPrompt: 'Your session expired. Please sign in again — your draft is saved.',
+      // #94 — success after submit redirect
+      newRequestBadge: 'New request',
     },
   },
 }
