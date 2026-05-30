@@ -4,7 +4,6 @@
   "private": true,
   "description": "Push for Fulfillment — community platform monorepo (frontend + backend + Firebase rules).",
   "scripts": {
-    "test:rules": "npm --prefix tests run test:rules",
-    "test:rules:nojest": "echo \"Boots the Firestore + Storage emulators, then runs jest. Requires Java 11+ and firebase-tools.\""
+    "test:rules": "firebase emulators:exec --config firebase.emulators.json --project demo-test --only firestore,storage \"npm test --prefix tests\""
   }
 }

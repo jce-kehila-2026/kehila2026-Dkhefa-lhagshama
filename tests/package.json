@@ -2,8 +2,7 @@
   "name": "kehila-rules-tests",
   "private": true,
   "scripts": {
-    "test": "jest",
-    "test:rules": "firebase emulators:exec --config firebase.emulators.json --only firestore,storage \"jest\""
+    "test": "jest"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

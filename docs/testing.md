@@ -9,12 +9,14 @@ requestEvents, chats, messages, auditLogs, answers, businesses, organizations,
 catch-all) plus the `storage.rules` request-attachment paths.
 
 ```
-cd tests
-npm install            # pulls firebase-tools (provides the emulators)
-npm run test:rules     # boots firestore + storage emulators, then runs jest
+cd tests && npm install   # pulls firebase-tools (provides the emulators)
+cd ..                     # back to repo root
+npm run test:rules        # boots firestore + storage emulators, then runs jest
 ```
 
-Or from the repo root: `npm run test:rules`.
+`test:rules` runs from the repo root and points `emulators:exec` at
+`firebase.emulators.json` (a hosting-free config) so it does not try to emulate
+the Next.js app. 56 tests, all passing.
 
 Requires **Java 11+** (the emulators are JVM processes). See `tests/README.md`
 for details.

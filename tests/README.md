@@ -15,7 +15,10 @@ tests/
 │   └── storage.test.js     # request attachments + catch-all
 ├── jest.config.js
 └── package.json
+firebase.emulators.json     # (repo root) hosting-free emulator config
 ```
+
+56 tests, all passing.
 
 ## Prerequisites
 
@@ -33,17 +36,20 @@ From the **repo root**:
 npm run test:rules
 ```
 
-or equivalently, from `tests/`:
+This wraps jest in `firebase emulators:exec`, starting the Firestore (`:8080`)
+and Storage (`:9199`) emulators, running the suite, then shutting them down.
+
+It points `emulators:exec` at `firebase.emulators.json` (a hosting-free copy of
+the Firestore/Storage config). The root `firebase.json` uses framework-aware
+hosting (`hosting.source: frontend`), which would otherwise make
+`emulators:exec` try to emulate the Next.js app and fail. The emulator ports
+match `firebase.json`.
+
+If the emulators are already running, you can run jest directly from `tests/`:
 
 ```bash
-npm run test:rules          # boots firestore + storage emulators, then runs jest
-# or, if the emulators are already running:
-npm test
+cd tests && npm test
 ```
-
-`test:rules` wraps jest in `firebase emulators:exec`, which starts the
-Firestore (`:8080`) and Storage (`:9199`) emulators, runs the suite, and shuts
-them down. The emulator ports match `firebase.json`.
 
 > Note: `firebase emulators:exec` may exit non-zero on its own shutdown path on
 > some firebase-tools versions even when every test passed — check the
@@ -52,9 +58,5 @@ them down. The emulator ports match `firebase.json`.
 
 ## CI
 
-These tests are emulator-backed (network + JVM), so they are kept out of the
-deploy workflow's critical path for now. To wire them into CI, add a job that:
-
-1. `actions/setup-java` (Temurin 11+)
-2. `cd tests && npm ci`
-3. `npm run test:rules`
+These run in `.github/workflows/ci.yml` (job `rules`): it installs Java +
+firebase-tools, `npm install` in `tests/`, then `npm run test:rules`.

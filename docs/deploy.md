@@ -32,6 +32,10 @@ secrets, and remove the guard. See `.github/workflows/deploy.yml`.
 firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
+> Note: rules **unit tests** run against `firebase.emulators.json` (a
+> hosting-free copy of the config) so the emulator does not try to build the
+> Next.js app. Deploys use the full `firebase.json`. See `tests/README.md`.
+
 ## Required CI secrets
 
 | Secret | Used by | Notes |

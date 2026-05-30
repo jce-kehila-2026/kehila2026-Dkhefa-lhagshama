@@ -45,8 +45,8 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
-  firestore-rules:
-    name: Firestore rules unit tests
+  rules:
+    name: Firestore + Storage rules unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,8 +68,10 @@ jobs:
         run: npm install
         working-directory: tests
 
-      - name: Run Firestore rules tests
-        # Run from repo root so firebase.json + firestore.rules are found.
-        run: npx firebase emulators:exec --project demo-test --only firestore "npm test --prefix tests"
+      - name: Run rules tests
+        # Use firebase.emulators.json (no hosting block) so emulators:exec does
+        # not try to emulate the Next.js web framework; runs from repo root so
+        # the rules files resolve. Covers both Firestore and Storage rules.
+        run: npm run test:rules
         env:
           FIREBASE_PROJECT_ID: demo-test

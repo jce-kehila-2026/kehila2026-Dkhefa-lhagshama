@@ -101,7 +101,11 @@ describe('/requests/{requestId}/{filename} — uploads', () => {
 });
 
 describe('/requests/{requestId}/{filename} — reads', () => {
-  test('owner of the request doc can read the file', async () => {
+  // Read rules call firestore.get(.../requests/{id}).data.beneficiaryId, so the
+  // matching Firestore doc must exist *and* carry a beneficiaryId field — a bare
+  // firestore.get on a missing doc / missing field throws a "Null value error"
+  // in the rules runtime. Seed the doc + upload the object once per test.
+  beforeEach(async () => {
     await seedRequest('alice');
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await uploadBytes(
@@ -110,32 +114,19 @@ describe('/requests/{requestId}/{filename} — reads', () => {
         META,
       );
     });
+  });
+
+  test('owner of the request doc can read the file', async () => {
     const storage = asUser('alice').storage();
     await assertSucceeds(getBytes(ref(storage, 'requests/req1/doc.pdf')));
   });
 
   test('non-owner cannot read the file', async () => {
-    await seedRequest('alice');
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await uploadBytes(
-        ref(ctx.storage(), 'requests/req1/doc.pdf'),
-        smallFile,
-        META,
-      );
-    });
     const storage = asUser('bob').storage();
     await assertFails(getBytes(ref(storage, 'requests/req1/doc.pdf')));
   });
 
   test('admin can read the file', async () => {
-    await seedRequest('alice');
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await uploadBytes(
-        ref(ctx.storage(), 'requests/req1/doc.pdf'),
-        smallFile,
-        META,
-      );
-    });
     const storage = asUser('admin1', { role: 'admin' }).storage();
     await assertSucceeds(getBytes(ref(storage, 'requests/req1/doc.pdf')));
   });
