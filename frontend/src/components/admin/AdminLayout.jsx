@@ -19,7 +19,7 @@ export default function AdminLayout({ title, subtitle, actions, children }) {
             {actions && <div className="admin-header-actions">{actions}</div>}
           </header>
         )}
-        <div className="admin-content">{children}</div>
+        <main className="admin-content page-enter">{children}</main>
       </div>
     </div>
   )

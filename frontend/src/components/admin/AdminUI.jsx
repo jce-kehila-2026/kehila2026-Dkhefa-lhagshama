@@ -1,4 +1,4 @@
-import { Inbox } from 'lucide-react'
+import { Inbox, AlertCircle } from 'lucide-react'
 
 // Maps a thrown apiJson error to a clear, localized message. A 401/403 means
 // the signed-in user has no admin custom claim — surface a dedicated message
@@ -15,15 +15,22 @@ export function adminErrorMessage(err, lang) {
     : 'Failed to load data. Please try again.'
 }
 
-export function StatCard({ label, value, loading }) {
+// StatCard — compact dashboard metric. `tone` drives only a small status dot
+// next to the label (shape + position cue, never a full color fill), which
+// keeps the number high-contrast and avoids the gradient hero-metric cliche.
+export function StatCard({ label, value, loading, tone = 'default', hint, icon: Icon }) {
   return (
-    <div className="stat-card">
-      <span className="stat-card-label">{label}</span>
+    <div className={`stat-card stat-card--${tone}`}>
+      <div className="stat-card-head">
+        <span className="stat-card-label">{label}</span>
+        {Icon ? <Icon size={18} aria-hidden="true" className="stat-card-icon" /> : null}
+      </div>
       {loading ? (
         <span className="skeleton skeleton-stat" aria-hidden="true" />
       ) : (
         <span className="stat-card-value">{value}</span>
       )}
+      {hint && !loading ? <span className="stat-card-hint">{hint}</span> : null}
     </div>
   )
 }
@@ -31,7 +38,9 @@ export function StatCard({ label, value, loading }) {
 export function EmptyState({ title, message, icon: Icon = Inbox }) {
   return (
     <div className="admin-empty" role="status">
-      <Icon size={40} aria-hidden="true" className="admin-empty-icon" />
+      <span className="admin-empty-badge" aria-hidden="true">
+        <Icon size={26} />
+      </span>
       <p className="admin-empty-title">{title}</p>
       {message && <p className="admin-empty-message">{message}</p>}
     </div>
@@ -41,9 +50,12 @@ export function EmptyState({ title, message, icon: Icon = Inbox }) {
 export function ErrorState({ message, onRetry, retryLabel }) {
   return (
     <div className="admin-error" role="alert">
-      <span>{message}</span>
+      <span className="admin-error-text">
+        <AlertCircle size={18} aria-hidden="true" />
+        <span>{message}</span>
+      </span>
       {onRetry && (
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onRetry}>
+        <button type="button" className="btn btn-danger btn-sm" onClick={onRetry}>
           {retryLabel}
         </button>
       )}
@@ -65,9 +77,16 @@ const STATUS_TONE = {
   beneficiary: 'badge-gray',
 }
 
+// A leading dot gives a non-color secondary cue (shape + position), so status
+// is never communicated by hue alone — helps color-vision-deficient users.
 export function StatusBadge({ status, label }) {
   const tone = STATUS_TONE[status] || 'badge-gray'
-  return <span className={`badge ${tone}`}>{label || status}</span>
+  return (
+    <span className={`badge ${tone}`}>
+      <span className="badge-dot" aria-hidden="true" />
+      {label || status}
+    </span>
+  )
 }
 
 export function TableSkeleton({ rows = 5, cols = 4 }) {

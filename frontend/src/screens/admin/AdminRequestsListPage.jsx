@@ -83,8 +83,8 @@ export default function AdminRequestsListPage() {
                     <td data-label={a.reqList.colTitle}>
                       {name || (r.description ? r.description.slice(0, 40) : r.id)}
                     </td>
-                    <td data-label={a.reqList.colCategory}>{r.category || '—'}</td>
-                    <td data-label={a.reqList.colCity}>{r.city || '—'}</td>
+                    <td data-label={a.reqList.colCategory}>{r.category || '·'}</td>
+                    <td data-label={a.reqList.colCity}>{r.city || '·'}</td>
                     <td data-label={a.reqList.colStatus}>
                       <StatusBadge status={r.status} label={a.statusLabels[r.status] || r.status} />
                     </td>

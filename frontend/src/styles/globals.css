@@ -1648,3 +1648,197 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
     transition: none;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════
+   ADMIN REDESIGN — additive polish (ui/admin-redesign)
+   Extends the existing admin shell above. New classes only;
+   nothing here redefines a previously declared selector.
+   All tokens, RTL via logical properties.
+═════════════════════════════════════════════════════════════ */
+
+/* ── Header (text + actions wrappers referenced by AdminLayout) ── */
+.admin-header-text { min-width: 0; }
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Sidebar brand: glyph mark + wordmark ── */
+.admin-sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.admin-sidebar-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--ember);
+  color: var(--cream);
+  font-family: 'Frank Ruhl Libre', serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+}
+.admin-sidebar-brand-name { min-width: 0; }
+.admin-nav-label { white-space: nowrap; }
+
+/* Ember active rail on the inline-start edge (auto-flips in RTL).
+   The existing .is-active rule sets the fill; this adds the marker. */
+.admin-sidebar-nav .admin-nav-item { position: relative; }
+.admin-sidebar-nav .admin-nav-item.is-active::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.5rem;
+  inset-inline-start: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--cream);
+}
+
+/* ── Stat card: head row, icon, tone dot, hint ── */
+.stat-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.stat-card-icon { color: var(--gray-400); flex: 0 0 auto; }
+.stat-card-hint { font-size: 0.8rem; color: var(--gray-500); }
+/* Tone shows as a small dot before the label, not a full fill. */
+.stat-card-label::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-inline-end: 0.45rem;
+  border-radius: 999px;
+  background: var(--gray-300);
+  vertical-align: middle;
+}
+.stat-card--amber .stat-card-label::before { background: var(--warning); }
+.stat-card--green .stat-card-label::before { background: var(--success); }
+.stat-card--blue  .stat-card-label::before { background: var(--info); }
+.stat-card--ember .stat-card-label::before { background: var(--ember); }
+.stat-card-value { font-variant-numeric: tabular-nums; }
+
+/* ── Badge dot: non-color status cue (shape + position) ── */
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+/* ── Dashboard shortcuts: differentiated rows, not an identical card grid ── */
+.admin-shortcuts { margin-block-start: 0.5rem; }
+.admin-shortcut-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.admin-shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--paper);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              transform var(--dur-2) var(--ease-out);
+}
+.admin-shortcut-row:hover {
+  border-color: var(--sky);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.admin-shortcut-row:focus-visible { outline: none; box-shadow: var(--ring-ink); }
+.admin-shortcut-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  background: var(--sky-2);
+  color: var(--ink);
+}
+.admin-shortcut-text { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.admin-shortcut-title { font-weight: 700; color: var(--ink); }
+.admin-shortcut-desc { font-size: 0.83rem; color: var(--gray-600); }
+.admin-shortcut-arrow {
+  color: var(--gray-400);
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  transition: color var(--dur-2) var(--ease-out);
+}
+.admin-shortcut-row:hover .admin-shortcut-arrow { color: var(--ember); }
+/* Arrow points up-and-out; mirror horizontally in RTL so it reads correctly. */
+[dir="rtl"] .admin-shortcut-arrow { transform: scaleX(-1); }
+
+/* ── Empty state: rounded badge wrapper (richer than a bare icon) ── */
+.admin-empty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-block-end: 0.25rem;
+  border-radius: 999px;
+  background: var(--ember-soft);
+  color: var(--ember-700);
+}
+
+/* ── Error state: icon + text grouping (border-only, no side stripe) ── */
+.admin-error-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.admin-error-text svg { flex: 0 0 auto; }
+
+/* ── Gate states: center the loading skeleton + structure the denied card ── */
+.admin-gate-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-gate-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--paper);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.admin-gate-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-block-end: 0.5rem;
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.admin-gate-denied .btn { margin-block-start: 1rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shortcut-row:hover { transform: none; }
+}

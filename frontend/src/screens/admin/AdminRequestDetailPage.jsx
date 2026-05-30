@@ -123,10 +123,12 @@ export default function AdminRequestDetailPage() {
     if (ok) setNote('')
   }
 
+  const EMPTY = '·' // middle dot placeholder for missing values
+
   const fmt = (ts) => {
-    if (!ts) return '—'
+    if (!ts) return EMPTY
     const d = new Date(ts)
-    if (Number.isNaN(d.getTime())) return '—'
+    if (Number.isNaN(d.getTime())) return EMPTY
     return d.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')
   }
 
@@ -213,11 +215,11 @@ export default function AdminRequestDetailPage() {
             <dl className="admin-detail-meta">
               <div>
                 <dt>{a.reqDetail.category}</dt>
-                <dd>{request.category || '—'}</dd>
+                <dd>{request.category || EMPTY}</dd>
               </div>
               <div>
                 <dt>{a.reqDetail.city}</dt>
-                <dd>{request.city || '—'}</dd>
+                <dd>{request.city || EMPTY}</dd>
               </div>
               <div>
                 <dt>{a.reqDetail.assignedTo}</dt>

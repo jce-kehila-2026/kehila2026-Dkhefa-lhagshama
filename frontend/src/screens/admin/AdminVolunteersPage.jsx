@@ -102,7 +102,7 @@ export default function AdminVolunteersPage() {
               {rows.map((v) => (
                 <tr key={v.id}>
                   <td data-label={a.vol.colName}>{v.fullName || v.uid}</td>
-                  <td data-label={a.vol.colEmail}>{v.email || '—'}</td>
+                  <td data-label={a.vol.colEmail}>{v.email || '·'}</td>
                   <td data-label={a.vol.colStatus}>
                     <StatusBadge
                       status={tab === 'active' ? 'active' : 'pending'}

@@ -32,11 +32,12 @@ export default function AdminSidebar() {
     <aside className="admin-sidebar" aria-label={t.admin.title}>
       <div className="admin-sidebar-brand">
         <Link href="/admin" className="admin-sidebar-brand-link">
-          {t.admin.title}
+          <span className="admin-sidebar-mark" aria-hidden="true">דחיפה</span>
+          <span className="admin-sidebar-brand-name">{t.admin.title}</span>
         </Link>
       </div>
 
-      <nav className="admin-sidebar-nav">
+      <nav className="admin-sidebar-nav" aria-label={t.admin.title}>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon
           const active = isActive(router.pathname, item)

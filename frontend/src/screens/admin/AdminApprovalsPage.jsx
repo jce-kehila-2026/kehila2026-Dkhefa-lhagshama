@@ -13,6 +13,13 @@ const ENTITY_LABELS = {
   en: { all: 'All', businesses: 'Businesses', organizations: 'Organizations', answers: 'Answers' },
 }
 
+// Distinct badge tone per entity type so the queue is scannable at a glance.
+const ENTITY_TONE = {
+  businesses: 'badge-amber',
+  organizations: 'badge-blue',
+  answers: 'badge-green',
+}
+
 /**
  * Approval queue rendered inside the admin shell. Reuses the existing
  * /api/admin/pending + approve|reject|request-changes endpoints (UC-05).
@@ -57,7 +64,7 @@ export default function AdminApprovalsPage() {
       setItems((prev) => prev.filter((i) => i.id !== item.id))
       toast(lang === 'he' ? 'בוצע בהצלחה' : 'Done', 'success')
     } catch {
-      toast(lang === 'he' ? 'שגיאה — נסה שוב' : 'Error — please try again', 'error')
+      toast(lang === 'he' ? 'שגיאה, נסה שוב' : 'Error, please try again', 'error')
     } finally {
       setBusyId(null)
     }
@@ -101,7 +108,10 @@ export default function AdminApprovalsPage() {
           {filtered.map((item) => (
             <div key={item.id} className="card admin-approval-card">
               <div className="admin-approval-info">
-                <span className="badge badge-amber">{labels[item.entityType] || item.entityType}</span>
+                <span className={`badge ${ENTITY_TONE[item.entityType] || 'badge-gray'}`}>
+                  <span className="badge-dot" aria-hidden="true" />
+                  {labels[item.entityType] || item.entityType}
+                </span>
                 <h3 className="admin-approval-name">
                   {item.name || item.title || item.id}
                 </h3>

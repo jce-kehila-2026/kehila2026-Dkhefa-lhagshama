@@ -1,5 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
+import Link from 'next/link'
+import { ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -21,18 +23,29 @@ export default function AdminGate({ children }) {
   }, [loading, user, router])
 
   if (loading || !user) {
-    return <div className="admin-gate-msg">{t.admin.ui.loading}</div>
+    return (
+      <div className="admin-gate-msg" role="status" aria-live="polite">
+        <span className="skeleton skeleton-title" style={{ width: '14rem' }} aria-hidden="true" />
+        <span className="sr-only">{t.admin.ui.loading}</span>
+      </div>
+    )
   }
 
   if (role !== 'admin') {
     return (
-      <div className="admin-gate-denied">
+      <div className="admin-gate-denied" role="alert">
+        <span className="admin-gate-icon" aria-hidden="true">
+          <ShieldAlert size={28} />
+        </span>
         <h1>{lang === 'he' ? 'גישה נדחתה' : 'Access denied'}</h1>
         <p>
           {lang === 'he'
             ? 'אין לך הרשאת מנהל לגשת לדף זה.'
             : 'You do not have admin permission to access this page.'}
         </p>
+        <Link href="/" className="btn btn-outline btn-sm">
+          {lang === 'he' ? 'חזרה לאתר' : 'Back to site'}
+        </Link>
       </div>
     )
   }
