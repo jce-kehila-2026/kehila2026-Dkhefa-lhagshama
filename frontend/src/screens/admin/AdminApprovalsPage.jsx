@@ -64,7 +64,7 @@ export default function AdminApprovalsPage() {
       setItems((prev) => prev.filter((i) => i.id !== item.id))
       toast(lang === 'he' ? 'בוצע בהצלחה' : 'Done', 'success')
     } catch {
-      toast(lang === 'he' ? 'שגיאה — נסה שוב' : 'Error — please try again', 'error')
+      toast(lang === 'he' ? 'שגיאה, נסה שוב' : 'Error, please try again', 'error')
     } finally {
       setBusyId(null)
     }
