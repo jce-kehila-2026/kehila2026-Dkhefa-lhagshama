@@ -4,6 +4,7 @@
   "private": true,
   "description": "Push for Fulfillment — community platform monorepo (frontend + backend + Firebase rules).",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
     "test:rules": "firebase emulators:exec --config firebase.emulators.json --project demo-test --only firestore,storage \"npm test --prefix tests\""
   }
 }

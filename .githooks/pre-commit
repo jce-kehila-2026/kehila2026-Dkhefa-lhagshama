@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Shared pre-commit quality gate. Enabled via: git config core.hooksPath .githooks
+# (the root `npm run prepare` script does this automatically).
+# Bypass once with: git commit --no-verify
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+staged="$(git diff --cached --name-only --diff-filter=ACM)"
+
+run() { echo "  → $*"; ( "$@" ); }
+
+# Only run the relevant gate for the area that changed — keeps commits fast.
+if echo "$staged" | grep -q '^frontend/'; then
+  echo "[pre-commit] frontend changed — typecheck + lint"
+  ( cd "$repo_root/frontend" && run npx tsc --noEmit && run npm run -s lint )
+fi
+
+if echo "$staged" | grep -q '^backend/'; then
+  echo "[pre-commit] backend changed — typecheck"
+  ( cd "$repo_root/backend" && run npm run -s type-check )
+fi
+
+echo "[pre-commit] OK"
