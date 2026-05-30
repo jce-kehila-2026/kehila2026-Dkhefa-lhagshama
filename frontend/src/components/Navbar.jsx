@@ -47,7 +47,7 @@ export default function Navbar() {
               },
             ]
           : []),
-        { key: "chats", to: "/chats", label: lang === "he" ? "צ׳אט" : "Chat" },
+        { key: "chats", to: "/chats", label: t.nav.chats },
         ...(role === "admin" ? [{ key: "admin", to: "/admin" }] : []),
       ]
     : baseLinks;
@@ -81,7 +81,7 @@ export default function Navbar() {
         >
           <img
             src="/logo.jpg"
-            alt={lang === "he" ? "דחיפה להגשמה" : "Push for Fulfillment"}
+            alt={t.nav.brand}
             width={40}
             height={40}
             style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
@@ -96,7 +96,7 @@ export default function Navbar() {
                 whiteSpace: "nowrap",
               }}
             >
-              {lang === "he" ? "דחיפה להגשמה" : "Push for Fulfillment"}
+              {t.nav.brand}
             </div>
           </div>
         </Link>
@@ -145,11 +145,11 @@ export default function Navbar() {
             <button
               onClick={toggleLang}
               className="nav-lang-toggle"
-              aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
-              title={lang === "he" ? "Switch to English" : "החלף לעברית"}
+              aria-label={t.nav.langSwitch}
+              title={t.nav.langSwitch}
             >
               <Globe size={14} aria-hidden="true" />
-              <span style={{ fontWeight: 700 }}>{lang === "he" ? "EN" : "עב"}</span>
+              <span style={{ fontWeight: 700 }}>{t.nav.langCode}</span>
             </button>
 
             {/* Auth controls */}
@@ -240,10 +240,10 @@ export default function Navbar() {
           <button
             onClick={toggleLang}
             className="nav-lang-toggle"
-            aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
+            aria-label={t.nav.langSwitch}
             style={{ padding: "6px 12px", fontWeight: 700 }}
           >
-            {lang === "he" ? "EN" : "עב"}
+            {t.nav.langCode}
           </button>
           <button
             aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}

@@ -305,15 +305,13 @@ export default function MyRequestsPage() {
               <AlertCircle size={24} color="var(--danger)" />
             </div>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--ink)", marginBottom: "8px" }}>
-              {lang === "he" ? "אירעה שגיאה בטעינת הבקשות" : "We could not load your requests"}
+              {t.myRequests.loadErrorTitle}
             </h2>
             <p style={{ color: "var(--gray-600)", marginBottom: "20px", lineHeight: 1.7, maxWidth: "44ch", marginInline: "auto" }}>
-              {lang === "he"
-                ? "נסה/י לרענן את הדף או לחזור שוב מאוחר יותר."
-                : "Try refreshing the page or come back again in a moment."}
+              {t.myRequests.loadErrorBody}
             </p>
             <button className="btn btn-primary" onClick={() => window.location.reload()}>
-              {lang === "he" ? "רענון" : "Refresh"}
+              {t.myRequests.refresh}
             </button>
           </div>
         ) : items.length === 0 ? (
@@ -325,9 +323,7 @@ export default function MyRequestsPage() {
               {t.myRequests.empty}
             </h2>
             <p style={{ color: "var(--gray-600)", marginBottom: "24px", lineHeight: 1.7, maxWidth: "46ch", marginInline: "auto" }}>
-              {lang === "he"
-                ? "כשתשלח/י בקשה חדשה, היא תופיע כאן עם מספר המעקב והסטטוס שלה."
-                : "When you submit a new request, it will appear here with its tracking number and status."}
+              {t.myRequests.emptyHint}
             </p>
             <Link href="/requests" className="btn btn-primary">
               {t.myRequests.submitCta}

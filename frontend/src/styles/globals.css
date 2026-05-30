@@ -753,6 +753,24 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 .modal-footer { padding: 16px 28px 24px; display: flex; justify-content: flex-end; gap: 10px; }
 
 /* ─────────────────────────────────────────
+   FOOTER SOCIAL ICONS (RTL-safe, logical hover)
+───────────────────────────────────────── */
+.social-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: rgba(244, 238, 224, 0.08);
+  border: 1px solid rgba(244, 238, 224, 0.12);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(244, 238, 224, 0.7);
+  margin-inline-start: 0;
+  transition: background .2s, color .2s;
+}
+.social-icon:hover {
+  background: rgba(185, 105, 78, 0.25);
+  color: var(--ember);
+}
+
+/* ─────────────────────────────────────────
    SKELETON LOADER
 ───────────────────────────────────────── */
 .skeleton {

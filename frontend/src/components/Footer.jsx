@@ -48,17 +48,7 @@ export default function Footer() {
             <p style={{ fontSize:'13.5px', lineHeight:1.7, marginBottom:'20px' }}>{f.tagline}</p>
             <div style={{ display:'flex', gap:'10px' }}>
               {[Facebook, Instagram, Twitter].map((Icon, i) => (
-                <a key={i} href="#" style={{
-                  width:'34px', height:'34px',
-                  borderRadius:'8px', background:'rgba(244,238,224,0.08)',
-                  border:'1px solid rgba(244,238,224,0.12)',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  color:'rgba(244,238,224,0.7)',
-                  transition:'all .2s',
-                }}
-                onMouseEnter={e => {e.currentTarget.style.background='rgba(185,105,78,0.25)'; e.currentTarget.style.color='var(--ember)'}}
-                onMouseLeave={e => {e.currentTarget.style.background='rgba(244,238,224,0.08)'; e.currentTarget.style.color='rgba(244,238,224,0.7)'}}
-                >
+                <a key={i} href="#" className="social-icon">
                   <Icon size={15} />
                 </a>
               ))}

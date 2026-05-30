@@ -15,8 +15,9 @@ import { firebaseDb } from "../lib/firebase";
 import { formatDate } from "../utils/helpers";
 
 export default function ChatListPage() {
-  const { lang } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user, loading: authLoading } = useAuth();
+  const c = t.chat;
 
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,10 +65,8 @@ export default function ChatListPage() {
     return unsub;
   }, [authLoading, user]);
 
-  const title = isRtl ? "השיחות שלי" : "My Chats";
-  const subtitle = isRtl
-    ? "כל השיחות עם הצוות שלנו"
-    : "All conversations with our team";
+  const title = c.listTitle;
+  const subtitle = c.listSubtitle;
 
   return (
     <>
@@ -79,56 +78,50 @@ export default function ChatListPage() {
       >
         {authLoading ? (
           <div className="card" style={{ padding: "28px", textAlign: "center" }}>
-            {isRtl ? "טוען..." : "Loading..."}
+            {c.loading}
           </div>
         ) : !user ? (
           <div className="card" style={{ padding: "34px", textAlign: "center" }}>
             <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--ink)", marginBottom: "10px" }}>
-              {isRtl ? "כניסה נדרשת" : "Sign in required"}
+              {c.signInRequired}
             </h2>
             <p style={{ color: "var(--gray-500)", marginBottom: "22px", lineHeight: 1.7 }}>
-              {isRtl
-                ? "כדי לראות את השיחות שלך, יש להתחבר תחילה."
-                : "You need to be signed in to view your chats."}
+              {c.signInListBody}
             </p>
             <Link
               href={`/login?next=${encodeURIComponent("/chats")}`}
               className="btn btn-primary"
             >
-              {isRtl ? "התחבר/י" : "Sign in"}
+              {c.signIn}
             </Link>
           </div>
         ) : loading ? (
           <div className="card" style={{ padding: "28px", textAlign: "center" }}>
-            {isRtl ? "טוען שיחות..." : "Loading chats..."}
+            {c.loadingChats}
           </div>
         ) : error === "permission" ? (
           <div className="card" style={{ padding: "28px", textAlign: "center" }}>
             <p style={{ color: "var(--gray-500)", marginBottom: "16px" }}>
-              {isRtl
-                ? "אין לך הרשאה לצפות בשיחות. ייתכן שהפעלת הסתיימה."
-                : "You don't have permission to view chats. Your session may have expired."}
+              {c.permissionList}
             </p>
             <Link
               href={`/login?next=${encodeURIComponent("/chats")}`}
               className="btn btn-primary"
             >
-              {isRtl ? "התחבר/י מחדש" : "Sign in again"}
+              {c.signInAgain}
             </Link>
           </div>
         ) : error ? (
           <div className="card" style={{ padding: "28px" }}>
             <p style={{ color: "var(--gray-500)" }}>
-              {isRtl
-                ? "אירעה שגיאה בטעינת השיחות. נסה/י לרענן."
-                : "Could not load chats. Try refreshing."}
+              {c.loadError}
             </p>
             <button
               className="btn btn-primary"
               style={{ marginTop: "14px" }}
               onClick={() => window.location.reload()}
             >
-              {isRtl ? "רענון" : "Refresh"}
+              {c.refresh}
             </button>
           </div>
         ) : chats.length === 0 ? (
@@ -144,7 +137,7 @@ export default function ChatListPage() {
                 marginBottom: "10px",
               }}
             >
-              {isRtl ? "אין שיחות עדיין" : "No chats yet"}
+              {c.emptyTitle}
             </h2>
             <p
               style={{
@@ -153,12 +146,10 @@ export default function ChatListPage() {
                 lineHeight: 1.7,
               }}
             >
-              {isRtl
-                ? "לאחר שבקשתך תוקצה למטפל, תיפתח כאן שיחה אוטומטית."
-                : "Once your request is assigned to a handler, a chat will appear here."}
+              {c.emptyBody}
             </p>
             <Link href="/requests" className="btn btn-primary">
-              {isRtl ? "הגש בקשה" : "Submit a request"}
+              {c.submitRequest}
             </Link>
           </div>
         ) : (
@@ -195,7 +186,7 @@ export default function ChatListPage() {
                         fontSize: "15px",
                       }}
                     >
-                      {isRtl ? "בקשה" : "Request"}{" "}
+                      {c.request}{" "}
                       <span style={{ fontFamily: "monospace", fontSize: "13px" }}>
                         {chat.requestId}
                       </span>
@@ -208,7 +199,7 @@ export default function ChatListPage() {
                       }}
                     >
                       {chat.participants.length}{" "}
-                      {isRtl ? "משתתפים" : "participants"}
+                      {c.participants}
                     </div>
                   </div>
                   <div

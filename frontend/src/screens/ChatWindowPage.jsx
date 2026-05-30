@@ -9,8 +9,9 @@ import { apiFetch } from "../lib/apiClient";
 import { useMessages } from "../hooks/useMessages";
 
 export default function ChatWindowPage() {
-  const { lang } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user, loading: authLoading } = useAuth();
+  const c = t.chat;
   const router = useRouter();
   const { id: chatId } = router.query;
 
@@ -69,7 +70,7 @@ export default function ChatWindowPage() {
     });
   }
 
-  const title = isRtl ? "שיחה" : "Chat";
+  const title = c.windowTitle;
 
   // Auth gate: don't render the chat UI for logged-out users.
   if (!authLoading && !user) {
@@ -79,18 +80,16 @@ export default function ChatWindowPage() {
         <div className="page-container" style={{ maxWidth: "760px", padding: "32px 1.5rem 72px" }}>
           <div className="card" style={{ padding: "34px", textAlign: "center" }}>
             <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--ink)", marginBottom: "10px" }}>
-              {isRtl ? "כניסה נדרשת" : "Sign in required"}
+              {c.signInRequired}
             </h2>
             <p style={{ color: "var(--gray-500)", marginBottom: "22px", lineHeight: 1.7 }}>
-              {isRtl
-                ? "כדי לפתוח את השיחה הזו, יש להתחבר תחילה."
-                : "You need to be signed in to open this chat."}
+              {c.signInWindowBody}
             </p>
             <Link
               href={`/login?next=${encodeURIComponent(router.asPath)}`}
               className="btn btn-primary"
             >
-              {isRtl ? "התחבר/י" : "Sign in"}
+              {c.signIn}
             </Link>
           </div>
         </div>
@@ -103,7 +102,7 @@ export default function ChatWindowPage() {
       <PageHeader title={title} subtitle={typeof chatId === "string" ? chatId : ""}>
         <div style={{ marginTop: "12px" }}>
           <Link href="/chats" className="btn btn-primary btn-sm">
-            {isRtl ? "← כל השיחות" : "← All chats"}
+            {c.allChats}
           </Link>
         </div>
       </PageHeader>
@@ -141,19 +140,17 @@ export default function ChatWindowPage() {
           >
             {msgsLoading && (
               <p style={{ textAlign: "center", color: "var(--gray-400)" }}>
-                {isRtl ? "טוען הודעות..." : "Loading messages..."}
+                {c.loadingMessages}
               </p>
             )}
             {msgsError === "permission" && (
               <p style={{ textAlign: "center", color: "var(--gray-500)" }}>
-                {isRtl
-                  ? "אין לך הרשאה לצפות בשיחה זו."
-                  : "You don't have permission to view this chat."}
+                {c.permissionWindow}
               </p>
             )}
             {msgsError && msgsError !== "permission" && (
               <p style={{ textAlign: "center", color: "var(--red, #c0392b)" }}>
-                {isRtl ? "שגיאה בטעינת ההודעות" : "Could not load messages"}
+                {c.messagesError}
               </p>
             )}
             {!msgsLoading && !msgsError && messages.length === 0 && (
@@ -164,9 +161,7 @@ export default function ChatWindowPage() {
                   paddingTop: "24px",
                 }}
               >
-                {isRtl
-                  ? "אין הודעות עדיין. שלח/י הודעה ראשונה!"
-                  : "No messages yet. Send the first one!"}
+                {c.noMessages}
               </p>
             )}
             {messages.map((msg) => {
@@ -224,7 +219,7 @@ export default function ChatWindowPage() {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={isRtl ? "הקלד/י הודעה..." : "Type a message..."}
+            placeholder={c.inputPH}
             disabled={sending}
             style={{
               flex: 1,
@@ -241,15 +236,13 @@ export default function ChatWindowPage() {
             className="btn btn-primary"
             disabled={sending || !inputText.trim()}
           >
-            {sending
-              ? isRtl ? "שולח..." : "Sending..."
-              : isRtl ? "שלח" : "Send"}
+            {sending ? c.sending : c.send}
           </button>
         </form>
 
         {sendError && (
           <p style={{ color: "var(--red, #c0392b)", fontSize: "13px" }}>
-            {isRtl ? "שגיאה בשליחת ההודעה. נסה/י שוב." : "Failed to send. Please try again."}
+            {c.sendError}
           </p>
         )}
       </div>

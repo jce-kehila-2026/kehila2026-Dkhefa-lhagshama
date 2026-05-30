@@ -8,11 +8,6 @@ import { EmptyState, ErrorState, TableSkeleton, adminErrorMessage } from '@/comp
 
 const ENTITY_FILTERS = ['all', 'businesses', 'organizations', 'answers']
 
-const ENTITY_LABELS = {
-  he: { all: 'הכול', businesses: 'עסקים', organizations: 'ארגונים', answers: 'מענים' },
-  en: { all: 'All', businesses: 'Businesses', organizations: 'Organizations', answers: 'Answers' },
-}
-
 // Distinct badge tone per entity type so the queue is scannable at a glance.
 const ENTITY_TONE = {
   businesses: 'badge-amber',
@@ -62,9 +57,9 @@ export default function AdminApprovalsPage() {
       })
       if (!res.ok) throw new Error('action_failed')
       setItems((prev) => prev.filter((i) => i.id !== item.id))
-      toast(lang === 'he' ? 'בוצע בהצלחה' : 'Done', 'success')
+      toast(a.approvals.actionSuccess, 'success')
     } catch {
-      toast(lang === 'he' ? 'שגיאה, נסה שוב' : 'Error, please try again', 'error')
+      toast(a.approvals.actionError, 'error')
     } finally {
       setBusyId(null)
     }
@@ -77,7 +72,12 @@ export default function AdminApprovalsPage() {
     answers: items.filter((i) => i.entityType === 'answers').length,
   }
   const filtered = filter === 'all' ? items : items.filter((i) => i.entityType === filter)
-  const labels = ENTITY_LABELS[lang] || ENTITY_LABELS.en
+  const labels = {
+    all: a.approvals.entityAll,
+    businesses: a.approvals.entityBusinesses,
+    organizations: a.approvals.entityOrganizations,
+    answers: a.approvals.entityAnswers,
+  }
 
   return (
     <AdminLayout title={a.approvals.title} subtitle={a.approvals.subtitle}>
@@ -133,7 +133,7 @@ export default function AdminApprovalsPage() {
                   onClick={() => act(item, 'request_changes')}
                 >
                   <MessageSquare size={14} aria-hidden="true" />
-                  {lang === 'he' ? 'בקש שינויים' : 'Request changes'}
+                  {a.approvals.requestChanges}
                 </button>
                 <button
                   type="button"
