@@ -2481,3 +2481,133 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   .confirm-box { animation: confirmFade var(--dur-1) var(--ease-out) both; }
   @keyframes confirmFade { from { opacity: 0; } to { opacity: 1; } }
 }
+
+/* ═════════════════════════════════════════════════════════════
+   BRANDED SKELETONS + ERROR MOTION + HELP TOOLTIPS (additive)
+   Reuses the existing .skeleton shimmer. Loading bones for list/card
+   and table-row layouts; a gentle invalid-input shake; an accessible
+   icon-help tooltip. All motion reduced-motion guarded.
+═════════════════════════════════════════════════════════════ */
+
+/* ── Card bones: a directory/list card placeholder (logo + lines + tag) ── */
+.card-bones {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-bones-head { display: flex; align-items: center; gap: 12px; margin-block-end: 4px; }
+.card-bones-avatar { width: 52px; height: 52px; border-radius: 10px; flex-shrink: 0; }
+.card-bones-head-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.bone { display: block; }              /* a single shimmer line/shape */
+.bone-line { height: 0.85em; border-radius: 4px; }
+.bone-title { height: 1.3em; width: 60%; border-radius: 6px; }
+.bone-sub { height: 0.8em; width: 45%; border-radius: 4px; }
+.bone-pill { height: 1.9em; width: 40%; border-radius: 999px; margin-block-start: 6px; }
+.bone-w-90 { width: 90%; }
+.bone-w-75 { width: 75%; }
+
+/* ── Row bones: a generic table/list row placeholder ── */
+.row-bones { display: flex; align-items: center; gap: 16px; padding: 14px 16px; }
+.row-bones .bone-line { flex: 1; }
+.row-bones .bone-line:nth-child(2) { flex: 0 0 22%; }
+.row-bones .bone-line:nth-child(3) { flex: 0 0 14%; }
+
+/* ── Invalid-input motion: a short horizontal nudge + soft danger glow.
+   Applied when .form-input.error gains the .shake hook (one-shot).     */
+.form-input.error.shake,
+.form-textarea.error.shake,
+.form-select.error.shake { animation: inputShake 0.32s var(--ease-out) both; }
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+/* A calmer always-on cue: error fields get a faint danger ring even
+   without the shake, so the invalid state reads at a glance. */
+.form-input.error,
+.form-textarea.error,
+.form-select.error { box-shadow: 0 0 0 1px rgba(160,72,53,0.18); }
+
+@media (prefers-reduced-motion: reduce) {
+  .form-input.error.shake,
+  .form-textarea.error.shake,
+  .form-select.error.shake { animation: none !important; }
+}
+
+/* ── Help tooltip: an inline ⓘ trigger with a positioned bubble.
+   Hover + keyboard focus both reveal it; the bubble is aria-describedby
+   target in JSX so screen readers announce it inline.                  */
+.icon-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-inline-start: 6px;
+  border-radius: 999px;
+  border: none;
+  background: var(--sky-2);
+  color: var(--ink-2);
+  cursor: help;
+  vertical-align: middle;
+  padding: 0;
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+.icon-help:hover { background: var(--sky); color: var(--ink); }
+.icon-help:focus-visible { outline: none; box-shadow: var(--ring-ink); }
+
+.tooltip { position: relative; display: inline-flex; align-items: center; }
+.tooltip-bubble {
+  position: absolute;
+  inset-block-end: calc(100% + 8px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%) translateY(4px);
+  z-index: var(--z-tooltip);
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 11px;
+  background: var(--ink);
+  color: var(--cream);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  text-align: start;
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out), visibility var(--dur-2);
+}
+[dir="rtl"] .tooltip-bubble { inset-inline-start: auto; inset-inline-end: 50%; transform: translateX(50%) translateY(4px); }
+/* Little pointer at the bottom-center of the bubble. */
+.tooltip-bubble::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-block-start-color: var(--ink);
+}
+[dir="rtl"] .tooltip-bubble::after { inset-inline-start: auto; inset-inline-end: 50%; transform: translateX(50%); }
+.tooltip:hover .tooltip-bubble,
+.tooltip:focus-within .tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+[dir="rtl"] .tooltip:hover .tooltip-bubble,
+[dir="rtl"] .tooltip:focus-within .tooltip-bubble { transform: translateX(50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip-bubble { transition: opacity 0.01ms, visibility 0.01ms; transform: translateX(-50%); }
+  [dir="rtl"] .tooltip-bubble { transform: translateX(50%); }
+}

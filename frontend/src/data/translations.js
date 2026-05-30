@@ -774,6 +774,8 @@ const translations = {
         none:        'ללא מסמך מזהה',
         noteLabel:   'הסבר (אופציונלי)',
         notePH:      'פרט מדוע אין תעודת זהות...',
+        tip:         'בחר/י את סוג המסמך המזהה שברשותך. אם אין מסמך, אפשר להמשיך ולצרף הסבר קצר.',
+        tipLabel:    'מידע נוסף על סוג מזהה',
       },
       // #67 — auto-fill
       autoFill: {
@@ -790,6 +792,8 @@ const translations = {
       deadline: {
         label:  'מועד אחרון להסתיימות הטיפול (אופציונלי)',
         hint:   'השאר ריק אם אין מועד מוגדר',
+        tip:    'אם יש תאריך שעד אליו הסיוע חשוב לך, בחר/י אותו כאן. זה עוזר לנו לתעדף את הטיפול.',
+        tipLabel: 'מידע נוסף על מועד אחרון',
       },
       // #90 — admin notice
       adminNotice: {
@@ -1560,6 +1564,8 @@ const translations = {
         none:       'No ID Document',
         noteLabel:  'Explanation (optional)',
         notePH:     'Explain why you do not have an ID...',
+        tip:        'Pick the identity document you hold. If you have none, you can continue and add a short explanation.',
+        tipLabel:   'More about ID type',
       },
       // #67 — auto-fill
       autoFill: {
@@ -1576,6 +1582,8 @@ const translations = {
       deadline: {
         label: 'Desired completion deadline (optional)',
         hint:  'Leave empty if no specific date is required',
+        tip:   'If there is a date by which support matters to you, pick it here. It helps us prioritise your case.',
+        tipLabel: 'More about the deadline',
       },
       // #90 — admin notice
       adminNotice: {

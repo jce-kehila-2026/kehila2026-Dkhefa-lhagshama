@@ -16,7 +16,7 @@ export function Label({ htmlFor, children, required }) {
 export function Input({ error, hint, ...props }) {
   return (
     <>
-      <input className={`form-input${error ? ' error' : ''}`} {...props} />
+      <input className={`form-input${error ? ' error shake' : ''}`} {...props} />
       {error && (
         <div className="form-error">
           <AlertCircle size={12} />
@@ -31,7 +31,7 @@ export function Input({ error, hint, ...props }) {
 export function Select({ error, hint, children, ...props }) {
   return (
     <>
-      <select className={`form-select${error ? ' error' : ''}`} {...props}>
+      <select className={`form-select${error ? ' error shake' : ''}`} {...props}>
         {children}
       </select>
       {error && (
@@ -48,7 +48,7 @@ export function Select({ error, hint, children, ...props }) {
 export function Textarea({ error, hint, ...props }) {
   return (
     <>
-      <textarea className={`form-textarea${error ? ' error' : ''}`} {...props} />
+      <textarea className={`form-textarea${error ? ' error shake' : ''}`} {...props} />
       {error && (
         <div className="form-error">
           <AlertCircle size={12} />

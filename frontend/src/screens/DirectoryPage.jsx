@@ -384,21 +384,22 @@ export default function DirectoryPage() {
           </div>
         )}
 
-        {/* ── LOADING SKELETON ──────────────────────────────────────── */}
+        {/* ── LOADING SKELETON — branded card bones ─────────────────── */}
         {loading && !error && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }} aria-hidden="true">
             {Array.from({ length: PER_PAGE }).map((_, i) => (
-              <div key={i} className="card" style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '14px' }}>
-                  <div className="skeleton" style={{ width: 52, height: 52, borderRadius: 10 }} />
-                  <div style={{ flex: 1 }}>
-                    <div className="skeleton skeleton-title" style={{ marginBottom: 8 }} />
-                    <div className="skeleton skeleton-text" style={{ width: '50%' }} />
-                  </div>
+              <div key={i} className="card-bones">
+                <div className="card-bones-head">
+                  <span className="skeleton card-bones-avatar" />
+                  <span className="card-bones-head-lines">
+                    <span className="skeleton bone bone-title" />
+                    <span className="skeleton bone bone-sub" />
+                  </span>
                 </div>
-                <div className="skeleton skeleton-text" />
-                <div className="skeleton skeleton-text" style={{ width: '85%' }} />
-                <div className="skeleton skeleton-text" style={{ width: '40%', marginBlockStart: 14, height: '2em' }} />
+                <span className="skeleton bone bone-line" />
+                <span className="skeleton bone bone-line bone-w-90" />
+                <span className="skeleton bone bone-line bone-w-75" />
+                <span className="skeleton bone bone-pill" />
               </div>
             ))}
           </div>

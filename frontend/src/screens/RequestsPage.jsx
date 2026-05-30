@@ -9,6 +9,7 @@ import PageHeader from '../components/PageHeader'
 import StepIndicator from '../components/StepIndicator'
 import UploadArea from '../components/UploadArea'
 import { FormGroup, Label, Input, Select, Textarea, FormRow } from '../components/FormElements'
+import HelpTooltip from '../components/HelpTooltip'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useApp } from '../contexts/AppContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -378,7 +379,10 @@ export default function RequestsPage() {
 
             {/* #66 — ID type selector */}
             <FormGroup>
-              <Label required>{s2.idType.label}</Label>
+              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Label required>{s2.idType.label}</Label>
+                <HelpTooltip text={s2.idType.tip} label={s2.idType.tipLabel} />
+              </span>
               <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
                 {[
                   ['israeli_id', s2.idType.israeliId],
@@ -514,7 +518,10 @@ export default function RequestsPage() {
               </FormGroup>
               {/* #68 — deadline picker */}
               <FormGroup>
-                <Label htmlFor="deadline">{s2.deadline.label}</Label>
+                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <Label htmlFor="deadline">{s2.deadline.label}</Label>
+                  <HelpTooltip text={s2.deadline.tip} label={s2.deadline.tipLabel} />
+                </span>
                 <Input
                   id="deadline" name="deadline" type="date"
                   value={values.deadline || ''}
