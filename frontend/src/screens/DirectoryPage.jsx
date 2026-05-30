@@ -206,6 +206,15 @@ export default function DirectoryPage() {
       // Surface the real backend error so failures are diagnosable instead of a
       // blanket "try again later". apiJson throws { status, error, detail }.
       console.error('[DirectoryPage] register business failed:', err)
+      // 401 means no signed-in user — registering a business requires login so
+      // the submission can be tied to an owner (firestore rules key off ownerId).
+      if (err?.status === 401) {
+        window.alert(lang === 'he'
+          ? 'יש להתחבר כדי לרשום עסק.'
+          : 'Please sign in to register a business.')
+        setRegisterSubmitting(false)
+        return
+      }
       const fieldErrors = err?.detail?.fieldErrors
       let detailMsg = ''
       if (fieldErrors && typeof fieldErrors === 'object') {

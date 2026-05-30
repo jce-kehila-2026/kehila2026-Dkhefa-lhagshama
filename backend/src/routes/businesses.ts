@@ -3,6 +3,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
+import { authenticate } from '@/middleware/auth';
 import { writeAuditLog } from '@/lib/audit';
 
 const router = Router();
@@ -54,7 +55,18 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+// POST /api/businesses — submit a new business for admin approval.
+// Server-only write (Firestore rules forbid client `create` on /businesses).
+// authenticate-gated: the signed-in user becomes the business `ownerId`, which
+// the firestore.rules `update` rule later keys off so the owner can edit their
+// own pending submission.
+router.post('/', authenticate, async (req: Request, res: Response) => {
+  const ownerId = req.user?.uid;
+  if (!ownerId) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+
   const parsed = createBusinessSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -69,6 +81,7 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const docRef = await db().collection('businesses').add({
       ...input,
+      ownerId,
       approved: false,
       status: 'pending',
       featured: false,
@@ -79,7 +92,7 @@ router.post('/', async (req: Request, res: Response) => {
     });
 
     writeAuditLog({
-      actorId: 'anonymous',
+      actorId: ownerId,
       action: 'business.submit',
       entityType: 'businesses',
       entityId: docRef.id,
