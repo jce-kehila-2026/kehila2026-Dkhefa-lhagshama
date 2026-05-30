@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import Pagination from '../components/Pagination'
 import { useLanguage } from '../contexts/LanguageContext'
 import { apiJson } from '../lib/apiClient'
-import { mockBusinesses, mockNGOs } from '../data/mockData'
 
 const PER_PAGE = 6
 
@@ -11,13 +10,29 @@ export default function DirectoryPage() {
   const { t, lang } = useLanguage()
   const d = t.directory
 
+  // ── BILINGUAL FIELD HELPERS ───────────────────────────────────
+  // Translatable fields arrive from the API as `{ he, en }` objects. These
+  // helpers render the active language and degrade gracefully for plain
+  // strings / missing values, so `.toLowerCase()`/`.map()` never throw on
+  // live data.
+  const L = (v) => (v && typeof v === 'object') ? (v[lang] ?? v.he ?? '') : (v ?? '')
+  // `tags` is `{ he: string[], en: string[] }` (or, defensively, a bare array).
+  const L_arr = (v) => {
+    if (Array.isArray(v)) return v
+    if (v && typeof v === 'object') {
+      const arr = v[lang] ?? v.he
+      return Array.isArray(arr) ? arr : []
+    }
+    return []
+  }
+
   const [activeTab, setActiveTab] = useState('business')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [bizSearch, setBizSearch] = useState('')
   const [bizCat, setBizCat] = useState('all')
   const [bizPage, setBizPage] = useState(1)
   const [showRegForm, setShowRegForm] = useState(false)
-  const [businesses, setBusinesses] = useState(mockBusinesses)
+  const [businesses, setBusinesses] = useState([])
   const [bizLoading, setBizLoading] = useState(true)
   const [bizError, setBizError] = useState(null)
   const [registerForm, setRegisterForm] = useState({
@@ -45,113 +60,98 @@ export default function DirectoryPage() {
     if (bizSearch.trim()) {
       const q = bizSearch.toLowerCase()
       data = data.filter(b =>
-        b.name.toLowerCase().includes(q) ||
-        b.desc.toLowerCase().includes(q) ||
-        b.descEn.toLowerCase().includes(q) ||
-        b.tags.some(tag => tag.toLowerCase().includes(q)) ||
-        b.city.toLowerCase().includes(q)
+        L(b.name).toLowerCase().includes(q) ||
+        L(b.description).toLowerCase().includes(q) ||
+        L(b.city).toLowerCase().includes(q) ||
+        L_arr(b.tags).some(tag => String(tag).toLowerCase().includes(q))
       )
     }
     return data
-  }, [bizCat, bizSearch, businesses])
+  }, [bizCat, bizSearch, businesses, lang])
 
   const bizPageData = filteredBiz.slice((bizPage - 1) * PER_PAGE, bizPage * PER_PAGE)
 
   // ── FILTER ANSWERS ──────────────────────────────────────────
   const filteredAnswers = useMemo(() => {
-    const data = answersError ? mockNGOs.map((n) => ({
-      id: n.id,
-      title: lang === 'he' ? n.name : n.nameEn,
-      body: lang === 'he' ? n.desc : n.descEn,
-      category: n.areas[0] || 'general',
-      region: lang === 'he' ? n.area : n.areaEn,
-      audience: 'community',
-      tags: lang === 'he' ? n.tags : n.tagsEn,
-      phone: n.phone,
-      sourceName: n.website,
-    })) : answers;
-
-    let filtered = data
+    let filtered = answers
     if (answerCategory !== 'all') filtered = filtered.filter((item) => item.category === answerCategory)
+    // region/audience are bilingual objects — filter against the active-language
+    // value (the API no longer filters these server-side).
     if (answerRegion.trim()) {
       const q = answerRegion.toLowerCase()
-      filtered = filtered.filter((item) => item.region?.toLowerCase().includes(q))
+      filtered = filtered.filter((item) => L(item.region).toLowerCase().includes(q))
     }
     if (answerAudience.trim()) {
       const q = answerAudience.toLowerCase()
-      filtered = filtered.filter((item) => item.audience?.toLowerCase().includes(q))
+      filtered = filtered.filter((item) => L(item.audience).toLowerCase().includes(q))
     }
     if (answerSearch.trim()) {
       const q = answerSearch.toLowerCase()
       filtered = filtered.filter((item) =>
-        item.title?.toLowerCase().includes(q) ||
-        item.body?.toLowerCase().includes(q) ||
-        item.region?.toLowerCase().includes(q) ||
-        item.audience?.toLowerCase().includes(q)
+        L(item.title).toLowerCase().includes(q) ||
+        L(item.body).toLowerCase().includes(q) ||
+        L(item.region).toLowerCase().includes(q) ||
+        L(item.audience).toLowerCase().includes(q)
       )
     }
     return filtered
-  }, [answers, answersError, answerCategory, answerRegion, answerAudience, answerSearch, lang])
+  }, [answers, answerCategory, answerRegion, answerAudience, answerSearch, lang])
 
   const answerPageData = filteredAnswers.slice((answerPage - 1) * PER_PAGE, answerPage * PER_PAGE)
 
-  useEffect(() => {
-    let canceled = false
-
-    async function loadBusinesses() {
-      setBizLoading(true)
-      setBizError(null)
-
-      try {
-        const data = await apiJson('/api/businesses')
-        if (!canceled && data?.items) {
-          setBusinesses(data.items)
-        }
-      } catch (err) {
-        if (!canceled) {
-          setBizError(err?.detail?.error || 'Unable to load businesses')
-          // Keep the mock businesses for a working experience.
-        }
-      } finally {
-        if (!canceled) setBizLoading(false)
+  // Loaders are useCallback so the Retry buttons can re-run them. `live` lets the
+  // effect cancel a stale in-flight request without blocking a manual retry.
+  const loadBusinesses = useCallback(async (live = { current: true }) => {
+    setBizLoading(true)
+    setBizError(null)
+    try {
+      const data = await apiJson('/api/businesses')
+      if (live.current && data?.items) {
+        setBusinesses(data.items)
       }
+    } catch (err) {
+      if (live.current) {
+        setBizError(err?.detail?.error || 'Unable to load businesses')
+      }
+    } finally {
+      if (live.current) setBizLoading(false)
     }
-
-    loadBusinesses()
-    return () => { canceled = true }
   }, [])
 
-  useEffect(() => {
-    let canceled = false
-
-    async function loadAnswers() {
-      setAnswersLoading(true)
-      setAnswersError(null)
-
-      try {
-        const query = new URLSearchParams()
-        if (answerCategory !== 'all') query.set('category', answerCategory)
-        if (answerRegion.trim()) query.set('region', answerRegion.trim())
-        if (answerAudience.trim()) query.set('audience', answerAudience.trim())
-
-        const queryString = query.toString()
-        const path = `/api/answers${queryString ? `?${queryString}` : ''}`
-        const data = await apiJson(path)
-        if (!canceled && data?.items) {
-          setAnswers(data.items)
-        }
-      } catch (err) {
-        if (!canceled) {
-          setAnswersError(err?.detail?.error || 'Unable to load answers')
-        }
-      } finally {
-        if (!canceled) setAnswersLoading(false)
+  const loadAnswers = useCallback(async (live = { current: true }) => {
+    setAnswersLoading(true)
+    setAnswersError(null)
+    try {
+      // `category` is an enum key the API can still filter on server-side.
+      // region/audience are bilingual objects and are filtered client-side.
+      const query = new URLSearchParams()
+      if (answerCategory !== 'all') query.set('category', answerCategory)
+      const queryString = query.toString()
+      const path = `/api/answers${queryString ? `?${queryString}` : ''}`
+      const data = await apiJson(path)
+      if (live.current && data?.items) {
+        setAnswers(data.items)
       }
+    } catch (err) {
+      if (live.current) {
+        setAnswersError(err?.detail?.error || 'Unable to load answers')
+      }
+    } finally {
+      if (live.current) setAnswersLoading(false)
     }
+  }, [answerCategory])
 
-    loadAnswers()
-    return () => { canceled = true }
-  }, [answerCategory, answerRegion, answerAudience])
+  useEffect(() => {
+    const live = { current: true }
+    loadBusinesses(live)
+    return () => { live.current = false }
+  }, [loadBusinesses])
+
+  useEffect(() => {
+    const live = { current: true }
+    loadAnswers(live)
+    return () => { live.current = false }
+  }, [loadAnswers])
 
   const BIZ_CATS = ['all', 'food', 'services', 'health', 'education', 'beauty', 'tech']
   const NGO_AREAS = ['all', 'education', 'employment', 'legal', 'social', 'housing']
@@ -179,17 +179,13 @@ export default function DirectoryPage() {
     }
 
     if (!trimmed.name || !trimmed.ownerName || !trimmed.phone || !trimmed.city || !trimmed.description) {
-      return window.alert(lang === 'he'
-        ? 'אנא מלא/י את כל השדות הנדרשים בשדה המקביל.'
-        : 'Please fill in all required fields.');
+      return window.alert(d.fillRequired);
     }
 
     // The backend (Zod) requires a description of at least 10 characters.
     // Validate here so the user gets a precise message instead of a generic 400.
     if (trimmed.description.length < 10) {
-      return window.alert(lang === 'he'
-        ? 'התיאור חייב לכלול לפחות 10 תווים.'
-        : 'The description must be at least 10 characters long.');
+      return window.alert(d.descTooShort);
     }
 
     setRegisterSubmitting(true)
@@ -198,8 +194,7 @@ export default function DirectoryPage() {
         method: 'POST',
         body: JSON.stringify(trimmed),
       })
-      window.alert(lang === 'he'
-        ? 'העסק נשלח לאישור. תודה!' : 'Business registration submitted for approval. Thank you!')
+      window.alert(d.submitSuccess)
       setShowRegForm(false)
       setRegisterForm({ business_name: '', owner_name: '', phone: '', category: 'food', city: '', desc: '' })
     } catch (err) {
@@ -209,9 +204,7 @@ export default function DirectoryPage() {
       // 401 means no signed-in user — registering a business requires login so
       // the submission can be tied to an owner (firestore rules key off ownerId).
       if (err?.status === 401) {
-        window.alert(lang === 'he'
-          ? 'יש להתחבר כדי לרשום עסק.'
-          : 'Please sign in to register a business.')
+        window.alert(d.loginRequired)
         setRegisterSubmitting(false)
         return
       }
@@ -228,9 +221,7 @@ export default function DirectoryPage() {
       } else if (err?.error) {
         detailMsg = err.error
       }
-      const base = lang === 'he'
-        ? 'שגיאה בשליחת העסק.'
-        : 'Failed to submit the business.'
+      const base = d.submitError
       window.alert(detailMsg ? `${base}\n${detailMsg}` : base)
     } finally {
       setRegisterSubmitting(false)
@@ -239,6 +230,8 @@ export default function DirectoryPage() {
 
   const resultsCount = activeTab === 'business' ? filteredBiz.length : filteredAnswers.length
   const loading = activeTab === 'business' ? bizLoading : answersLoading
+  const error = activeTab === 'business' ? bizError : answersError
+  const retry = activeTab === 'business' ? loadBusinesses : loadAnswers
 
   return (
     <>
@@ -343,7 +336,7 @@ export default function DirectoryPage() {
                     type="text"
                     value={answerRegion}
                     onChange={e => { setAnswerRegion(e.target.value); setAnswerPage(1) }}
-                    placeholder={lang === 'he' ? 'אזור' : 'Region'}
+                    placeholder={d.regionPH}
                     style={{
                       minWidth: '160px', flex: 1, padding: '10px 14px',
                       border: '1px solid var(--hair)', borderRadius: '8px',
@@ -354,7 +347,7 @@ export default function DirectoryPage() {
                     type="text"
                     value={answerAudience}
                     onChange={e => { setAnswerAudience(e.target.value); setAnswerPage(1) }}
-                    placeholder={lang === 'he' ? 'קהל יעד' : 'Audience'}
+                    placeholder={d.audiencePH}
                     style={{
                       minWidth: '160px', flex: 1, padding: '10px 14px',
                       border: '1px solid var(--hair)', borderRadius: '8px',
@@ -368,12 +361,25 @@ export default function DirectoryPage() {
         )}
 
         {/* ── RESULTS COUNT ─────────────────────────────────────────── */}
-        <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '16px', fontWeight: 500 }}>
-          {loading ? t.common.loading : `${resultsCount} ${t.common.results}`}
-        </div>
+        {!error && (
+          <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '16px', fontWeight: 500 }}>
+            {loading ? t.common.loading : `${resultsCount} ${t.common.results}`}
+          </div>
+        )}
+
+        {/* ── ERROR STATE (with Retry) ──────────────────────────────── */}
+        {!loading && error && (
+          <div className="dir-empty" role="alert">
+            <Search size={28} aria-hidden="true" className="dir-empty-icon" />
+            <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.loadError}</h3>
+            <button className="btn btn-primary btn-sm" onClick={() => retry()} style={{ marginBlockStart: '12px' }}>
+              {d.retry}
+            </button>
+          </div>
+        )}
 
         {/* ── LOADING SKELETON ──────────────────────────────────────── */}
-        {loading && (
+        {loading && !error && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }} aria-hidden="true">
             {Array.from({ length: PER_PAGE }).map((_, i) => (
               <div key={i} className="card" style={{ padding: '24px' }}>
@@ -393,7 +399,7 @@ export default function DirectoryPage() {
         )}
 
         {/* ── BUSINESS RESULTS ──────────────────────────────────────── */}
-        {!loading && activeTab === 'business' && (
+        {!loading && !error && activeTab === 'business' && (
           <>
             {bizPageData.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
@@ -406,31 +412,31 @@ export default function DirectoryPage() {
                         fontSize: '11px', fontWeight: 700, padding: '3px 10px',
                         borderRadius: '20px', marginBottom: '12px',
                       }}>
-                        <Star size={10} fill="var(--ember)" /> {lang === 'he' ? 'מומלץ' : 'Featured'}
+                        <Star size={10} fill="var(--ember)" /> {d.featured}
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                       <div style={{
                         width: '52px', height: '52px', borderRadius: '10px',
-                        background: biz.logoColor, color: '#fff',
+                        background: biz.logoColor || 'var(--navy, #1f2a44)', color: '#fff',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontFamily: 'Frank Ruhl Libre, serif', fontWeight: 900, fontSize: '20px', flexShrink: 0,
                       }}>
-                        {biz.logo}
+                        {biz.logo || L(biz.name).charAt(0)}
                       </div>
                       <div>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)' }}>{biz.name}</div>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)' }}>{L(biz.name)}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--gray-400)' }}>
                           <MapPin size={11} />
-                          {d.categories[biz.category]} • {lang === 'he' ? biz.city : biz.cityEn}
+                          {d.categories[biz.category] || biz.category} • {L(biz.city)}
                         </div>
                       </div>
                     </div>
                     <p style={{ fontSize: '13.5px', color: 'var(--gray-500)', lineHeight: 1.65, marginBottom: '12px' }}>
-                      {lang === 'he' ? biz.desc : biz.descEn}
+                      {L(biz.description)}
                     </p>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                      {(lang === 'he' ? biz.tags : biz.tagsEn).map(tag => (
+                      {L_arr(biz.tags).map(tag => (
                         <span key={tag} style={{
                           background: 'var(--gray-100)', color: 'var(--gray-600)',
                           padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
@@ -454,7 +460,7 @@ export default function DirectoryPage() {
             ) : (
               <div className="dir-empty">
                 <Search size={28} aria-hidden="true" className="dir-empty-icon" />
-                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.noResults}</h3>
+                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.emptyBiz}</h3>
                 <p style={{ color: 'var(--gray-500)', margin: 0 }}>{d.noResultsHint}</p>
               </div>
             )}
@@ -463,24 +469,28 @@ export default function DirectoryPage() {
         )}
 
         {/* ── ANSWER RESULTS ────────────────────────────────────────── */}
-        {!loading && activeTab === 'ngo' && (
+        {!loading && !error && activeTab === 'ngo' && (
           <>
             {answerPageData.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                {answerPageData.map(answer => (
+                {answerPageData.map(answer => {
+                  const aTitle = L(answer.title)
+                  const aRegion = L(answer.region)
+                  const aAudience = L(answer.audience)
+                  return (
                   <div key={answer.id} className="card card-interactive" style={{ padding: '24px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', marginBottom: '14px' }}>
                       <div>
                         <div style={{ fontSize: '15.5px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
-                          {answer.title || (lang === 'he' ? 'שאלה' : 'Question')}
+                          {aTitle || d.questionFallback}
                         </div>
                         <div style={{ fontSize: '12.5px', color: 'var(--gray-400)' }}>
-                          {answer.region || ''}{answer.region && answer.audience ? ' • ' : ''}{answer.audience || ''}
+                          {aRegion}{aRegion && aAudience ? ' • ' : ''}{aAudience}
                         </div>
                       </div>
                     </div>
                     <p style={{ fontSize: '13.5px', color: 'var(--gray-500)', lineHeight: 1.65, marginBottom: '14px' }}>
-                      {answer.body || ''}
+                      {L(answer.body)}
                     </p>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
                       {answer.category && (
@@ -491,20 +501,20 @@ export default function DirectoryPage() {
                           {answer.category === 'all' ? d.filterAll : d.ngoAreas[answer.category] || answer.category}
                         </span>
                       )}
-                      {answer.region && (
+                      {aRegion && (
                         <span style={{
                           background: 'var(--gray-100)', color: 'var(--gray-600)',
                           padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
                         }}>
-                          {answer.region}
+                          {aRegion}
                         </span>
                       )}
-                      {answer.audience && (
+                      {aAudience && (
                         <span style={{
                           background: 'var(--gray-100)', color: 'var(--gray-600)',
                           padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
                         }}>
-                          {answer.audience}
+                          {aAudience}
                         </span>
                       )}
                     </div>
@@ -512,12 +522,13 @@ export default function DirectoryPage() {
                       <button className="btn btn-navy btn-sm" style={{ flex: 1 }}>{d.moreBtn}</button>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="dir-empty">
                 <Search size={28} aria-hidden="true" className="dir-empty-icon" />
-                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.noResults}</h3>
+                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.emptyAnswers}</h3>
                 <p style={{ color: 'var(--gray-500)', margin: 0 }}>{d.noResultsHint}</p>
               </div>
             )}
@@ -532,7 +543,7 @@ export default function DirectoryPage() {
           <div className="modal-box">
             <div className="modal-header">
               <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--ink)' }}>
-                {lang === 'he' ? '+ רישום עסק חדש' : '+ Register New Business'}
+                {d.registerNew}
               </h3>
               <button onClick={() => setShowRegForm(false)} className="btn btn-ghost btn-sm" style={{ padding: '4px' }}>✕</button>
             </div>
@@ -540,8 +551,7 @@ export default function DirectoryPage() {
               {['business_name', 'owner_name', 'phone', 'category', 'city', 'desc'].map(field => (
                 <div className="form-group" key={field}>
                   <label className="form-label">
-                    {lang === 'he' ? { business_name: 'שם העסק', owner_name: 'שם הבעלים', phone: 'טלפון', category: 'קטגוריה', city: 'עיר', desc: 'תיאור קצר' }[field]
-                                   : { business_name: 'Business Name', owner_name: 'Owner Name', phone: 'Phone', category: 'Category', city: 'City', desc: 'Short Description' }[field]}
+                    {d.fields[field]}
                   </label>
                   {field === 'desc' ? (
                     <textarea
@@ -574,7 +584,7 @@ export default function DirectoryPage() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowRegForm(false)}>{t.common.cancel}</button>
               <button className="btn btn-primary" onClick={handleRegisterSubmit} disabled={registerSubmitting}>
-                {registerSubmitting ? t.common.loading : (lang === 'he' ? 'שלח לאישור' : 'Submit for Approval')}
+                {registerSubmitting ? t.common.loading : d.submitApproval}
               </button>
             </div>
           </div>
