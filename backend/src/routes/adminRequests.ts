@@ -88,24 +88,27 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
     }
     const data = snap.data()!;
 
-    // Also fetch request events for the timeline
+    // Also fetch request events for the timeline. We sort client-side by
+    // createdAt (ascending) instead of Firestore's orderBy so this equality
+    // query needs no composite index — the per-request event set is small.
     const eventsSnap = await db()
       .collection('requestEvents')
       .where('requestId', '==', req.params.id)
-      .orderBy('createdAt', 'asc')
       .get();
 
-    const events = eventsSnap.docs.map((e) => {
-      const ev = e.data();
-      return {
-        id: e.id,
-        type: ev.type,
-        actorId: ev.actorId,
-        visibility: ev.visibility,
-        details: ev.details ?? {},
-        createdAt: ev.createdAt?.toDate?.()?.toISOString?.() ?? null,
-      };
-    });
+    const events = eventsSnap.docs
+      .map((e) => {
+        const ev = e.data();
+        return {
+          id: e.id,
+          type: ev.type,
+          actorId: ev.actorId,
+          visibility: ev.visibility,
+          details: ev.details ?? {},
+          createdAt: ev.createdAt?.toDate?.()?.toISOString?.() ?? null,
+        };
+      })
+      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''));
 
     res.json({
       id: snap.id,

@@ -44,9 +44,10 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const [pendingSnap, activeSnap] = await Promise.all([
       db()
+        // Sorted client-side by submittedAt below so this equality query needs
+        // no composite index (pending applications are few).
         .collection('volunteerApplications')
         .where('status', '==', 'pending')
-        .orderBy('submittedAt', 'desc')
         .limit(100)
         .get(),
       db()
@@ -71,6 +72,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         submittedAt: data.submittedAt?.toDate?.()?.toISOString?.() ?? null,
       };
     });
+    // Newest applications first (replaces Firestore orderBy).
+    pending.sort((a, b) => (b.submittedAt ?? '').localeCompare(a.submittedAt ?? ''));
 
     const active = activeSnap.docs.map((d) => {
       const data = d.data();

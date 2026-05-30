@@ -299,10 +299,11 @@ router.get('/:id/events', authenticate, async (req: Request, res: Response) => {
     // Determine which visibility levels this caller may see.
     const canSeeInternal = isAdmin || isHandler;
 
+    // Sort client-side by createdAt (ascending) instead of Firestore orderBy
+    // so this equality query needs no composite index — the set is small.
     const eventsSnap = await db()
       .collection('requestEvents')
       .where('requestId', '==', id)
-      .orderBy('createdAt', 'asc')
       .get();
 
     const events = eventsSnap.docs
@@ -317,6 +318,7 @@ router.get('/:id/events', authenticate, async (req: Request, res: Response) => {
           createdAt:  ev.createdAt?.toDate?.()?.toISOString?.() ?? null,
         };
       })
+      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
       // Filter internal events unless the caller may see them.
       .filter((ev) => canSeeInternal || ev.visibility !== 'internal');
 
