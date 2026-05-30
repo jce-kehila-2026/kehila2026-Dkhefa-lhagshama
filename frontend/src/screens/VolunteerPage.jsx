@@ -13,7 +13,7 @@ export default function VolunteerPage() {
   const [submitted, setSubmitted] = useState(false)
   const [selectedAreas, setSelectedAreas] = useState([])
 
-  const { values, errors, handleChange, setValue, setFieldErrors, reset } = useForm({
+  const { values, errors, handleChange, setFieldErrors, reset } = useForm({
     fullName:'', profession:'', availability:'1', city:'',
   })
 

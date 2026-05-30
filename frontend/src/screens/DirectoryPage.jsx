@@ -16,16 +16,19 @@ export default function DirectoryPage() {
   // helpers render the active language and degrade gracefully for plain
   // strings / missing values, so `.toLowerCase()`/`.map()` never throw on
   // live data.
-  const L = (v) => (v && typeof v === 'object') ? (v[lang] ?? v.he ?? '') : (v ?? '')
+  const L = useCallback(
+    (v) => (v && typeof v === 'object') ? (v[lang] ?? v.he ?? '') : (v ?? ''),
+    [lang],
+  )
   // `tags` is `{ he: string[], en: string[] }` (or, defensively, a bare array).
-  const L_arr = (v) => {
+  const L_arr = useCallback((v) => {
     if (Array.isArray(v)) return v
     if (v && typeof v === 'object') {
       const arr = v[lang] ?? v.he
       return Array.isArray(arr) ? arr : []
     }
     return []
-  }
+  }, [lang])
 
   const [activeTab, setActiveTab] = useState('business')
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -73,7 +76,7 @@ export default function DirectoryPage() {
       )
     }
     return data
-  }, [bizCat, bizSearch, businesses, lang])
+  }, [bizCat, bizSearch, businesses, L, L_arr])
 
   const bizPageData = filteredBiz.slice((bizPage - 1) * PER_PAGE, bizPage * PER_PAGE)
 
@@ -101,7 +104,7 @@ export default function DirectoryPage() {
       )
     }
     return filtered
-  }, [answers, answerCategory, answerRegion, answerAudience, answerSearch, lang])
+  }, [answers, answerCategory, answerRegion, answerAudience, answerSearch, L])
 
   const answerPageData = filteredAnswers.slice((answerPage - 1) * PER_PAGE, answerPage * PER_PAGE)
 

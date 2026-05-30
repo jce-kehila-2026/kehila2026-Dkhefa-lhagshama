@@ -27,7 +27,7 @@ export default function LoginPage() {
       // #88 — validateRedirect ensures `next` is a same-origin relative path only
       const safe = validateRedirect(router.query.next, '/')
       router.push(safe)
-    } catch (err) {
+    } catch {
       setError(a.error)
       setSubmitting(false)
     }

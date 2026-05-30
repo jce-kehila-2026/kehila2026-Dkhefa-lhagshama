@@ -31,11 +31,9 @@ export function uploadAttachment(file: File, requestId: string): UploadHandle {
   const path = `requests/${requestId}/${safeName(file.name)}`;
   const listeners = new Set<(p: number) => void>();
   const xhr = new XMLHttpRequest();
-  let resolveDone: (value: { path: string; downloadURL: string }) => void = () => {};
   let rejectDone: (reason?: unknown) => void = () => {};
 
   const done = new Promise<{ path: string; downloadURL: string }>((resolve, reject) => {
-    resolveDone = resolve;
     rejectDone = reject;
 
     xhr.upload.onprogress = (event) => {

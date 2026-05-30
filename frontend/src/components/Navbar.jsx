@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 
 export default function Navbar() {
-  const { t, toggleLang, lang } = useLanguage();
+  const { t, toggleLang } = useLanguage();
   const { user, role, logout, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();

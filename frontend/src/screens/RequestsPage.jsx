@@ -4,7 +4,7 @@ const useNavigate = () => {
   const router = useRouter()
   return (to) => router.push(to)
 }
-import { CheckCircle, Copy, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles } from 'lucide-react'
+import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import StepIndicator from '../components/StepIndicator'
 import UploadArea from '../components/UploadArea'
@@ -17,7 +17,6 @@ import { sendEmailVerification } from 'firebase/auth' // #86
 import { firebaseAuth } from '../lib/firebase' // #86
 import { useForm } from '../hooks/useForm'
 import { validateStep1, validateStep2, validateStep3, validateStep4 } from '../utils/validators'
-import { copyToClipboard } from '../utils/helpers'
 import { apiFetch, apiJson } from '../lib/apiClient'
 
 // ── Constants ──────────────────────────────────────────────────
@@ -72,7 +71,6 @@ export default function RequestsPage() {
   }
 
   const [step, setStep] = useState(1)
-  const [trackingId, setTrackingId] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [idUploaded, setIdUploaded] = useState(false)
   const [idPath, setIdPath] = useState('')
@@ -90,8 +88,10 @@ export default function RequestsPage() {
     return window.crypto.randomUUID()
   }, [])
 
-  const GENDER_MAP = { M: 'male', F: 'female', O: 'other', '': '' }
-  const toCanonicalGender = (g) => GENDER_MAP[g] ?? ''
+  const toCanonicalGender = useCallback((g) => {
+    const GENDER_MAP = { M: 'male', F: 'female', O: 'other', '': '' }
+    return GENDER_MAP[g] ?? ''
+  }, [])
 
   const rq = t.request
   const s2 = t.stream2
@@ -99,7 +99,7 @@ export default function RequestsPage() {
 
   // ── Form state (#93 draft) ────────────────────────────────────
   const draft = loadDraft()
-  const { values, errors, touched, handleChange, setValue, setFieldErrors, reset } = useForm({
+  const { values, errors, handleChange, setValue, setFieldErrors } = useForm({
     firstName:'', lastName:'',
     idType: 'israeli_id', idNumber:'', idNote:'',
     phone:'', email:'',
@@ -257,7 +257,6 @@ export default function RequestsPage() {
       const body = await res.json()
       const newId = body.requestId || requestId
       clearDraft()
-      setTrackingId(newId)
       setSubmitted(true)
       setShowSaveProfile(true)
       // #94 — replace route so back-button doesn't re-open the form
@@ -269,11 +268,6 @@ export default function RequestsPage() {
     } finally {
       setSubmitting(false)
     }
-  }
-
-  const handleCopy = async () => {
-    const ok = await copyToClipboard(trackingId)
-    toast(ok ? t.common.copied : t.common.error, ok ? 'success' : 'error')
   }
 
   // ── Auth / role gates ─────────────────────────────────────────
@@ -485,7 +479,6 @@ export default function RequestsPage() {
                     className="choice-tile"
                     role="radio"
                     aria-checked={selected}
-                    aria-pressed={selected}
                     onClick={() => setValue('category', key)}
                   >
                     <span className="choice-tile-icon" aria-hidden="true" style={{ background:bg, color }}>

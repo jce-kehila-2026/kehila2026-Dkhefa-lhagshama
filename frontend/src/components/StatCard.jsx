@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-export default function StatCard({ num, suffix = '', label, delay = 0 }) {
+export default function StatCard({ num, suffix = '', delay = 0 }) {
   const [displayed, setDisplayed] = useState(0)
   const ref = useRef(null)
   const started = useRef(false)

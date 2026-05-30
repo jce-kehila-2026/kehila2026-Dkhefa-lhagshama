@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Star, CheckCircle, Phone } from 'lucide-react'
+import { ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Star } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { mockStories, mockStats, mockNGOs } from '../data/mockData'
 import StatCard from '../components/StatCard'

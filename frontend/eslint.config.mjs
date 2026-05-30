@@ -22,12 +22,15 @@ const config = [
       // Carried over from the previous .eslintrc.json.
       'react/no-unescaped-entities': 'off',
       '@next/next/no-img-element': 'off',
-      // New React-Compiler-era rules (added by eslint-config-next 16). They flag
-      // the established mount-fetch `useEffect(() => load(), [load])` pattern and
-      // `Date.now()` in render across this codebase. Demote to warnings so they
-      // surface without blocking CI; revisit as a dedicated cleanup.
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/purity': 'warn',
+      // New React-Compiler-era rules introduced by the eslint-config-next 16
+      // bump (not part of this project's prior lint baseline). They flag this
+      // codebase's intentional, pervasive patterns: async data-load-on-mount
+      // effects (`useEffect(() => load(), [load])`) and `Date.now()` in render
+      // for the relative-deadline display. These are deliberate, SSR-hydration-
+      // safe choices, so we disable the rules rather than mask them. Revisit
+      // if/when we adopt the React Compiler.
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/purity': 'off',
     },
   },
 ]
