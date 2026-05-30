@@ -19,6 +19,13 @@ firebase deploy --only hosting
 > (add `output: 'export'` in `frontend/next.config.js`), change `firebase.json`
 > hosting back to `"public": "frontend/out"` and deploy `frontend/out`.
 
+> Build note: Next 16 uses Turbopack for `next build`. Turbopack panics if
+> `frontend/node_modules` is a **symlink that points outside the project root**
+> (`Symlink [project]/node_modules is invalid`). CI installs deps with
+> `npm ci`, which creates a real directory, so builds succeed there. Only some
+> local git-worktree setups (where node_modules is shared via symlink) hit this;
+> run a plain `npm install` inside `frontend/` to get a real node_modules.
+
 ## Backend
 
 **Decision pending — Cloud Run or Vercel.** The deploy workflow has both
