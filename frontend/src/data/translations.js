@@ -432,6 +432,53 @@ const translations = {
       welcome:          'שלום',
     },
 
+    // === Stream 3 (volunteer signup) ===
+    volunteerSignup: {
+      // Tab toggle on register page
+      tabBeneficiary: 'נהנה מהשירות',
+      tabVolunteer:   'מתנדב/ת',
+
+      // Step 1 — account creation labels (reuses auth.register for email/pw)
+      step1Title:     'פרטי חשבון',
+
+      // Step 2 — volunteer details form
+      step2Title:     'פרטי התנדבות',
+      firstName:      'שם פרטי',
+      lastName:       'שם משפחה',
+      phone:          'מספר טלפון',
+      email:          'דואר אלקטרוני',
+      city:           'עיר מגורים',
+      profession:     'מקצוע / תחום התמחות',
+      professionPH:   'עו״ד, מהנדס, מורה...',
+      areasOfHelp:    'תחומי התנדבות',
+      languages:      'שפות',
+      languagesPH:    'עברית, אמהרית, אנגלית...',
+      availability:   'זמינות שבועית',
+      avail24:        '2–4 שעות בשבוע',
+      avail48:        '4–8 שעות בשבוע',
+      avail8plus:     '8+ שעות בשבוע',
+      motivation:     'מוטיבציה / הערות נוספות',
+      motivationPH:   'ספר/י לנו קצת על עצמך...',
+      consent:        'אני מאשר/ת את תנאי השימוש ומדיניות הפרטיות ומסכים/ה שפרטי יישמרו לצורך תיאום פעילות ההתנדבות.',
+      areasList:      ['חינוך וחניכה', 'ייעוץ משפטי', 'תעסוקה', 'שילוב חברתי', 'בריאות ורווחה', 'יזמות ועסקים'],
+
+      // Navigation
+      nextStep:       'המשך לפרטי ההתנדבות',
+      backStep:       'חזור לפרטי חשבון',
+      submit:         'שלח הגשה כמתנדב',
+      submitting:     'שולח...',
+
+      // Errors
+      minOneArea:     'יש לבחור לפחות תחום התנדבות אחד',
+      minOneLang:     'יש לציין לפחות שפה אחת',
+      consentRequired:'יש לאשר את התנאים',
+
+      // Thanks page
+      thanksTitle:    'תודה על ההגשה!',
+      thanksSubtitle: 'קיבלנו את בקשתך להצטרף כמתנדב/ת. נציג יצור איתך קשר בקרוב לתיאום.',
+      thanksBackHome: 'חזרה לדף הבית',
+    },
+
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
     myRequests: {
       navLink:  'הבקשות שלי',
@@ -447,6 +494,7 @@ const translations = {
         status:      'סטטוס',
         date:        'תאריך הגשה',
         attachments: 'מסמכים',
+        deadline:    'מועד אחרון',
       },
       categories: {
         education:  'חינוך',
@@ -468,6 +516,61 @@ const translations = {
         rejected:     'נדחה',
         needsChanges: 'דורש תיקון',
       },
+      // #68 — timeline
+      timeline: {
+        title:            'היסטוריית הבקשה',
+        noEvents:         'אין אירועים עדיין',
+        types: {
+          created:          'הבקשה נוצרה',
+          attachment_added: 'מסמך צורף',
+          assigned:         'הוקצה מטפל',
+          status_changed:   'הסטטוס עודכן',
+          note_added:       'הוסף הערה',
+          rated:            'דירוג נוסף',
+        },
+      },
+      // #68 — deadline pill
+      dueIn: (days) => days === 0 ? 'היום' : days < 0 ? `עבר לפני ${Math.abs(days)} ימים` : `בעוד ${days} ימים`,
+      overdue: 'עבר המועד',
+    },
+
+    // === Stream 2 (UC-01 form) ===
+    // Keys added by Stream 2 agent. Do not reorder or reformat existing keys.
+    stream2: {
+      // #66 — ID-type selector
+      idType: {
+        label:       'סוג מזהה',
+        israeliId:   'תעודת זהות ישראלית',
+        passport:    'דרכון / מסמך זר',
+        none:        'ללא מסמך מזהה',
+        noteLabel:   'הסבר (אופציונלי)',
+        notePH:      'פרט מדוע אין תעודת זהות...',
+      },
+      // #67 — auto-fill
+      autoFill: {
+        fillBtn:        'מלא מהפרופיל שלי',
+        saveToProfile:  'שמור פרטים לפרופיל',
+        saved:          'הפרטים נשמרו בפרופיל',
+        saveError:      'שמירת הפרופיל נכשלה',
+        emailNote:      'ניתן לשנות את כתובת האימייל',
+      },
+      // #68 — deadline picker
+      deadline: {
+        label:  'מועד אחרון להסתיימות הטיפול (אופציונלי)',
+        hint:   'השאר ריק אם אין מועד מוגדר',
+      },
+      // #90 — admin notice
+      adminNotice: {
+        title:    'חשבון ניהול מחובר',
+        body:     'לא ניתן להגיש בקשה מחשבון מנהל. אנא עבור לחשבון מוטב.',
+        switchBtn:'עבור לחשבון מוטב',
+      },
+      // #93 — draft restored
+      draftRestored:  'הטיוטה שלך שוחזרה לאחר הפסקת הפגישה',
+      draftCleared:   'הטיוטה נמחקה',
+      reloginPrompt:  'הפגישה פגה תוקף. אנא התחבר שוב — הטיוטה תישמר.',
+      // #94 — success after submit redirect
+      newRequestBadge: 'בקשה חדשה',
     },
   },
 
@@ -885,6 +988,53 @@ const translations = {
       welcome:          'Hello',
     },
 
+    // === Stream 3 (volunteer signup) ===
+    volunteerSignup: {
+      // Tab toggle on register page
+      tabBeneficiary: 'Beneficiary',
+      tabVolunteer:   'Volunteer',
+
+      // Step 1 — account creation labels (reuses auth.register for email/pw)
+      step1Title:     'Account Details',
+
+      // Step 2 — volunteer details form
+      step2Title:     'Volunteer Details',
+      firstName:      'First Name',
+      lastName:       'Last Name',
+      phone:          'Phone Number',
+      email:          'Email Address',
+      city:           'City',
+      profession:     'Profession / Area of Expertise',
+      professionPH:   'Lawyer, engineer, teacher...',
+      areasOfHelp:    'Areas of Help',
+      languages:      'Languages',
+      languagesPH:    'Hebrew, Amharic, English...',
+      availability:   'Weekly Availability',
+      avail24:        '2–4 hours per week',
+      avail48:        '4–8 hours per week',
+      avail8plus:     '8+ hours per week',
+      motivation:     'Motivation / Additional Notes',
+      motivationPH:   'Tell us a bit about yourself...',
+      consent:        'I agree to the Terms of Use and Privacy Policy, and consent to my details being stored for volunteer coordination purposes.',
+      areasList:      ['Education & Mentoring', 'Legal Consulting', 'Employment', 'Social Integration', 'Health & Welfare', 'Entrepreneurship & Business'],
+
+      // Navigation
+      nextStep:       'Continue to Volunteer Details',
+      backStep:       'Back to Account Details',
+      submit:         'Submit Volunteer Application',
+      submitting:     'Submitting...',
+
+      // Errors
+      minOneArea:     'Please select at least one area of help',
+      minOneLang:     'Please enter at least one language',
+      consentRequired:'You must agree to the terms to continue',
+
+      // Thanks page
+      thanksTitle:    'Thank You for Applying!',
+      thanksSubtitle: 'We received your volunteer application. A representative will contact you soon to coordinate.',
+      thanksBackHome: 'Back to Home',
+    },
+
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
     myRequests: {
       navLink:  'My Requests',
@@ -900,6 +1050,7 @@ const translations = {
         status:      'Status',
         date:        'Date submitted',
         attachments: 'Files',
+        deadline:    'Deadline',
       },
       categories: {
         education:  'Education',
@@ -921,6 +1072,61 @@ const translations = {
         rejected:     'Rejected',
         needsChanges: 'Needs changes',
       },
+      // #68 — timeline
+      timeline: {
+        title:            'Request Timeline',
+        noEvents:         'No events yet',
+        types: {
+          created:          'Request created',
+          attachment_added: 'Document attached',
+          assigned:         'Handler assigned',
+          status_changed:   'Status updated',
+          note_added:       'Note added',
+          rated:            'Rating added',
+        },
+      },
+      // #68 — deadline pill
+      dueIn: (days) => days === 0 ? 'Due today' : days < 0 ? `Overdue by ${Math.abs(days)} days` : `Due in ${days} days`,
+      overdue: 'Overdue',
+    },
+
+    // === Stream 2 (UC-01 form) ===
+    // Keys added by Stream 2 agent. Do not reorder or reformat existing keys.
+    stream2: {
+      // #66 — ID-type selector
+      idType: {
+        label:      'ID Type',
+        israeliId:  'Israeli ID',
+        passport:   'Passport / Foreign Document',
+        none:       'No ID Document',
+        noteLabel:  'Explanation (optional)',
+        notePH:     'Explain why you do not have an ID...',
+      },
+      // #67 — auto-fill
+      autoFill: {
+        fillBtn:       'Auto-fill from my profile',
+        saveToProfile: 'Save details to profile',
+        saved:         'Details saved to profile',
+        saveError:     'Failed to save profile',
+        emailNote:     'You may change your email address',
+      },
+      // #68 — deadline picker
+      deadline: {
+        label: 'Desired completion deadline (optional)',
+        hint:  'Leave empty if no specific date is required',
+      },
+      // #90 — admin notice
+      adminNotice: {
+        title:    'Admin account signed in',
+        body:     'You cannot submit a request from an admin account. Please switch to a beneficiary account.',
+        switchBtn:'Switch account',
+      },
+      // #93 — draft restored
+      draftRestored: 'Your draft was restored after your session expired',
+      draftCleared:  'Draft cleared',
+      reloginPrompt: 'Your session expired. Please sign in again — your draft is saved.',
+      // #94 — success after submit redirect
+      newRequestBadge: 'New request',
     },
   },
 }
