@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import Pagination from '../components/Pagination'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { useLanguage } from '../contexts/LanguageContext'
 import { apiJson } from '../lib/apiClient'
 
@@ -44,6 +45,8 @@ export default function DirectoryPage() {
     desc: '',
   })
   const [registerSubmitting, setRegisterSubmitting] = useState(false)
+  // Branded notice dialog (replaces native alert): { message, variant, onClose? }.
+  const [notice, setNotice] = useState(null)
   const [answers, setAnswers] = useState([])
   const [answerSearch, setAnswerSearch] = useState('')
   const [answerCategory, setAnswerCategory] = useState('all')
@@ -179,13 +182,15 @@ export default function DirectoryPage() {
     }
 
     if (!trimmed.name || !trimmed.ownerName || !trimmed.phone || !trimmed.city || !trimmed.description) {
-      return window.alert(d.fillRequired);
+      setNotice({ message: d.fillRequired, variant: 'danger' })
+      return
     }
 
     // The backend (Zod) requires a description of at least 10 characters.
     // Validate here so the user gets a precise message instead of a generic 400.
     if (trimmed.description.length < 10) {
-      return window.alert(d.descTooShort);
+      setNotice({ message: d.descTooShort, variant: 'danger' })
+      return
     }
 
     setRegisterSubmitting(true)
@@ -194,9 +199,10 @@ export default function DirectoryPage() {
         method: 'POST',
         body: JSON.stringify(trimmed),
       })
-      window.alert(d.submitSuccess)
+      // Reset + close the form, then surface a branded success notice.
       setShowRegForm(false)
       setRegisterForm({ business_name: '', owner_name: '', phone: '', category: 'food', city: '', desc: '' })
+      setNotice({ message: d.submitSuccess })
     } catch (err) {
       // Surface the real backend error so failures are diagnosable instead of a
       // blanket "try again later". apiJson throws { status, error, detail }.
@@ -204,7 +210,7 @@ export default function DirectoryPage() {
       // 401 means no signed-in user — registering a business requires login so
       // the submission can be tied to an owner (firestore rules key off ownerId).
       if (err?.status === 401) {
-        window.alert(d.loginRequired)
+        setNotice({ message: d.loginRequired, variant: 'danger' })
         setRegisterSubmitting(false)
         return
       }
@@ -222,7 +228,7 @@ export default function DirectoryPage() {
         detailMsg = err.error
       }
       const base = d.submitError
-      window.alert(detailMsg ? `${base}\n${detailMsg}` : base)
+      setNotice({ message: detailMsg ? `${base}\n${detailMsg}` : base, variant: 'danger' })
     } finally {
       setRegisterSubmitting(false)
     }
@@ -590,6 +596,16 @@ export default function DirectoryPage() {
           </div>
         </div>
       )}
+
+      {/* Branded notice (replaces native alert) — single OK button. */}
+      <ConfirmDialog
+        open={!!notice}
+        title={notice?.variant === 'danger' ? t.common.notice : t.common.success}
+        message={notice?.message}
+        confirmLabel={t.common.ok}
+        onConfirm={() => setNotice(null)}
+        onCancel={() => setNotice(null)}
+      />
     </>
   )
 }

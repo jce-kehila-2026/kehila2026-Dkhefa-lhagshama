@@ -392,6 +392,14 @@ const translations = {
         requestChanges: 'בקש שינויים',
         actionSuccess:  'בוצע בהצלחה',
         actionError:    'שגיאה, נסה שוב',
+        confirm: {
+          approveTitle:   'לאשר את הפריט?',
+          approveBody:    'הפריט יפורסם ויהיה גלוי לציבור.',
+          rejectTitle:    'לדחות את הפריט?',
+          rejectBody:     'הפריט יידחה ולא יפורסם. אפשר יהיה לשחזר אותו בהמשך.',
+          changesTitle:   'לבקש שינויים?',
+          changesBody:    'הפריט יוחזר לשולח לצורך תיקונים.',
+        },
         entityAll:           'הכול',
         entityBusinesses:    'עסקים',
         entityOrganizations: 'ארגונים',
@@ -542,6 +550,9 @@ const translations = {
       delete:     'מחיקה',
       deleteConfirm: 'האם אתה בטוח שברצונך למחוק?',
       or:         'או',
+      ok:         'הבנתי',
+      notice:     'שימו לב',
+      areYouSure: 'האם להמשיך?',
     },
 
     // ── FOOTER ────────────────────────────────────────────────
@@ -1175,6 +1186,14 @@ const translations = {
         requestChanges: 'Request changes',
         actionSuccess:  'Done',
         actionError:    'Error, please try again',
+        confirm: {
+          approveTitle:   'Approve this item?',
+          approveBody:    'The item will be published and visible to the public.',
+          rejectTitle:    'Reject this item?',
+          rejectBody:     'The item will be rejected and stay unpublished. You can restore it later.',
+          changesTitle:   'Request changes?',
+          changesBody:    'The item will be sent back to its submitter for edits.',
+        },
         entityAll:           'All',
         entityBusinesses:    'Businesses',
         entityOrganizations: 'Organizations',
@@ -1319,6 +1338,9 @@ const translations = {
       delete:     'Delete',
       deleteConfirm: 'Are you sure you want to delete this?',
       or:         'or',
+      ok:         'Got it',
+      notice:     'Heads up',
+      areYouSure: 'Continue?',
     },
 
     footer: {

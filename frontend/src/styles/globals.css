@@ -2404,3 +2404,80 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 
 /* ── Modal close (✕) and ghost icon buttons: ensure a ring. */
 .modal-header .btn-ghost:focus-visible { outline: none; box-shadow: var(--ring-ink); }
+
+/* ═════════════════════════════════════════════════════════════
+   BRANDED CONFIRM DIALOG (additive) — replaces native confirm()/alert()
+   Reuses .modal-overlay / .btn*. Adds a compact, centered decision box
+   with an intent icon. role="dialog" + focus trap live in the JSX.
+═════════════════════════════════════════════════════════════ */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(6,14,30,0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  animation: fadeOverlay var(--dur-2) var(--ease-out);
+}
+.confirm-box {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-xl);
+  padding: clamp(22px, 4vw, 28px);
+  text-align: start;
+  animation: confirmPop var(--dur-3) var(--ease-out-expo) both;
+}
+@keyframes confirmPop {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  margin-block-end: 16px;
+  flex: 0 0 auto;
+}
+.confirm-icon--default { background: var(--sky-2); color: var(--ink); }
+.confirm-icon--danger  { background: var(--danger-soft); color: var(--danger); }
+.confirm-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.25;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.confirm-message {
+  font-size: 0.95rem;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin: 0 0 22px;
+  white-space: pre-line;
+}
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.confirm-actions .btn { min-width: 96px; }
+@media (max-width: 420px) {
+  .confirm-actions { flex-direction: column-reverse; }
+  .confirm-actions .btn { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-overlay { animation: fadeOverlay 0.01ms; }
+  .confirm-box { animation: confirmFade var(--dur-1) var(--ease-out) both; }
+  @keyframes confirmFade { from { opacity: 0; } to { opacity: 1; } }
+}

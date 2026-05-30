@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
 import { apiJson, apiFetch } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { EmptyState, ErrorState, TableSkeleton, adminErrorMessage } from '@/components/admin/AdminUI'
 
 const ENTITY_FILTERS = ['all', 'businesses', 'organizations', 'answers']
@@ -29,6 +30,8 @@ export default function AdminApprovalsPage() {
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
   const [busyId, setBusyId] = useState(null)
+  // Pending action awaiting confirmation: { item, action } | null.
+  const [pending, setPending] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -62,8 +65,18 @@ export default function AdminApprovalsPage() {
       toast(a.approvals.actionError, 'error')
     } finally {
       setBusyId(null)
+      setPending(null)
     }
   }
+
+  // Per-action confirm copy + theming. Reject is destructive → danger variant.
+  const c = a.approvals.confirm
+  const CONFIRM_COPY = {
+    approve:         { title: c.approveTitle, body: c.approveBody, variant: 'default', label: t.admin.table.approve },
+    reject:          { title: c.rejectTitle,  body: c.rejectBody,  variant: 'danger',  label: t.admin.table.reject },
+    request_changes: { title: c.changesTitle, body: c.changesBody, variant: 'default', label: a.approvals.requestChanges },
+  }
+  const pendingCopy = pending ? CONFIRM_COPY[pending.action] : null
 
   const counts = {
     all: items.length,
@@ -121,7 +134,7 @@ export default function AdminApprovalsPage() {
                   type="button"
                   className="btn btn-primary btn-sm"
                   disabled={busyId === item.id}
-                  onClick={() => act(item, 'approve')}
+                  onClick={() => setPending({ item, action: 'approve' })}
                 >
                   <CheckCircle size={14} aria-hidden="true" />
                   {a.table.approve}
@@ -130,7 +143,7 @@ export default function AdminApprovalsPage() {
                   type="button"
                   className="btn btn-ghost btn-sm"
                   disabled={busyId === item.id}
-                  onClick={() => act(item, 'request_changes')}
+                  onClick={() => setPending({ item, action: 'request_changes' })}
                 >
                   <MessageSquare size={14} aria-hidden="true" />
                   {a.approvals.requestChanges}
@@ -139,7 +152,7 @@ export default function AdminApprovalsPage() {
                   type="button"
                   className="btn btn-ghost btn-sm"
                   disabled={busyId === item.id}
-                  onClick={() => act(item, 'reject')}
+                  onClick={() => setPending({ item, action: 'reject' })}
                 >
                   <XCircle size={14} aria-hidden="true" />
                   {a.table.reject}
@@ -149,6 +162,18 @@ export default function AdminApprovalsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pending}
+        title={pendingCopy?.title}
+        message={pendingCopy?.body}
+        confirmLabel={pendingCopy?.label || t.common.confirm}
+        cancelLabel={t.common.cancel}
+        variant={pendingCopy?.variant}
+        busy={!!pending && busyId === pending.item.id}
+        onConfirm={() => pending && act(pending.item, pending.action)}
+        onCancel={() => { if (!busyId) setPending(null) }}
+      />
     </AdminLayout>
   )
 }
