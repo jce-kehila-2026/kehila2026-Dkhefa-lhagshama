@@ -15,6 +15,7 @@ import {
   orderBy,
   query,
   where,
+  type Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
 
@@ -33,6 +34,15 @@ interface UseMessagesResult {
   messages: ChatMessage[];
   loading: boolean;
   error: string | null;
+}
+
+/** Raw shape of a `messages/{id}` document as stored by the backend. */
+interface RawMessageDoc {
+  chatId?: string;
+  senderId?: string;
+  content?: string;
+  timestamp?: Timestamp | null;
+  status?: string;
 }
 
 export function useMessages(chatId: string | null): UseMessagesResult {
@@ -67,14 +77,14 @@ export function useMessages(chatId: string | null): UseMessagesResult {
       q,
       (snap) => {
         const msgs: ChatMessage[] = snap.docs.map((doc) => {
-          const d = doc.data();
+          const d = doc.data() as RawMessageDoc;
           return {
             id: doc.id,
-            chatId: d.chatId as string,
-            senderId: d.senderId as string,
-            content: d.content as string,
-            timestamp: d.timestamp?.toDate?.() ?? null,
-            status: (d.status as string) ?? 'sent',
+            chatId: d.chatId ?? '',
+            senderId: d.senderId ?? '',
+            content: d.content ?? '',
+            timestamp: d.timestamp?.toDate() ?? null,
+            status: d.status ?? 'sent',
           };
         });
         setMessages(msgs);
