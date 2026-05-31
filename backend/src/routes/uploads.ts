@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import express, { Router, type Request, type Response } from 'express';
 
-import { storage } from '@/lib/firebaseAdmin';
+import { db, storage } from '@/lib/firebaseAdmin';
 import { writeRequestEvent } from '@/lib/requestEvents';
 import { authenticate } from '@/middleware/auth';
 import { sanitizeFilename } from '@/lib/sanitizeFilename'; // #96 — replaces inline safeName
@@ -35,6 +35,30 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   const requestId = req.params.requestId;
   if (!UUID_V4.test(requestId)) {
     res.status(400).json({ error: 'validation', detail: 'requestId must be a v4 UUID' });
+    return;
+  }
+
+  // ── Ownership check (F1) ────────────────────────────────────────────────
+  // Without this, any verified user who knows another beneficiary's requestId
+  // could inject attachments into the victim's request and burn their quota.
+  // Mirror the read-side gate in requests.ts: owner, assigned handler/volunteer,
+  // or admin only. Storage rules deliberately delegate write-auth to Express.
+  const requestSnap = await db().collection('requests').doc(requestId).get();
+  if (!requestSnap.exists) {
+    res.status(404).json({ error: 'request_not_found' });
+    return;
+  }
+  const reqData = requestSnap.data() as {
+    beneficiaryId?: string;
+    handler?: string | null;
+    assignedVolunteerId?: string | null;
+  };
+  const isOwner             = reqData.beneficiaryId === req.user.uid;
+  const isHandler           = reqData.handler === req.user.uid;
+  const isAssignedVolunteer = reqData.assignedVolunteerId === req.user.uid;
+  const isAdmin             = req.user.role === 'admin';
+  if (!isOwner && !isHandler && !isAssignedVolunteer && !isAdmin) {
+    res.status(403).json({ error: 'forbidden' });
     return;
   }
 
@@ -106,9 +130,15 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
     // eslint-disable-next-line no-console
     console.log(`[uploads] file saved successfully: ${path}`);
 
+    // ── Signed-URL expiry (F4) ──────────────────────────────────────────
+    // Previously expired in the year 2500 — an effectively permanent,
+    // unauthenticated bearer link to a PII-bearing upload. Scope it to a
+    // short window; the URL is consumed right after upload and nothing in the
+    // frontend re-uses a stored URL long-term.
+    const SIGNED_URL_TTL_MS = 60 * 60 * 1000; // 1 hour
     const [downloadURL] = await bucketFile.getSignedUrl({
       action: 'read',
-      expires: '2500-01-01T00:00:00.000Z',
+      expires: Date.now() + SIGNED_URL_TTL_MS,
     });
 
     // Timeline event (#65) — fire-and-forget; don't fail the upload on it.
@@ -128,7 +158,7 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
     // eslint-disable-next-line no-console
     console.error('[uploads.request] failed:', {
       message: err instanceof Error ? err.message : String(err),
-      code: err instanceof Error && 'code' in err ? (err as any).code : undefined,
+      code: err instanceof Error && 'code' in err ? (err as { code?: unknown }).code : undefined,
       requestId,
       path,
       bodySize: req.body.length,
