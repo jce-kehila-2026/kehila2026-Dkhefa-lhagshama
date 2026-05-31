@@ -25,10 +25,13 @@ service cloud.firestore {
     // read theirs; admins can read all. Writes are server-only (Express +
     // Admin SDK bypass these rules) — the client never writes to /requests.
     match /requests/{requestId} {
+      // F2-B: direct client reads are limited to the owner and admins. Staff
+      // (assigned handler/volunteer) read via GET /api/requests/:id, which
+      // strips the national ID / internal notes the full doc would otherwise
+      // leak (Firestore has no field-level projection). The app never reads
+      // /requests via the client SDK today — this is defense-in-depth.
       allow read: if isSignedIn() && (
         resource.data.beneficiaryId == request.auth.uid
-        || resource.data.handler == request.auth.uid
-        || resource.data.assignedVolunteerId == request.auth.uid
         || isAdmin()
       );
       allow create, update, delete: if false;
@@ -50,9 +53,14 @@ service cloud.firestore {
     // visibility == 'all' (internal notes stay hidden). Writes are server-only
     // via writeRequestEvent() (Admin SDK).
     match /requestEvents/{eventId} {
+      // F3: mirror GET /api/requests/:id/events. Admins and the assigned
+      // handler of the parent request see all events (including internal
+      // notes); the owning beneficiary sees only visibility=='all'. Previously
+      // ANY volunteer could read every event on every request (incl. internal
+      // admin notes) via the client SDK, bypassing the stricter route.
       allow read: if isSignedIn() && (
         isAdmin()
-        || hasRole('volunteer')
+        || get(/databases/$(database)/documents/requests/$(resource.data.requestId)).data.handler == request.auth.uid
         || (
           resource.data.visibility == 'all'
           && get(/databases/$(database)/documents/requests/$(resource.data.requestId)).data.beneficiaryId == request.auth.uid
@@ -129,10 +137,12 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    // ── /volunteers — aggregate rating per volunteer (#80) ───────────────────
-    // The volunteer reads their own aggregate; admins read all. Writes are
-    // server-only — the aggregate is maintained in a transaction by the
-    // ratings endpoint (Admin SDK).
+    // ── /volunteers — volunteer profile, rating aggregate + roster (#80, #73) ─
+    // F6: single source of truth for the /volunteers collection (previously
+    // declared in two identical match blocks). Holds both the rating aggregate
+    // (#80, maintained by the ratings endpoint) and the approved-roster fields
+    // (#73, set by the admin approve/deactivate endpoints). The volunteer reads
+    // their own doc; admins read all. All writes are server-only (Admin SDK).
     match /volunteers/{volunteerId} {
       allow read: if isSignedIn() && (
         request.auth.uid == volunteerId
@@ -149,15 +159,6 @@ service cloud.firestore {
         resource.data.uid == request.auth.uid
         || isAdmin()
       );
-      allow create, update, delete: if false;
-    }
-
-    // ── /volunteers — approved volunteer roster (#73) ───────────────────────
-    // A volunteer reads their own profile; admins read all. Writes are
-    // server-only: the admin approve/deactivate endpoints (Admin SDK) set
-    // `active` + the role claim — the client never writes here.
-    match /volunteers/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
       allow create, update, delete: if false;
     }
 
