@@ -12,14 +12,8 @@ import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function VolunteerThanksPage() {
-  // LanguageContext is a .jsx file without TS types; cast to access shape.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { t, lang } = useLanguage() as any
-  const v = t.volunteerSignup as {
-    thanksTitle: string
-    thanksSubtitle: string
-    thanksBackHome: string
-  }
+  const { t, lang } = useLanguage()
+  const v = t.volunteerSignup
   const isRtl = lang === 'he'
 
   return (
