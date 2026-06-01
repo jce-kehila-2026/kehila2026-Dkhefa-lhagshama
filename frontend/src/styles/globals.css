@@ -116,7 +116,9 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  /* clip (not hidden) prevents horizontal scroll WITHOUT establishing a
+     scroll container — so the sticky navbar keeps sticking to the viewport. */
+  overflow-x: clip;
 }
 
 body {
@@ -127,7 +129,7 @@ body {
   font-size: var(--fs-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* LTR mode (English) */
@@ -2847,4 +2849,41 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   .area-item:hover { transform: none; }
   .area-item:hover .area-icon { transform: none; }
   .home-partner:hover { transform: none; }
+}
+
+/* ── Volunteers section — figure + how-they-help points ─────────────────── */
+.volunteers-figure { position: relative; }
+.volunteers-figure-badge {
+  position: absolute;
+  inset-block-end: -18px;
+  inset-inline-end: 24px;
+  inline-size: 56px;
+  block-size: 56px;
+  border-radius: 50%;
+  background: var(--ember);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  border: 3px solid var(--cream);
+}
+.volunteers-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.volunteers-point { display: flex; gap: 14px; align-items: flex-start; }
+.volunteers-point-icon {
+  flex-shrink: 0;
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: 50%;
+  background: var(--ember-soft);
+  color: var(--ember-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: 2px;
+}
+.volunteers-point-title { display: block; font-weight: 700; font-size: var(--fs-body); color: var(--ink); }
+.volunteers-point-desc { display: block; font-size: var(--fs-sm); line-height: 1.55; color: var(--gray-600); margin-block-start: 2px; }
+@media (max-width: 860px) {
+  .impact-grid { grid-template-columns: 1fr; }
 }

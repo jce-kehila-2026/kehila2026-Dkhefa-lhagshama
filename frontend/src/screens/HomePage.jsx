@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-import { ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Star } from 'lucide-react'
+import { ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Star, Check, HeartHandshake } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { mockStories, mockStats, mockNGOs } from '../data/mockData'
@@ -149,21 +149,49 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── COMMUNITY IMPACT — text + image, generous, no card ─────────────── */}
+      {/* ── VOLUNTEERS — the people who show up, and how they help ─────────── */}
       <section style={{ background: 'var(--cream)', paddingBlock: 'clamp(56px, 8vw, 96px)' }}>
         <div className="page-container impact-grid">
-          <Reveal>
-            <h2 className="section-display-bold" style={{ marginBlockEnd: '16px' }}>{t.home.impactTitle}</h2>
-            <p className="section-lede" style={{ margin: 0 }}>{t.home.impactBody}</p>
-          </Reveal>
           <Reveal delay={0.1} y={32}>
-            <AssetImage
-              slot="communityImpact"
-              ratio="4 / 3"
-              rounded="var(--radius-lg)"
-              shadow="var(--shadow)"
-              border="1px solid var(--hair)"
-            />
+            <div className="volunteers-figure">
+              <AssetImage
+                slot="volunteerInvite"
+                ratio="4 / 5"
+                rounded="var(--radius-lg)"
+                shadow="var(--shadow-lg)"
+                border="1px solid var(--hair)"
+              />
+              <span className="volunteers-figure-badge">
+                <HeartHandshake size={26} />
+              </span>
+            </div>
+          </Reveal>
+
+          <Reveal>
+            <div>
+              <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '12px' }}>
+                {t.home.volunteers.eyebrow}
+              </span>
+              <h2 className="section-display-bold" style={{ marginBlockEnd: '16px' }}>{t.home.volunteers.title}</h2>
+              <p className="section-lede" style={{ margin: '0 0 28px' }}>{t.home.volunteers.body}</p>
+
+              <ul className="volunteers-points">
+                {t.home.volunteers.points.map((p, i) => (
+                  <li key={i} className="volunteers-point">
+                    <span className="volunteers-point-icon"><Check size={16} strokeWidth={3} /></span>
+                    <span>
+                      <span className="volunteers-point-title">{p.title}</span>
+                      <span className="volunteers-point-desc">{p.desc}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <button className="btn btn-ember btn-lg" style={{ marginBlockStart: '32px' }} onClick={() => navigate('/volunteer')}>
+                {t.home.volunteers.cta}
+                <ArrowIcon size={16} />
+              </button>
+            </div>
           </Reveal>
         </div>
       </section>
