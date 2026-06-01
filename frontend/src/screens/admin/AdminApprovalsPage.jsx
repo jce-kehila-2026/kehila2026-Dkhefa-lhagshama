@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
-import { CheckCircle, XCircle, MessageSquare } from 'lucide-react'
+import { CheckCircle, XCircle, MessageSquare, Store, Building2, Lightbulb, Layers, ClipboardCheck } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
 import { apiJson, apiFetch } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import Reveal from '../../components/motion/Reveal'
 import { EmptyState, ErrorState, TableSkeleton, adminErrorMessage } from '@/components/admin/AdminUI'
 
 const ENTITY_FILTERS = ['all', 'businesses', 'organizations', 'answers']
@@ -20,6 +21,15 @@ const ENTITY_TONE = {
   businesses: 'badge-amber',
   organizations: 'badge-blue',
   answers: 'badge-green',
+}
+
+// A small per-entity glyph + tint pairing. The icon makes each card scannable
+// at a glance and echoes the brand's editorial, color-restrained surfaces.
+const ENTITY_VISUAL = {
+  businesses:    { Icon: Store,     fg: 'var(--warning)', bg: 'var(--warning-soft)' },
+  organizations: { Icon: Building2, fg: 'var(--info)',    bg: 'var(--sky-3)' },
+  answers:       { Icon: Lightbulb, fg: 'var(--success)', bg: 'var(--success-soft)' },
+  all:           { Icon: Layers,    fg: 'var(--ember)',   bg: 'var(--ember-soft)' },
 }
 
 /**
@@ -98,9 +108,78 @@ export default function AdminApprovalsPage() {
     answers: a.approvals.entityAnswers,
   }
 
+  const eyebrowFont = {
+    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+    fontSize: 'var(--fs-xs)',
+    fontWeight: 600,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+  }
+
   return (
     <AdminLayout title={a.approvals.title} subtitle={a.approvals.subtitle}>
-      <div className="admin-filters" role="tablist" aria-label={a.approvals.title}>
+      {/* ── QUEUE SUMMARY — a quiet count strip that frames the work ahead ── */}
+      <div
+        className="card"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--sp-4)',
+          padding: 'var(--sp-4) var(--sp-5)',
+          marginBlockEnd: 'var(--sp-5)',
+          border: '1px solid var(--hair)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            inlineSize: '44px',
+            blockSize: '44px',
+            flexShrink: 0,
+            borderRadius: 'var(--radius)',
+            color: 'var(--ember)',
+            background: 'var(--ember-soft)',
+          }}
+        >
+          <ClipboardCheck size={22} />
+        </span>
+        <div style={{ minInlineSize: 0 }}>
+          <span style={{ ...eyebrowFont, color: 'var(--ember)', display: 'block', marginBlockEnd: '4px' }}>
+            {lang === 'he' ? 'תור אישורים' : 'Approval queue'}
+          </span>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 'var(--fs-body)',
+              color: 'var(--gray-600)',
+              lineHeight: 1.4,
+              textAlign: 'start',
+            }}
+          >
+            {loading
+              ? (lang === 'he' ? 'טוען את התור…' : 'Loading the queue…')
+              : counts.all === 0
+                ? (lang === 'he' ? 'אין פריטים הממתינים לאישור.' : 'No items are waiting for review.')
+                : counts.all === 1
+                  ? (lang === 'he' ? 'פריט אחד ממתין לאישור.' : '1 item is waiting for your review.')
+                  : (lang === 'he'
+                      ? `${counts.all} פריטים ממתינים לאישור.`
+                      : `${counts.all} items are waiting for your review.`)}
+          </p>
+        </div>
+      </div>
+
+      {/* ── FILTERS — entity tabs with live counts ── */}
+      <div
+        className="admin-filters"
+        role="tablist"
+        aria-label={a.approvals.title}
+        style={{ marginBlockEnd: 'var(--sp-5)' }}
+      >
         {ENTITY_FILTERS.map((f) => (
           <button
             key={f}
@@ -121,51 +200,127 @@ export default function AdminApprovalsPage() {
       {loading ? (
         <TableSkeleton rows={4} cols={3} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={CheckCircle} title={a.approvals.empty} />
+        <Reveal>
+          <EmptyState icon={CheckCircle} title={a.approvals.empty} />
+        </Reveal>
       ) : (
-        <div className="admin-approval-list">
-          {filtered.map((item) => (
-            <div key={item.id} className="card admin-approval-card">
-              <div className="admin-approval-info">
-                <span className={`badge ${ENTITY_TONE[item.entityType] || 'badge-gray'}`}>
-                  <span className="badge-dot" aria-hidden="true" />
-                  {labels[item.entityType] || item.entityType}
-                </span>
-                <h3 className="admin-approval-name">
-                  {L(item.name, lang) || L(item.title, lang) || item.id}
-                </h3>
-              </div>
-              <div className="admin-row-actions">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={busyId === item.id}
-                  onClick={() => setPending({ item, action: 'approve' })}
+        <div
+          className="admin-approval-list"
+          style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}
+        >
+          {filtered.map((item, i) => {
+            const visual = ENTITY_VISUAL[item.entityType] || ENTITY_VISUAL.all
+            const EntityIcon = visual.Icon
+            const isBusy = busyId === item.id
+            return (
+              <Reveal key={item.id} delay={Math.min(i, 6) * 0.05}>
+                <div
+                  className="card"
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: 'var(--sp-4)',
+                    padding: 'var(--sp-4) var(--sp-5)',
+                    border: '1px solid var(--hair)',
+                    boxShadow: 'var(--shadow-sm)',
+                    opacity: isBusy ? 0.6 : 1,
+                    transition: 'opacity var(--dur-2) var(--ease-out)',
+                  }}
                 >
-                  <CheckCircle size={14} aria-hidden="true" />
-                  {a.table.approve}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  disabled={busyId === item.id}
-                  onClick={() => setPending({ item, action: 'request_changes' })}
-                >
-                  <MessageSquare size={14} aria-hidden="true" />
-                  {a.approvals.requestChanges}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  disabled={busyId === item.id}
-                  onClick={() => setPending({ item, action: 'reject' })}
-                >
-                  <XCircle size={14} aria-hidden="true" />
-                  {a.table.reject}
-                </button>
-              </div>
-            </div>
-          ))}
+                  {/* Identity: entity glyph + type badge + display name */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--sp-4)',
+                      flex: '1 1 16rem',
+                      minInlineSize: 0,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        inlineSize: '42px',
+                        blockSize: '42px',
+                        flexShrink: 0,
+                        borderRadius: 'var(--radius)',
+                        color: visual.fg,
+                        background: visual.bg,
+                      }}
+                    >
+                      <EntityIcon size={20} />
+                    </span>
+                    <div style={{ minInlineSize: 0 }}>
+                      <span className={`badge ${ENTITY_TONE[item.entityType] || 'badge-gray'}`}>
+                        <span className="badge-dot" aria-hidden="true" />
+                        {labels[item.entityType] || item.entityType}
+                      </span>
+                      <h3
+                        className="admin-approval-name"
+                        style={{
+                          margin: '6px 0 0',
+                          fontSize: 'var(--fs-h3)',
+                          fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+                          fontWeight: 500,
+                          lineHeight: 1.25,
+                          color: 'var(--ink)',
+                          letterSpacing: '-0.01em',
+                          textAlign: 'start',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        {L(item.name, lang) || L(item.title, lang) || item.id}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Actions: approve leads (ember), then request-changes, then reject */}
+                  <div
+                    className="admin-row-actions"
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 'var(--sp-2)',
+                      marginInlineStart: 'auto',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      disabled={isBusy}
+                      onClick={() => setPending({ item, action: 'approve' })}
+                    >
+                      <CheckCircle size={14} aria-hidden="true" />
+                      {a.table.approve}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      disabled={isBusy}
+                      onClick={() => setPending({ item, action: 'request_changes' })}
+                    >
+                      <MessageSquare size={14} aria-hidden="true" />
+                      {a.approvals.requestChanges}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      disabled={isBusy}
+                      onClick={() => setPending({ item, action: 'reject' })}
+                      style={{ color: 'var(--danger)' }}
+                    >
+                      <XCircle size={14} aria-hidden="true" />
+                      {a.table.reject}
+                    </button>
+                  </div>
+                </div>
+              </Reveal>
+            )
+          })}
         </div>
       )}
 

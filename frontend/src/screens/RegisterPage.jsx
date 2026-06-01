@@ -12,7 +12,7 @@
  * Issue #69.
  */
 import { useState } from 'react'
-import { Check, X as XIcon, AlertCircle } from 'lucide-react'
+import { Check, X as XIcon, AlertCircle, ArrowLeft, ArrowRight, HeartHandshake, ShieldCheck, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -20,15 +20,53 @@ import { useAuth } from '../contexts/AuthContext'
 import { useApp } from '../contexts/AppContext'
 import { validateRedirect } from '../utils/validateRedirect'
 import { apiFetch } from '../lib/apiClient'
+import Reveal from '../components/motion/Reveal'
 
 // ── Shared input style ────────────────────────────────────────────────────────
 const inputStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: 6,
+  gap: 7,
   fontSize: 13.5,
   color: 'var(--ink)',
-  fontWeight: 500,
+  fontWeight: 600,
+  textAlign: 'start',
+}
+
+// Eyebrow above a field group inside the form card.
+const fieldLabel = {
+  fontSize: 13.5,
+  color: 'var(--ink)',
+  fontWeight: 600,
+  textAlign: 'start',
+}
+
+// Shared card shell so both tabs and every step feel like one continuous surface.
+const cardStyle = {
+  padding: 'clamp(24px, 4vw, 34px)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 18,
+  border: '1px solid var(--hair)',
+  borderRadius: 'var(--radius-lg)',
+  boxShadow: 'var(--shadow)',
+  background: 'var(--white)',
+}
+
+const loginRowStyle = {
+  fontSize: 13.5,
+  textAlign: 'center',
+  color: 'var(--gray-600)',
+  marginBlockStart: 4,
+  paddingBlockStart: 16,
+  borderBlockStart: '1px solid var(--hair)',
+}
+
+const loginLinkStyle = {
+  color: 'var(--ember)',
+  fontWeight: 600,
+  textDecoration: 'underline',
+  textUnderlineOffset: '3px',
 }
 
 // ── Small checkbox component ──────────────────────────────────────────────────
@@ -58,7 +96,7 @@ function PwCheck({ ok, label }) {
 // ── Tab toggle ────────────────────────────────────────────────────────────────
 function TabToggle({ active, labels, onChange }) {
   return (
-    <div className="seg" role="tablist" style={{ marginBottom: 20 }}>
+    <div className="seg" role="tablist" style={{ marginBlockEnd: 22 }}>
       {['beneficiary', 'volunteer'].map((tab) => (
         <button
           key={tab}
@@ -72,6 +110,71 @@ function TabToggle({ active, labels, onChange }) {
         </button>
       ))}
     </div>
+  )
+}
+
+// ── Two-step progress indicator (volunteer flow) ─────────────────────────────
+function StepIndicator({ current, labels, progressLabel }) {
+  return (
+    <ol
+      aria-label={`${progressLabel} (${current} / ${labels.length})`}
+      style={{
+        listStyle: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        margin: '0 0 18px',
+        padding: 0,
+      }}
+    >
+      {[1, 2].map((n, i) => {
+        const done = current > n
+        const on = current === n
+        return (
+          <li key={n} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: i === 0 ? '0 0 auto' : '1 1 auto' }}>
+            <span
+              aria-current={on ? 'step' : undefined}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: on || done ? 'var(--ink)' : 'var(--gray-500)',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  flex: '0 0 auto',
+                  background: done ? 'var(--success)' : on ? 'var(--ember)' : 'var(--gray-100)',
+                  color: done || on ? 'var(--white)' : 'var(--gray-500)',
+                  border: on || done ? 'none' : '1px solid var(--hair)',
+                  transition: 'background var(--dur-2) var(--ease-out)',
+                }}
+              >
+                {done ? <Check size={13} strokeWidth={3} /> : n}
+              </span>
+              {labels[i]}
+            </span>
+            {i === 0 && (
+              <span
+                aria-hidden="true"
+                style={{ flex: 1, height: 2, borderRadius: 2, background: current > 1 ? 'var(--success)' : 'var(--hair)' }}
+              />
+            )}
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
@@ -113,7 +216,7 @@ function BeneficiaryForm({ t }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card" style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <form onSubmit={onSubmit} className="card" style={cardStyle}>
       <label style={inputStyle}>
         {a.email}
         <input type="email" autoComplete="email" required value={email}
@@ -124,7 +227,7 @@ function BeneficiaryForm({ t }) {
         <input id="ben-password" type="password" autoComplete="new-password" required minLength={6}
           value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" />
         {password.length > 0 && (
-          <div className="pw-checks" style={{ marginTop: 8 }}>
+          <div className="pw-checks" style={{ marginBlockStart: 8 }}>
             <PwCheck ok={password.length >= 8} label={a.pwRuleLength} />
             <PwCheck ok={/\d/.test(password)} label={a.pwRuleDigit} />
           </div>
@@ -135,13 +238,13 @@ function BeneficiaryForm({ t }) {
         <input type="password" autoComplete="new-password" required minLength={6}
           value={confirm} onChange={(e) => setConfirm(e.target.value)} className="form-input" />
       </label>
-      {error && <div className="form-error"><AlertCircle size={12} /><span>{error}</span></div>}
-      <button type="submit" disabled={submitting} className={`btn btn-primary${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ marginTop: 4 }}>
+      {error && <div className="form-error" role="alert"><AlertCircle size={12} /><span>{error}</span></div>}
+      <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ marginBlockStart: 4, justifyContent: 'center' }}>
         {submitting ? a.submitting : a.submit}
       </button>
-      <div style={{ fontSize: 13.5, textAlign: 'center', color: 'var(--ink-2)', marginTop: 4 }}>
+      <div style={loginRowStyle}>
         {a.haveAccount}{' '}
-        <Link href="/login" style={{ color: 'var(--ember)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+        <Link href="/login" style={loginLinkStyle}>
           {a.loginLink}
         </Link>
       </div>
@@ -150,7 +253,7 @@ function BeneficiaryForm({ t }) {
 }
 
 // ── VOLUNTEER FORM — step 1 (account) ────────────────────────────────────────
-function VolunteerStep1({ v, a, onNext }) {
+function VolunteerStep1({ v, a, lang, onNext }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -165,10 +268,12 @@ function VolunteerStep1({ v, a, onNext }) {
   }
 
   return (
-    <form onSubmit={submit} className="card" style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ fontSize: 13, color: 'var(--ink-2)', fontWeight: 500, marginBottom: -4 }}>
-        {v.step1Title}
-      </div>
+    <form onSubmit={submit} className="card" style={cardStyle}>
+      <StepIndicator
+        current={1}
+        labels={[v.step1Title, v.step2Title]}
+        progressLabel={lang === 'he' ? 'התקדמות הרשמת מתנדב' : 'Volunteer registration progress'}
+      />
       <label style={inputStyle}>
         {a.email}
         <input type="email" autoComplete="email" required value={email}
@@ -184,13 +289,13 @@ function VolunteerStep1({ v, a, onNext }) {
         <input type="password" autoComplete="new-password" required minLength={6}
           value={confirm} onChange={(e) => setConfirm(e.target.value)} className="form-input" />
       </label>
-      {error && <div className="form-error"><AlertCircle size={12} /><span>{error}</span></div>}
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 4 }}>
+      {error && <div className="form-error" role="alert"><AlertCircle size={12} /><span>{error}</span></div>}
+      <button type="submit" className="btn btn-ember btn-lg" style={{ marginBlockStart: 4, justifyContent: 'center' }}>
         {v.nextStep}
       </button>
-      <div style={{ fontSize: 13.5, textAlign: 'center', color: 'var(--ink-2)', marginTop: 4 }}>
+      <div style={loginRowStyle}>
         {a.haveAccount}{' '}
-        <Link href="/login" style={{ color: 'var(--ember)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+        <Link href="/login" style={loginLinkStyle}>
           {a.loginLink}
         </Link>
       </div>
@@ -199,9 +304,10 @@ function VolunteerStep1({ v, a, onNext }) {
 }
 
 // ── VOLUNTEER FORM — step 2 (details) ────────────────────────────────────────
-function VolunteerStep2({ v, a, accountData, onBack }) {
+function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }) {
   const { register } = useAuth()
   const router = useRouter()
+  const BackArrow = isRTL ? ArrowRight : ArrowLeft
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -276,10 +382,12 @@ function VolunteerStep2({ v, a, accountData, onBack }) {
   ]
 
   return (
-    <form onSubmit={submit} className="card" style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ fontSize: 13, color: 'var(--ink-2)', fontWeight: 500, marginBottom: -4 }}>
-        {v.step2Title}
-      </div>
+    <form onSubmit={submit} className="card" style={cardStyle}>
+      <StepIndicator
+        current={2}
+        labels={[v.step1Title, v.step2Title]}
+        progressLabel={lang === 'he' ? 'התקדמות הרשמת מתנדב' : 'Volunteer registration progress'}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <label style={inputStyle}>
@@ -313,7 +421,7 @@ function VolunteerStep2({ v, a, accountData, onBack }) {
       </label>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>{v.areasOfHelp}</div>
+        <div style={fieldLabel}>{v.areasOfHelp}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {v.areasList.map((area) => {
             const on = selectedAreas.includes(area)
@@ -341,7 +449,7 @@ function VolunteerStep2({ v, a, accountData, onBack }) {
       </label>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>{v.availability}</div>
+        <div style={fieldLabel}>{v.availability}</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {availOptions.map((opt) => (
             <label key={opt.value} className={`opt-pill${availability === opt.value ? ' is-on' : ''}`}>
@@ -363,13 +471,14 @@ function VolunteerStep2({ v, a, accountData, onBack }) {
 
       <Checkbox checked={consent} onChange={setConsent} label={v.consent} />
 
-      {error && <div className="form-error"><AlertCircle size={12} /><span>{error}</span></div>}
+      {error && <div className="form-error" role="alert"><AlertCircle size={12} /><span>{error}</span></div>}
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-        <button type="button" onClick={onBack} className="btn btn-outline" style={{ flex: '0 0 auto' }}>
+      <div style={{ display: 'flex', gap: 10, marginBlockStart: 4 }}>
+        <button type="button" onClick={onBack} className="btn btn-outline btn-lg" style={{ flex: '0 0 auto', gap: 6 }}>
+          <BackArrow size={16} />
           {v.backStep}
         </button>
-        <button type="submit" disabled={submitting} className={`btn btn-primary${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ flex: 1 }}>
+        <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ flex: 1, justifyContent: 'center' }}>
           {submitting ? v.submitting : v.submit}
         </button>
       </div>
@@ -379,7 +488,7 @@ function VolunteerStep2({ v, a, accountData, onBack }) {
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
 export default function RegisterPage() {
-  const { t, lang } = useLanguage()
+  const { t, lang, isRTL } = useLanguage()
   const v = t.volunteerSignup
   const a = t.auth.register
 
@@ -398,78 +507,198 @@ export default function RegisterPage() {
     setAccountData(null)
   }
 
+  // Editorial trust points for the brand aside.
+  const asidePoints = lang === 'he'
+    ? [
+        { Icon: HeartHandshake, text: 'ליווי אישי בכל שלב מהבקשה ועד הסיוע' },
+        { Icon: Users, text: 'קהילה של מתנדבים ונותני שירות לצידך' },
+        { Icon: ShieldCheck, text: 'הפרטים שלך נשמרים באופן מאובטח וחסוי' },
+      ]
+    : [
+        { Icon: HeartHandshake, text: 'Personal guidance at every step, from request to support' },
+        { Icon: Users, text: 'A community of volunteers and providers by your side' },
+        { Icon: ShieldCheck, text: 'Your details are kept secure and confidential' },
+      ]
+
   return (
-    <div className="auth-grid" style={{
-      minHeight: 'calc(100vh - 64px)',
-      display: 'grid',
-      gridTemplateColumns: '1fr',
-      background: 'var(--paper)',
-    }}>
-      <aside style={{
-        background: 'var(--sky-2)',
-        padding: '64px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '20px',
-      }}>
-        <img
-          src="/logo.jpg"
-          alt={lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
-          width={96}
-          height={96}
-          style={{ borderRadius: '50%', objectFit: 'cover', boxShadow: 'var(--shadow)' }}
+    <div
+      className="auth-grid"
+      style={{
+        minHeight: 'calc(100vh - var(--nav-h))',
+      }}
+    >
+      {/* ── BRAND ASIDE — editorial, ink-toned, sets the tone.
+           `auth-aside` (globals.css) hides this under 900px so the form
+           stacks to a single, full-width column on phones/tablets. ── */}
+      <aside
+        className="auth-aside"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          background: 'var(--ink)',
+          color: 'var(--cream)',
+          padding: 'clamp(48px, 6vw, 80px) clamp(32px, 4vw, 56px)',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          justifyContent: 'center',
+          gap: 28,
+        }}
+      >
+        {/* Soft ember glow, decorative */}
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            insetBlockStart: '-12%',
+            insetInlineEnd: '-10%',
+            width: 320,
+            height: 320,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(185,105,78,0.32), transparent 70%)',
+            filter: 'blur(8px)',
+            pointerEvents: 'none',
+          }}
         />
-        <div className="section-eyebrow" style={{ textAlign: 'center' }}>
-          {lang === 'he' ? 'הצטרפות לקהילה' : 'Join the community'}
+
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 22, maxWidth: '30rem' }}>
+          <img
+            src="/logo.jpg"
+            alt={lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
+            width={72}
+            height={72}
+            style={{
+              borderRadius: '50%',
+              objectFit: 'cover',
+              boxShadow: 'var(--shadow-lg)',
+              border: '2px solid rgba(244,238,224,0.18)',
+            }}
+          />
+
+          <span
+            className="eyebrow"
+            style={{ color: 'var(--ember)' }}
+          >
+            {lang === 'he' ? 'הצטרפות לקהילה' : 'Join the community'}
+          </span>
+
+          {/* Decorative brand display — presentational only (aria-hidden);
+              the canonical page <h1> lives in the form <main> region. */}
+          <div
+            aria-hidden="true"
+            style={{
+              fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+              fontWeight: 400,
+              fontSize: 'var(--fs-display)',
+              lineHeight: 1.14,
+              letterSpacing: '-0.01em',
+              color: 'var(--cream)',
+              margin: 0,
+              textWrap: 'balance',
+            }}
+          >
+            {a.title}
+          </div>
+
+          {a.subtitle && (
+            <p style={{ color: 'rgba(244,238,224,0.8)', fontSize: 'var(--fs-lede)', lineHeight: 1.6, margin: 0 }}>
+              {a.subtitle}
+            </p>
+          )}
+
+          <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {asidePoints.map(({ Icon, text }, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    flex: '0 0 auto',
+                    width: 34,
+                    height: 34,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(185,105,78,0.18)',
+                    color: 'var(--ember-soft)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon size={17} />
+                </span>
+                <span style={{ fontSize: 14.5, lineHeight: 1.5, color: 'rgba(244,238,224,0.92)' }}>
+                  {text}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
-        <h1 className="section-display" style={{
-          fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-          textAlign: 'center',
-          maxWidth: '24rem',
-          margin: 0,
-        }}>
-          {a.title}
-        </h1>
-        {a.subtitle && (
-          <p className="section-lede" style={{ textAlign: 'center', margin: '0 auto', maxWidth: '26rem' }}>
-            {a.subtitle}
-          </p>
-        )}
       </aside>
 
-      <main style={{
-        padding: '64px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        maxWidth: '480px',
-        width: '100%',
-        margin: '0 auto',
-      }}>
-        <TabToggle active={tab} labels={tabLabels} onChange={switchTab} />
+      {/* ── FORM COLUMN ── */}
+      <main
+        style={{
+          padding: 'clamp(40px, 6vw, 72px) clamp(24px, 4vw, 48px)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}
+      >
+        <Reveal>
+          <div style={{ maxWidth: '480px', width: '100%', marginInline: 'auto' }}>
+            {/* Form-region heading — gives the primary content area its own
+                eyebrow → serif heading → lede rhythm and an accessible <h1>
+                (the aside h1 is decorative + hidden under 900px). */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBlockEnd: 22, textAlign: 'start' }}>
+              <span className="eyebrow" style={{ color: 'var(--ember)' }}>
+                {lang === 'he' ? 'הצטרפות לקהילה' : 'Join the community'}
+              </span>
+              <h1
+                style={{
+                  fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+                  fontWeight: 400,
+                  fontSize: 'var(--fs-h2)',
+                  lineHeight: 1.18,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--ink)',
+                  margin: 0,
+                  textWrap: 'balance',
+                }}
+              >
+                {a.title}
+              </h1>
+              {a.subtitle && (
+                <p style={{ color: 'var(--gray-600)', fontSize: 'var(--fs-body)', lineHeight: 1.6, margin: 0 }}>
+                  {a.subtitle}
+                </p>
+              )}
+            </div>
 
-        {tab === 'beneficiary' && (
-          <BeneficiaryForm t={t} />
-        )}
+            <TabToggle active={tab} labels={tabLabels} onChange={switchTab} />
 
-        {tab === 'volunteer' && volStep === 1 && (
-          <VolunteerStep1
-            v={v}
-            a={a}
-            onNext={(data) => { setAccountData(data); setVolStep(2) }}
-          />
-        )}
+            {tab === 'beneficiary' && (
+              <BeneficiaryForm t={t} />
+            )}
 
-        {tab === 'volunteer' && volStep === 2 && (
-          <VolunteerStep2
-            v={v}
-            a={a}
-            accountData={accountData}
-            onBack={() => setVolStep(1)}
-          />
-        )}
+            {tab === 'volunteer' && volStep === 1 && (
+              <VolunteerStep1
+                v={v}
+                a={a}
+                lang={lang}
+                onNext={(data) => { setAccountData(data); setVolStep(2) }}
+              />
+            )}
+
+            {tab === 'volunteer' && volStep === 2 && (
+              <VolunteerStep2
+                v={v}
+                a={a}
+                lang={lang}
+                isRTL={isRTL}
+                accountData={accountData}
+                onBack={() => setVolStep(1)}
+              />
+            )}
+          </div>
+        </Reveal>
       </main>
     </div>
   )

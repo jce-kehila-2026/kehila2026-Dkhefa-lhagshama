@@ -1,15 +1,26 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, useCallback } from "react";
-import { CheckCircle, ChevronDown, ChevronUp, AlertCircle, FileText } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronUp, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus } from "lucide-react";
 
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import RatingForm from "../components/RatingForm";
+import Reveal from "../components/motion/Reveal";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { apiJson } from "../lib/apiClient";
 import { formatDate, truncate } from "../utils/helpers";
+
+// ── Small monospace eyebrow/label helper ──────────────────────
+const labelStyle = {
+  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+  fontSize: "11px",
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--gray-500)",
+};
 
 // ── Deadline pill (#68) ───────────────────────────────────────
 function DeadlinePill({ deadline, t }) {
@@ -25,7 +36,9 @@ function DeadlinePill({ deadline, t }) {
   }[tone];
   return (
     <span style={{
-      display: "inline-block",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "5px",
       padding: "3px 10px",
       borderRadius: "999px",
       fontSize: "12px",
@@ -33,6 +46,7 @@ function DeadlinePill({ deadline, t }) {
       background: palette.bg,
       color: palette.fg,
     }}>
+      <Calendar size={12} aria-hidden="true" />
       {label}
     </span>
   );
@@ -63,8 +77,8 @@ function RequestTimeline({ requestId, t }) {
   }
 
   return (
-    <div style={{ marginTop: "12px" }}>
-      <div style={{ fontSize: "13.5px", fontWeight: 700, color: "var(--ink)", marginBottom: "12px" }}>
+    <div style={{ marginBlockStart: "4px" }}>
+      <div style={{ ...labelStyle, marginBlockEnd: "14px" }}>
         {tl.title}
       </div>
       {events.length === 0 ? (
@@ -79,7 +93,7 @@ function RequestTimeline({ requestId, t }) {
               <li key={ev.id} className="timeline-item">
                 {!isLast && <span className="timeline-rail" aria-hidden="true" />}
                 <span className="timeline-dot" aria-hidden="true" />
-                <div style={{ flex: 1, paddingTop: "1px" }}>
+                <div style={{ flex: 1, paddingBlockStart: "1px" }}>
                   <div className="timeline-title">{typeLabel}</div>
                   {dateStr && <div className="timeline-time">{dateStr}</div>}
                 </div>
@@ -130,84 +144,193 @@ function RateExperienceCard({ requestId, t }) {
   return (
     <div
       style={{
-        marginTop: "16px",
-        padding: "20px 22px",
-        background: "var(--white)",
-        border: "1px solid var(--gray-200)",
-        borderRadius: "var(--radius)",
+        marginBlockStart: "20px",
+        padding: "22px 24px",
+        background: "linear-gradient(180deg, var(--white), var(--ember-soft) 380%)",
+        border: "1px solid var(--hair)",
+        borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-xs)",
       }}
     >
-      <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--ink)", marginBottom: "6px" }}>
+      <div style={{
+        fontFamily: "Frank Ruhl Libre, Georgia, serif",
+        fontSize: "1.15rem",
+        fontWeight: 500,
+        color: "var(--ink)",
+        marginBlockEnd: "6px",
+      }}>
         {r.cardTitle}
       </div>
       {alreadyRated ? (
         <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--success)", fontSize: "14px", fontWeight: 600 }}>
-          <CheckCircle size={16} /> {r.thanks}
+          <CheckCircle size={16} aria-hidden="true" /> {r.thanks}
         </div>
       ) : (
         <>
-          <p style={{ fontSize: "13px", color: "var(--gray-600)", marginBottom: "14px", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "13px", color: "var(--gray-600)", marginBlockEnd: "16px", lineHeight: 1.6, maxWidth: "52ch" }}>
             {r.cardSubtitle}
           </p>
           <RatingForm onSubmit={handleSubmit} submitting={submitting} />
-          {error && <div className="form-error" style={{ marginTop: 10 }}><span>{error}</span></div>}
+          {error && <div className="form-error" style={{ marginBlockStart: 10 }}><span>{error}</span></div>}
         </>
       )}
     </div>
   );
 }
 
-// ── Row with expandable timeline ──────────────────────────────
-function RequestRow({ item, t, lang, expandedId, onToggle }) {
+// ── Field with monospace label + value (card meta) ────────────
+function MetaField({ icon, label, children }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ ...labelStyle, display: "flex", alignItems: "center", gap: "6px", marginBlockEnd: "5px" }}>
+        {icon}
+        {label}
+      </div>
+      <div style={{ fontSize: "14px", color: "var(--ink)", fontWeight: 500 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Request card with expandable timeline ─────────────────────
+function RequestCard({ item, t, lang, expandedId, onToggle }) {
   const isExpanded = expandedId === item.id;
   const categoryLabel = (cat) => t.myRequests.categories[cat] || cat;
   const urgencyLabel  = (urg) => t.myRequests.urgencies[urg]  || urg;
+  const tbl = t.myRequests.table;
+  const attachments = Array.isArray(item.attachmentPaths) ? item.attachmentPaths.length : 0;
+  const panelId = `req-panel-${item.id}`;
 
   return (
-    <>
-      <tr
-        style={{
-          borderTop: "1px solid var(--hair)",
-          background: isExpanded ? "var(--sky-2)" : "var(--paper)",
-          cursor: "pointer",
-        }}
+    <div
+      style={{
+        background: "var(--white)",
+        border: `1px solid ${isExpanded ? "var(--ember-soft)" : "var(--hair)"}`,
+        borderRadius: "var(--radius-lg)",
+        boxShadow: isExpanded ? "var(--shadow)" : "var(--shadow-xs)",
+        overflow: "hidden",
+        transition: "box-shadow var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out)",
+      }}
+    >
+      {/* Header — the whole bar is the toggle */}
+      <button
+        type="button"
         onClick={() => onToggle(item.id)}
+        aria-expanded={isExpanded}
+        aria-controls={panelId}
+        style={{
+          // NOTE: do not use `all: unset` here — it resets `outline` to
+          // `none` inline, which beats the global `*:focus-visible` ring on
+          // specificity and leaves keyboard users with no visible focus.
+          // Reset only what we need and let the global ember ring apply.
+          appearance: "none",
+          margin: 0,
+          background: "none",
+          border: "none",
+          borderRadius: "inherit",
+          font: "inherit",
+          color: "inherit",
+          boxSizing: "border-box",
+          display: "block",
+          width: "100%",
+          cursor: "pointer",
+          padding: "20px 24px",
+          textAlign: "start",
+        }}
       >
-        <td style={tdStyle}>
-          <div style={{
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: "13px", color: "var(--ink)", letterSpacing: "0.04em",
-          }}>
-            {item.id}
+        {/* Top line: id + status + chevron */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flexWrap: "wrap" }}>
+            <span style={{
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: "12.5px",
+              fontWeight: 600,
+              color: "var(--ember)",
+              letterSpacing: "0.04em",
+              background: "var(--ember-soft)",
+              padding: "3px 9px",
+              borderRadius: "var(--radius-sm)",
+            }}>
+              {item.id}
+            </span>
+            <StatusBadge status={item.status} />
           </div>
-          <div style={{ marginTop: "6px", color: "var(--ink-2)", fontSize: "13px" }}>
-            {truncate(item.description || "", 72)}
-          </div>
-        </td>
-        <td style={tdStyle}>{categoryLabel(item.category)}</td>
-        <td style={tdStyle}>{urgencyLabel(item.urgency)}</td>
-        <td style={tdStyle}><StatusBadge status={item.status} /></td>
-        <td style={tdStyle}>{formatDate(item.createdAt, lang) || "—"}</td>
-        {/* #68 — deadline pill */}
-        <td style={tdStyle}><DeadlinePill deadline={item.deadline} t={t} /></td>
-        <td style={tdStyle}>{Array.isArray(item.attachmentPaths) ? item.attachmentPaths.length : 0}</td>
-        <td style={{ ...tdStyle, color: "var(--gray-400)" }}>
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </td>
-      </tr>
-      {/* Expanded timeline row (#68) */}
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: isExpanded ? "var(--ember-soft)" : "var(--sky-3)",
+              color: isExpanded ? "var(--ember-700)" : "var(--gray-500)",
+              flexShrink: 0,
+              transition: "background var(--dur-2) var(--ease-out)",
+            }}
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </span>
+        </div>
+
+        {/* Description */}
+        <p style={{
+          marginBlock: "12px 0",
+          color: "var(--ink-2)",
+          fontSize: "15px",
+          lineHeight: 1.55,
+        }}>
+          {truncate(item.description || "", 140) || "—"}
+        </p>
+
+        {/* Meta grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+          gap: "16px 20px",
+          marginBlockStart: "18px",
+          paddingBlockStart: "16px",
+          borderBlockStart: "1px solid var(--hair)",
+        }}>
+          <MetaField icon={<Tag size={12} aria-hidden="true" />} label={tbl.category}>
+            {categoryLabel(item.category)}
+          </MetaField>
+          <MetaField label={tbl.urgency}>
+            {urgencyLabel(item.urgency)}
+          </MetaField>
+          <MetaField icon={<Calendar size={12} aria-hidden="true" />} label={tbl.date}>
+            {formatDate(item.createdAt, lang) || "—"}
+          </MetaField>
+          <MetaField label={tbl.deadline}>
+            <DeadlinePill deadline={item.deadline} t={t} />
+          </MetaField>
+          <MetaField icon={<Paperclip size={12} aria-hidden="true" />} label={tbl.attachments}>
+            {attachments}
+          </MetaField>
+        </div>
+      </button>
+
+      {/* Expanded panel */}
       {isExpanded && (
-        <tr style={{ background: "var(--sky-2)", borderTop: "1px solid var(--hair)" }}>
-          <td colSpan={8} style={{ padding: "16px 24px 20px" }}>
+        <div
+          id={panelId}
+          style={{
+            padding: "4px 24px 24px",
+            background: "linear-gradient(180deg, var(--sky-3), var(--white) 60%)",
+            borderBlockStart: "1px solid var(--hair)",
+          }}
+        >
+          <div style={{ paddingBlockStart: "20px" }}>
             <RequestTimeline requestId={item.id} t={t} />
             {item.status === "resolved" && (
               <RateExperienceCard requestId={item.id} t={t} />
             )}
-          </td>
-        </tr>
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -267,118 +390,108 @@ export default function MyRequestsPage() {
   return (
     <>
       <PageHeader title={t.myRequests.title} subtitle={t.myRequests.subtitle}>
-        <div style={{ marginTop: "22px", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px" }}>
+        <div style={{ marginBlockStart: "24px", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px" }}>
           <Link href="/requests" className="btn btn-ember btn-sm">
+            <Plus size={15} aria-hidden="true" />
             {t.myRequests.submitCta}
           </Link>
         </div>
       </PageHeader>
 
-      <div className="page-container" style={{ maxWidth: "1200px", padding: "42px 1.5rem 72px" }}>
+      <div className="page-container" style={{ maxWidth: "960px", padding: "clamp(32px, 5vw, 56px) 1.5rem 80px" }}>
 
         {/* #94 — New-request success banner */}
         {newId && !loading && (
-          <div className="form-banner form-banner-success" style={{ marginBottom: "24px", alignItems: "flex-start" }}>
-            <CheckCircle size={18} />
-            <div>
-              <div style={{ fontWeight: 700 }}>{t.stream2.newRequestBadge}</div>
-              <div style={{ fontSize: "12.5px", fontWeight: 500, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', marginTop: "2px" }}>
-                {newId}
+          <Reveal>
+            <div className="form-banner form-banner-success" style={{ marginBlockEnd: "28px", alignItems: "flex-start" }}>
+              <CheckCircle size={18} aria-hidden="true" />
+              <div>
+                <div style={{ fontWeight: 700 }}>{t.stream2.newRequestBadge}</div>
+                <div style={{ fontSize: "12.5px", fontWeight: 500, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', marginBlockStart: "2px" }}>
+                  {newId}
+                </div>
               </div>
             </div>
-          </div>
+          </Reveal>
         )}
 
         {loading || authLoading ? (
-          <div className="card" style={{ padding: "24px" }} aria-busy="true" aria-label={t.myRequests.loading}>
+          <div aria-busy="true" aria-label={t.myRequests.loading} style={{ display: "grid", gap: "16px" }}>
             {[0, 1, 2].map((i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "12px 0", borderBottom: i < 2 ? "1px solid var(--hair)" : "none" }}>
-                <div className="skeleton skeleton-line" style={{ width: "30%" }} />
-                <div className="skeleton skeleton-line" style={{ width: "18%" }} />
-                <div className="skeleton skeleton-line" style={{ width: "22%", marginInlineStart: "auto" }} />
+              <div key={i} className="card" style={{ padding: "22px 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBlockEnd: "16px" }}>
+                  <div className="skeleton skeleton-line" style={{ width: "90px", height: "1.2rem" }} />
+                  <div className="skeleton skeleton-line" style={{ width: "70px", height: "1.2rem" }} />
+                </div>
+                <div className="skeleton skeleton-line" style={{ width: "85%" }} />
+                <div className="skeleton skeleton-line" style={{ width: "55%", marginBlockStart: "8px" }} />
+                <div style={{ display: "flex", gap: "20px", marginBlockStart: "20px", paddingBlockStart: "16px", borderBlockStart: "1px solid var(--hair)" }}>
+                  <div className="skeleton skeleton-line" style={{ width: "22%" }} />
+                  <div className="skeleton skeleton-line" style={{ width: "22%" }} />
+                  <div className="skeleton skeleton-line" style={{ width: "22%" }} />
+                </div>
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="card" style={{ padding: "32px", textAlign: "center" }}>
-            <div aria-hidden="true" style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--danger-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <AlertCircle size={24} color="var(--danger)" />
+          <div className="card" style={{ padding: "clamp(40px, 6vw, 56px) 32px", textAlign: "center" }}>
+            <div aria-hidden="true" style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--danger-soft)", display: "flex", alignItems: "center", justifyContent: "center", marginInline: "auto", marginBlockEnd: "18px" }}>
+              <AlertCircle size={26} color="var(--danger)" />
             </div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--ink)", marginBottom: "8px" }}>
+            <h2 style={{ fontFamily: "Frank Ruhl Libre, Georgia, serif", fontSize: "var(--fs-h3)", fontWeight: 500, color: "var(--ink)", marginBlockEnd: "10px" }}>
               {t.myRequests.loadErrorTitle}
             </h2>
-            <p style={{ color: "var(--gray-600)", marginBottom: "20px", lineHeight: 1.7, maxWidth: "44ch", marginInline: "auto" }}>
+            <p style={{ color: "var(--gray-600)", marginBlockEnd: "24px", lineHeight: 1.7, maxWidth: "44ch", marginInline: "auto" }}>
               {t.myRequests.loadErrorBody}
             </p>
-            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+            <button className="btn btn-ember" onClick={() => window.location.reload()}>
               {t.myRequests.refresh}
             </button>
           </div>
         ) : items.length === 0 ? (
-          <div className="card" style={{ padding: "48px 32px", textAlign: "center" }}>
-            <div aria-hidden="true" style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--sky-2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
-              <FileText size={26} color="var(--ink-2)" />
+          <Reveal>
+            <div className="card" style={{ padding: "clamp(48px, 7vw, 72px) 32px", textAlign: "center" }}>
+              <span className="eyebrow" style={{ color: "var(--ember)", display: "block", marginBlockEnd: "16px" }}>
+                {t.myRequests.title}
+              </span>
+              <div aria-hidden="true" style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--sky-2)", display: "flex", alignItems: "center", justifyContent: "center", marginInline: "auto", marginBlockEnd: "20px" }}>
+                <FileText size={28} color="var(--ink-2)" />
+              </div>
+              <h2 style={{ fontFamily: "Frank Ruhl Libre, Georgia, serif", fontSize: "var(--fs-h2)", fontWeight: 500, color: "var(--ink)", lineHeight: 1.2, marginBlockEnd: "12px", textWrap: "balance" }}>
+                {t.myRequests.empty}
+              </h2>
+              <p style={{ color: "var(--gray-600)", marginBlockEnd: "28px", lineHeight: 1.7, maxWidth: "46ch", marginInline: "auto", fontSize: "var(--fs-lede)" }}>
+                {t.myRequests.emptyHint}
+              </p>
+              <Link href="/requests" className="btn btn-ember btn-lg">
+                <Plus size={16} aria-hidden="true" />
+                {t.myRequests.submitCta}
+              </Link>
             </div>
-            <h2 style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)", marginBottom: "10px" }}>
-              {t.myRequests.empty}
-            </h2>
-            <p style={{ color: "var(--gray-600)", marginBottom: "24px", lineHeight: 1.7, maxWidth: "46ch", marginInline: "auto" }}>
-              {t.myRequests.emptyHint}
-            </p>
-            <Link href="/requests" className="btn btn-primary">
-              {t.myRequests.submitCta}
-            </Link>
-          </div>
+          </Reveal>
         ) : (
-          <div className="card" style={{ padding: "0", overflow: "hidden" }}>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "var(--sky-2)" }}>
-                    <th style={thStyle}>{t.myRequests.table.id}</th>
-                    <th style={thStyle}>{t.myRequests.table.category}</th>
-                    <th style={thStyle}>{t.myRequests.table.urgency}</th>
-                    <th style={thStyle}>{t.myRequests.table.status}</th>
-                    <th style={thStyle}>{t.myRequests.table.date}</th>
-                    <th style={thStyle}>{t.myRequests.table.deadline}</th>
-                    <th style={thStyle}>{t.myRequests.table.attachments}</th>
-                    <th style={thStyle} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <RequestRow
-                      key={item.id}
-                      item={item}
-                      t={t}
-                      lang={lang}
-                      expandedId={expandedId}
-                      onToggle={handleToggle}
-                    />
-                  ))}
-                </tbody>
-              </table>
+          <>
+            {/* Count summary line */}
+            <div style={{ ...labelStyle, marginBlockEnd: "18px" }}>
+              {items.length} · {t.myRequests.title}
             </div>
-          </div>
+
+            <div style={{ display: "grid", gap: "16px" }}>
+              {items.map((item, i) => (
+                <Reveal key={item.id} delay={Math.min(i * 0.05, 0.3)}>
+                  <RequestCard
+                    item={item}
+                    t={t}
+                    lang={lang}
+                    expandedId={expandedId}
+                    onToggle={handleToggle}
+                  />
+                </Reveal>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </>
   );
 }
-
-const thStyle = {
-  textAlign: "start",
-  padding: "13px 18px",
-  fontSize: "12.5px",
-  color: "var(--ink)",
-  fontWeight: 700,
-  borderBottom: "1px solid var(--gray-200)",
-  whiteSpace: "nowrap",
-};
-
-const tdStyle = {
-  padding: "16px 18px",
-  verticalAlign: "top",
-  fontSize: "14px",
-  color: "var(--ink)",
-};

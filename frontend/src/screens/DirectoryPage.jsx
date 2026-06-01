@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown } from 'lucide-react'
+import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown, Store, HeartHandshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle } from 'lucide-react'
 import Pagination from '../components/Pagination'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Reveal from '../components/motion/Reveal'
 import { useLanguage } from '../contexts/LanguageContext'
 import { apiJson } from '../lib/apiClient'
 
 const PER_PAGE = 6
 
 export default function DirectoryPage() {
-  const { t, lang } = useLanguage()
+  const { t, lang, isRTL } = useLanguage()
   const d = t.directory
+  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight
 
   // ── BILINGUAL FIELD HELPERS ───────────────────────────────────
   // Translatable fields arrive from the API as `{ he, en }` objects. These
@@ -165,12 +167,17 @@ export default function DirectoryPage() {
   const BIZ_CATS = ['all', 'food', 'services', 'health', 'education', 'beauty', 'tech']
   const NGO_AREAS = ['all', 'education', 'employment', 'legal', 'social', 'housing']
 
+  // Segmented control: each tab is a self-contained pill inside a tinted track.
   const tabStyle = (active) => ({
-    padding: '10px 18px', fontSize: '14.5px', fontWeight: 600,
-    border: 'none', background: 'none', cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    paddingBlock: '9px', paddingInline: '18px',
+    fontSize: '14px', fontWeight: 600, fontFamily: 'inherit',
+    border: '1px solid transparent', borderRadius: '999px', cursor: 'pointer',
     color: active ? 'var(--ink)' : 'var(--ink-2)',
-    borderBottom: active ? '2px solid var(--ember)' : '2px solid transparent',
-    marginBottom: '-1px', transition: 'color .2s', fontFamily: 'inherit',
+    background: active ? 'var(--white)' : 'transparent',
+    borderColor: active ? 'var(--hair)' : 'transparent',
+    boxShadow: active ? 'var(--shadow-xs)' : 'none',
+    transition: 'color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out)',
   })
 
   const updateRegisterField = (field, value) => {
@@ -246,44 +253,79 @@ export default function DirectoryPage() {
   const retry = activeTab === 'business' ? loadBusinesses : loadAnswers
 
   return (
-    <>
-      {/* ── SLIM HEADER (#78) — replaces heavy PageHeader ──────────── */}
-      <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--hair)' }}>
-        <div className="page-container" style={{ paddingBlock: '24px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h1 className="section-display" style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', margin: '0 0 4px' }}>
-                {d.pageTitle}
-              </h1>
-              <p style={{ color: 'var(--ink-2)', fontSize: '14px', margin: 0 }}>{d.pageSubtitle}</p>
+    <main>
+      {/* ── EDITORIAL HEADER — eyebrow → serif display → lede ──────── */}
+      <section style={{ background: 'var(--cream)', borderBlockEnd: '1px solid var(--hair)' }}>
+        <div className="page-container" style={{ paddingBlock: 'clamp(40px, 6vw, 64px) clamp(28px, 4vw, 40px)' }}>
+          <Reveal>
+            <div style={{
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: '24px',
+            }}>
+              <div style={{ maxWidth: '40rem' }}>
+                <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '14px' }}>
+                  {lang === 'he' ? 'מדריך קהילתי' : 'Community directory'}
+                </span>
+                <h1 className="section-display-bold" style={{ margin: '0 0 12px' }}>
+                  {d.pageTitle}
+                </h1>
+                <p className="section-lede" style={{ margin: 0 }}>{d.pageSubtitle}</p>
+              </div>
+              <button
+                className="btn btn-ember"
+                onClick={() => setShowRegForm(true)}
+                style={{ flexShrink: 0 }}
+              >
+                <Plus size={16} aria-hidden="true" />
+                {d.registerBiz}
+              </button>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => setShowRegForm(true)}>
-              + {d.registerBiz}
-            </button>
-          </div>
+          </Reveal>
 
-          {/* Tabs sit on the header baseline */}
-          <div style={{ display: 'flex', gap: '4px', marginTop: '18px' }}>
-            <button className="dir-tab" style={tabStyle(activeTab === 'business')} onClick={() => { setActiveTab('business'); setFiltersOpen(false) }}>
+          {/* Segmented tab control sits at the header baseline (no overlap) */}
+          <div
+            role="tablist"
+            aria-label={d.pageTitle}
+            style={{
+              display: 'inline-flex', gap: '4px', marginBlockStart: 'clamp(28px, 4vw, 40px)',
+              padding: '5px', borderRadius: '999px',
+              background: 'rgba(15,30,45,0.05)', border: '1px solid var(--hair)',
+            }}
+          >
+            <button
+              role="tab"
+              aria-selected={activeTab === 'business'}
+              className="dir-tab"
+              style={tabStyle(activeTab === 'business')}
+              onClick={() => { setActiveTab('business'); setFiltersOpen(false) }}
+            >
+              <Store size={15} aria-hidden="true" />
               {d.tabBusiness}
             </button>
-            <button className="dir-tab" style={tabStyle(activeTab === 'ngo')} onClick={() => { setActiveTab('ngo'); setFiltersOpen(false) }}>
+            <button
+              role="tab"
+              aria-selected={activeTab === 'ngo'}
+              className="dir-tab"
+              style={tabStyle(activeTab === 'ngo')}
+              onClick={() => { setActiveTab('ngo'); setFiltersOpen(false) }}
+            >
+              <HeartHandshake size={15} aria-hidden="true" />
               {d.tabNGO}
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="page-container" style={{ paddingBlock: '24px 64px' }}>
+      <div className="page-container" style={{ paddingBlock: 'clamp(40px, 5vw, 56px) 72px' }}>
         {/* ── SEARCH + COLLAPSIBLE FILTER TOGGLE (always visible, above fold) ── */}
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
-          <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
-            <Search size={16} style={{
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBlockEnd: '20px' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>
+            <Search size={17} aria-hidden="true" style={{
               position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-              insetInlineStart: '12px', color: 'var(--gray-400)', pointerEvents: 'none',
+              insetInlineStart: '16px', color: 'var(--gray-400)', pointerEvents: 'none',
             }} />
             <input
-              type="text"
+              type="search"
               value={activeTab === 'business' ? bizSearch : answerSearch}
               onChange={e => {
                 if (activeTab === 'business') { setBizSearch(e.target.value); setBizPage(1) }
@@ -291,21 +333,22 @@ export default function DirectoryPage() {
               }}
               placeholder={activeTab === 'business' ? d.searchPH : d.searchNGO}
               className="form-input"
-              style={{ paddingInlineStart: '38px' }}
+              style={{ paddingInlineStart: '44px', height: '48px', borderRadius: 'var(--radius)', textAlign: 'start' }}
               aria-label={activeTab === 'business' ? d.searchPH : d.searchNGO}
             />
           </div>
           <button
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline"
             aria-expanded={filtersOpen}
             onClick={() => setFiltersOpen(o => !o)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '48px' }}
           >
-            <SlidersHorizontal size={15} />
+            <SlidersHorizontal size={16} aria-hidden="true" />
             {d.filters}
             <ChevronDown
               size={15}
-              style={{ transition: 'transform .2s', transform: filtersOpen ? 'rotate(180deg)' : 'none' }}
+              aria-hidden="true"
+              style={{ transition: 'transform var(--dur-2) var(--ease-out)', transform: filtersOpen ? 'rotate(180deg)' : 'none' }}
             />
           </button>
         </div>
@@ -313,58 +356,74 @@ export default function DirectoryPage() {
         {/* ── COLLAPSIBLE FILTER PANEL ──────────────────────────────── */}
         {filtersOpen && (
           <div style={{
-            background: 'var(--paper)', borderRadius: '12px',
-            border: '1px solid var(--hair)', padding: '16px 18px',
-            boxShadow: 'var(--shadow-sm)', marginBottom: '20px',
-            display: 'flex', flexDirection: 'column', gap: '14px',
+            background: 'var(--white)', borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--hair)', padding: 'clamp(18px, 3vw, 24px)',
+            boxShadow: 'var(--shadow-sm)', marginBlockEnd: '24px',
+            display: 'flex', flexDirection: 'column', gap: '20px',
           }}>
             {activeTab === 'business' ? (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {BIZ_CATS.map(cat => (
-                  <button
-                    key={cat}
-                    className={`filter-chip${bizCat === cat ? ' active' : ''}`}
-                    onClick={() => { setBizCat(cat); setBizPage(1) }}
-                  >
-                    {cat === 'all' ? d.filterAll : d.categories[cat]}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {NGO_AREAS.map(area => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{
+                  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                  fontSize: '11px', fontWeight: 500, letterSpacing: '0.08em',
+                  textTransform: 'uppercase', color: 'var(--gray-500)',
+                }}>
+                  {d.filters}
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {BIZ_CATS.map(cat => (
                     <button
-                      key={area}
-                      className={`filter-chip${answerCategory === area ? ' active' : ''}`}
-                      onClick={() => { setAnswerCategory(area); setAnswerPage(1) }}
+                      key={cat}
+                      className={`filter-chip${bizCat === cat ? ' active' : ''}`}
+                      aria-pressed={bizCat === cat}
+                      onClick={() => { setBizCat(cat); setBizPage(1) }}
                     >
-                      {area === 'all' ? d.filterAll : d.ngoAreas[area]}
+                      {cat === 'all' ? d.filterAll : d.categories[cat]}
                     </button>
                   ))}
                 </div>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <span style={{
+                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                    fontSize: '11px', fontWeight: 500, letterSpacing: '0.08em',
+                    textTransform: 'uppercase', color: 'var(--gray-500)',
+                  }}>
+                    {d.filters}
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {NGO_AREAS.map(area => (
+                      <button
+                        key={area}
+                        className={`filter-chip${answerCategory === area ? ' active' : ''}`}
+                        aria-pressed={answerCategory === area}
+                        onClick={() => { setAnswerCategory(area); setAnswerPage(1) }}
+                      >
+                        {area === 'all' ? d.filterAll : d.ngoAreas[area]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', paddingBlockStart: '16px', borderBlockStart: '1px solid var(--hair)', marginBlockStart: '4px' }}>
                   <input
                     type="text"
                     value={answerRegion}
                     onChange={e => { setAnswerRegion(e.target.value); setAnswerPage(1) }}
                     placeholder={d.regionPH}
-                    style={{
-                      minWidth: '160px', flex: 1, padding: '10px 14px',
-                      border: '1px solid var(--hair)', borderRadius: '8px',
-                      fontSize: '14px', fontFamily: 'inherit',
-                    }}
+                    aria-label={d.regionPH}
+                    className="form-input"
+                    style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
                   />
                   <input
                     type="text"
                     value={answerAudience}
                     onChange={e => { setAnswerAudience(e.target.value); setAnswerPage(1) }}
                     placeholder={d.audiencePH}
-                    style={{
-                      minWidth: '160px', flex: 1, padding: '10px 14px',
-                      border: '1px solid var(--hair)', borderRadius: '8px',
-                      fontSize: '14px', fontFamily: 'inherit',
-                    }}
+                    aria-label={d.audiencePH}
+                    className="form-input"
+                    style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
                   />
                 </div>
               </>
@@ -374,17 +433,30 @@ export default function DirectoryPage() {
 
         {/* ── RESULTS COUNT ─────────────────────────────────────────── */}
         {!error && (
-          <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '16px', fontWeight: 500 }}>
+          <div
+            aria-live="polite"
+            style={{
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: '12px', letterSpacing: '0.04em', textTransform: 'uppercase',
+              color: 'var(--gray-500)', marginBlockEnd: '20px', fontWeight: 500,
+            }}
+          >
             {loading ? t.common.loading : `${resultsCount} ${t.common.results}`}
           </div>
         )}
 
         {/* ── ERROR STATE (with Retry) ──────────────────────────────── */}
         {!loading && error && (
-          <div className="dir-empty" role="alert">
-            <Search size={28} aria-hidden="true" className="dir-empty-icon" />
-            <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.loadError}</h3>
-            <button className="btn btn-primary btn-sm" onClick={() => retry()} style={{ marginBlockStart: '12px' }}>
+          <div className="dir-empty" role="alert" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px', padding: 'clamp(40px, 7vw, 72px) 24px', background: 'var(--white)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '56px', height: '56px', borderRadius: '50%',
+              background: 'var(--danger-soft)', color: 'var(--danger)', marginBlockEnd: '8px',
+            }}>
+              <AlertTriangle size={26} aria-hidden="true" />
+            </span>
+            <h3 className="section-display" style={{ color: 'var(--ink)', margin: 0, fontSize: 'var(--fs-h3)' }}>{d.loadError}</h3>
+            <button className="btn btn-ember" onClick={() => retry()} style={{ marginBlockStart: '12px' }}>
               {d.retry}
             </button>
           </div>
@@ -415,66 +487,75 @@ export default function DirectoryPage() {
         {!loading && !error && activeTab === 'business' && (
           <>
             {bizPageData.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
-                {bizPageData.map(biz => (
-                  <div key={biz.id} className="card card-interactive" style={{ padding: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+                {bizPageData.map((biz, i) => (
+                  <Reveal key={biz.id} delay={Math.min(i, 5) * 0.06} className="card card-interactive" style={{ padding: '26px', display: 'flex', flexDirection: 'column' }}>
                     {biz.featured && (
                       <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '4px',
-                        background: 'var(--cream)', color: 'var(--ember)',
-                        fontSize: '11px', fontWeight: 700, padding: '3px 10px',
-                        borderRadius: '20px', marginBottom: '12px',
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        alignSelf: 'flex-start',
+                        background: 'var(--ember-soft)', color: 'var(--ember-700)',
+                        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                        fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
+                        paddingBlock: '4px', paddingInline: '11px',
+                        borderRadius: '999px', marginBlockEnd: '14px',
                       }}>
-                        <Star size={10} fill="var(--ember)" /> {d.featured}
+                        <Star size={10} fill="var(--ember)" color="var(--ember)" aria-hidden="true" /> {d.featured}
                       </div>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBlockEnd: '16px' }}>
                       <div style={{
-                        width: '52px', height: '52px', borderRadius: '10px',
-                        background: biz.logoColor || 'var(--navy, #1f2a44)', color: '#fff',
+                        width: '54px', height: '54px', borderRadius: 'var(--radius)',
+                        background: biz.logoColor || 'var(--ink)', color: 'var(--white)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: 'Frank Ruhl Libre, serif', fontWeight: 900, fontSize: '20px', flexShrink: 0,
-                      }}>
+                        fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontWeight: 700, fontSize: '22px', flexShrink: 0,
+                        boxShadow: 'var(--shadow-xs)',
+                      }} aria-hidden="true">
                         {biz.logo || L(biz.name).charAt(0)}
                       </div>
-                      <div>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)' }}>{L(biz.name)}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--gray-400)' }}>
-                          <MapPin size={11} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '17px', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25 }}>{L(biz.name)}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', color: 'var(--gray-500)', marginBlockStart: '3px' }}>
+                          <MapPin size={12} aria-hidden="true" />
                           {d.categories[biz.category] || biz.category} • {L(biz.city)}
                         </div>
                       </div>
                     </div>
-                    <p style={{ fontSize: '13.5px', color: 'var(--gray-500)', lineHeight: 1.65, marginBottom: '12px' }}>
+                    <p style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: 1.65, marginBlockEnd: '16px', flex: 1 }}>
                       {L(biz.description)}
                     </p>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBlockEnd: '16px' }}>
                       {L_arr(biz.tags).map(tag => (
                         <span key={tag} style={{
-                          background: 'var(--gray-100)', color: 'var(--gray-600)',
-                          padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
+                          background: 'var(--sky-3)', color: 'var(--ink-2)',
+                          paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500,
                         }}>{tag}</span>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '14px' }}>
-                      <Star size={13} fill="var(--ember)" color="var(--ember)" />
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>{biz.rating}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--gray-400)' }}>({biz.reviews})</span>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start',
+                      marginBlockEnd: '18px', paddingBlockStart: '14px', borderBlockStart: '1px solid var(--hair)', width: '100%',
+                    }}>
+                      <Star size={15} fill="var(--ember)" color="var(--ember)" aria-hidden="true" />
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>{biz.rating}</span>
+                      <span style={{ fontSize: '12.5px', color: 'var(--gray-500)' }}>({biz.reviews})</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" style={{ flex: '1 1 140px', minWidth: 0, textDecoration: 'none', display: 'flex', justifyContent: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        <Phone size={13} /> {biz.phone}
+                      <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" aria-label={`${L(biz.name)} — ${biz.phone}`} style={{ flex: '1 1 140px', minWidth: 0, textDecoration: 'none', display: 'flex', justifyContent: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <Phone size={14} aria-hidden="true" /> {biz.phone}
                       </a>
-                      <button className="btn btn-primary btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>{d.moreBtn}</button>
+                      <button className="btn btn-ember btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>{d.moreBtn}</button>
                     </div>
-                  </div>
+                  </Reveal>
                 ))}
               </div>
             ) : (
-              <div className="dir-empty">
-                <Search size={28} aria-hidden="true" className="dir-empty-icon" />
-                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.emptyBiz}</h3>
-                <p style={{ color: 'var(--gray-500)', margin: 0 }}>{d.noResultsHint}</p>
+              <div className="dir-empty" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px', padding: 'clamp(48px, 8vw, 80px) 24px', background: 'var(--white)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'var(--sky-3)', color: 'var(--ink-2)', marginBlockEnd: '8px' }}>
+                  <Store size={26} aria-hidden="true" />
+                </span>
+                <h3 className="section-display" style={{ color: 'var(--ink)', margin: 0, fontSize: 'var(--fs-h3)' }}>{d.emptyBiz}</h3>
+                <p style={{ color: 'var(--gray-500)', margin: 0, maxWidth: '24rem' }}>{d.noResultsHint}</p>
               </div>
             )}
             <Pagination total={filteredBiz.length} perPage={PER_PAGE} current={bizPage} onChange={setBizPage} />
@@ -485,64 +566,65 @@ export default function DirectoryPage() {
         {!loading && !error && activeTab === 'ngo' && (
           <>
             {answerPageData.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                {answerPageData.map(answer => {
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                {answerPageData.map((answer, i) => {
                   const aTitle = L(answer.title)
                   const aRegion = L(answer.region)
                   const aAudience = L(answer.audience)
+                  const areaLabel = answer.category && (answer.category === 'all' ? d.filterAll : d.ngoAreas[answer.category] || answer.category)
                   return (
-                  <div key={answer.id} className="card card-interactive" style={{ padding: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', marginBottom: '14px' }}>
-                      <div>
-                        <div style={{ fontSize: '15.5px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
-                          {aTitle || d.questionFallback}
-                        </div>
-                        <div style={{ fontSize: '12.5px', color: 'var(--gray-400)' }}>
-                          {aRegion}{aRegion && aAudience ? ' • ' : ''}{aAudience}
-                        </div>
+                  <Reveal key={answer.id} delay={Math.min(i, 5) * 0.06} className="card card-interactive" style={{ padding: '26px', display: 'flex', flexDirection: 'column' }}>
+                    {areaLabel && (
+                      <span style={{
+                        alignSelf: 'flex-start',
+                        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                        fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
+                        color: 'var(--ember-700)', background: 'var(--ember-soft)',
+                        paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', marginBlockEnd: '14px',
+                      }}>
+                        {areaLabel}
+                      </span>
+                    )}
+                    <h3 style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '18px', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.3, marginBlockEnd: '6px' }}>
+                      {aTitle || d.questionFallback}
+                    </h3>
+                    {(aRegion || aAudience) && (
+                      <div style={{ fontSize: '12.5px', color: 'var(--gray-500)', marginBlockEnd: '14px' }}>
+                        {aRegion}{aRegion && aAudience ? ' • ' : ''}{aAudience}
                       </div>
-                    </div>
-                    <p style={{ fontSize: '13.5px', color: 'var(--gray-500)', lineHeight: 1.65, marginBottom: '14px' }}>
+                    )}
+                    <p style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: 1.65, marginBlockEnd: '18px', flex: 1 }}>
                       {L(answer.body)}
                     </p>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                      {answer.category && (
-                        <span style={{
-                          background: 'var(--gray-100)', color: 'var(--gray-600)',
-                          padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
-                        }}>
-                          {answer.category === 'all' ? d.filterAll : d.ngoAreas[answer.category] || answer.category}
-                        </span>
-                      )}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBlockEnd: '18px' }}>
                       {aRegion && (
-                        <span style={{
-                          background: 'var(--gray-100)', color: 'var(--gray-600)',
-                          padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
-                        }}>
+                        <span style={{ background: 'var(--sky-3)', color: 'var(--ink-2)', paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500 }}>
                           {aRegion}
                         </span>
                       )}
                       {aAudience && (
-                        <span style={{
-                          background: 'var(--gray-100)', color: 'var(--gray-600)',
-                          padding: '3px 10px', borderRadius: '20px', fontSize: '11.5px',
-                        }}>
+                        <span style={{ background: 'var(--sky-3)', color: 'var(--ink-2)', paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500 }}>
                           {aAudience}
                         </span>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button className="btn btn-navy btn-sm" style={{ flex: 1 }}>{d.moreBtn}</button>
+                    <div style={{ display: 'flex', gap: '8px', paddingBlockStart: '16px', borderBlockStart: '1px solid var(--hair)' }}>
+                      <button className="btn btn-navy btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        {d.moreBtn}
+                        <ArrowIcon size={14} aria-hidden="true" />
+                      </button>
                     </div>
-                  </div>
+                  </Reveal>
                   )
                 })}
               </div>
             ) : (
-              <div className="dir-empty">
-                <Search size={28} aria-hidden="true" className="dir-empty-icon" />
-                <h3 style={{ color: 'var(--ink)', margin: 0 }}>{d.emptyAnswers}</h3>
-                <p style={{ color: 'var(--gray-500)', margin: 0 }}>{d.noResultsHint}</p>
+              <div className="dir-empty" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px', padding: 'clamp(48px, 8vw, 80px) 24px', background: 'var(--white)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'var(--sky-3)', color: 'var(--ink-2)', marginBlockEnd: '8px' }}>
+                  <HeartHandshake size={26} aria-hidden="true" />
+                </span>
+                <h3 className="section-display" style={{ color: 'var(--ink)', margin: 0, fontSize: 'var(--fs-h3)' }}>{d.emptyAnswers}</h3>
+                <p style={{ color: 'var(--gray-500)', margin: 0, maxWidth: '24rem' }}>{d.noResultsHint}</p>
               </div>
             )}
             <Pagination total={filteredAnswers.length} perPage={PER_PAGE} current={answerPage} onChange={setAnswerPage} />
@@ -555,10 +637,12 @@ export default function DirectoryPage() {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowRegForm(false)}>
           <div className="modal-box">
             <div className="modal-header">
-              <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--ink)' }}>
+              <h3 style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '20px', fontWeight: 700, color: 'var(--ink)' }}>
                 {d.registerNew}
               </h3>
-              <button onClick={() => setShowRegForm(false)} className="btn btn-ghost btn-sm" style={{ padding: '4px' }}>✕</button>
+              <button onClick={() => setShowRegForm(false)} className="btn btn-ghost btn-sm" aria-label={t.common.cancel} style={{ padding: '6px', display: 'inline-flex' }}>
+                <X size={18} aria-hidden="true" />
+              </button>
             </div>
             <div className="modal-body">
               {['business_name', 'owner_name', 'phone', 'category', 'city', 'desc'].map(field => (
@@ -596,7 +680,7 @@ export default function DirectoryPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowRegForm(false)}>{t.common.cancel}</button>
-              <button className="btn btn-primary" onClick={handleRegisterSubmit} disabled={registerSubmitting}>
+              <button className="btn btn-ember" onClick={handleRegisterSubmit} disabled={registerSubmitting}>
                 {registerSubmitting ? t.common.loading : d.submitApproval}
               </button>
             </div>
@@ -613,6 +697,6 @@ export default function DirectoryPage() {
         onConfirm={() => setNotice(null)}
         onCancel={() => setNotice(null)}
       />
-    </>
+    </main>
   )
 }

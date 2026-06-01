@@ -4,8 +4,9 @@ const useNavigate = () => {
   const router = useRouter()
   return (to) => router.push(to)
 }
-import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles } from 'lucide-react'
+import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles, Clock, Lock } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import Reveal from '../components/motion/Reveal'
 import StepIndicator from '../components/StepIndicator'
 import UploadArea from '../components/UploadArea'
 import { FormGroup, Label, Input, Select, Textarea, FormRow } from '../components/FormElements'
@@ -283,28 +284,38 @@ export default function RequestsPage() {
   if (role === 'admin') {
     return (
       <>
-        <PageHeader title={rq.pageTitle} subtitle={rq.pageSubtitle} />
-        <div className="page-container" style={{ maxWidth:'580px', padding:'56px 1.5rem' }}>
-          <div className="card" style={{ padding:'40px 36px', textAlign:'center' }}>
-            <div aria-hidden="true" style={{
-              width:'64px', height:'64px',
-              background:'var(--ember-soft)',
-              borderRadius:'50%',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              margin:'0 auto 20px',
-            }}>
-              <AlertTriangle size={28} color="var(--ember)" />
+        <PageHeader
+          eyebrow={lang === 'he' ? 'הגשת בקשה' : 'Request intake'}
+          title={rq.pageTitle}
+          subtitle={rq.pageSubtitle}
+        />
+        <div className="page-container" style={{ maxWidth:'560px', paddingBlock:'clamp(48px, 7vw, 80px)', paddingInline:'1.5rem' }}>
+          <Reveal>
+            <div className="card" style={{ padding:'clamp(32px, 5vw, 48px)', textAlign:'center', boxShadow:'var(--shadow-lg)' }}>
+              <div aria-hidden="true" style={{
+                width:'68px', height:'68px',
+                background:'var(--ember-soft)',
+                borderRadius:'var(--radius-lg)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                marginInline:'auto', marginBlockEnd:'var(--sp-5)',
+              }}>
+                <AlertTriangle size={30} color="var(--ember)" />
+              </div>
+              <h2 style={{
+                fontFamily:'Frank Ruhl Libre, Georgia, serif',
+                fontSize:'var(--fs-h2)', fontWeight:400, color:'var(--ink)',
+                lineHeight:1.18, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-3)', textWrap:'balance',
+              }}>
+                {s2.adminNotice.title}
+              </h2>
+              <p style={{ color:'var(--gray-600)', fontSize:'var(--fs-body)', marginBlockEnd:'var(--sp-6)', lineHeight:1.7 }}>
+                {s2.adminNotice.body}
+              </p>
+              <button className="btn btn-outline" onClick={() => navigate('/')}>
+                {s2.adminNotice.switchBtn}
+              </button>
             </div>
-            <h2 className="section-display" style={{ fontSize:'1.5rem', marginBottom:'12px' }}>
-              {s2.adminNotice.title}
-            </h2>
-            <p style={{ color:'var(--ink-2)', fontSize:'15px', marginBottom:'28px', lineHeight:1.7 }}>
-              {s2.adminNotice.body}
-            </p>
-            <button className="btn btn-outline" onClick={() => navigate('/')}>
-              {s2.adminNotice.switchBtn}
-            </button>
-          </div>
+          </Reveal>
         </div>
       </>
     )
@@ -313,14 +324,25 @@ export default function RequestsPage() {
   // #86 — t.auth.verifyBanner strings
   const vb = t.auth.verifyBanner
 
+  // Reassurance items shown beneath the form — quiet, brand-aligned trust signals.
+  const trustItems = [
+    { Icon: Clock,       text: lang === 'he' ? 'נציג חוזר אליך תוך 48 שעות' : 'A representative replies within 48 hours' },
+    { Icon: Lock,        text: lang === 'he' ? 'הפרטים שלך מאובטחים ומוצפנים' : 'Your details are encrypted and secure' },
+    { Icon: ShieldCheck, text: lang === 'he' ? 'הטיוטה נשמרת אוטומטית' : 'Your draft is saved automatically' },
+  ]
+
   return (
     <>
-      <PageHeader title={rq.pageTitle} subtitle={rq.pageSubtitle} />
+      <PageHeader
+        eyebrow={lang === 'he' ? 'הגשת בקשה' : 'Request intake'}
+        title={rq.pageTitle}
+        subtitle={rq.pageSubtitle}
+      />
 
-      <div className="page-container" style={{ maxWidth:'780px', padding:'40px 1.5rem 72px' }}>
+      <div className="page-container" style={{ maxWidth:'820px', paddingBlock:'clamp(32px, 5vw, 56px) clamp(56px, 8vw, 88px)', paddingInline:'1.5rem' }}>
         {/* #86 — email-not-verified banner; shown only when user is signed in but unverified */}
         {!emailVerified && (
-          <div className="form-banner form-banner-info" style={{ marginBottom:'24px' }}>
+          <div className="form-banner form-banner-info" style={{ marginBlockEnd:'var(--sp-5)' }}>
             <AlertTriangle size={16} />
             <span style={{ flex:1, fontWeight:500 }}>{vb.text}</span>
             <button
@@ -334,17 +356,31 @@ export default function RequestsPage() {
           </div>
         )}
 
-        <div className="card">
-          <div style={{ padding:'24px 24px 20px', background:'var(--gray-50)', borderBottom:'1px solid var(--hair)' }}>
+        <Reveal>
+        <div className="card" style={{ overflow:'hidden', boxShadow:'var(--shadow-lg)' }}>
+          <div style={{
+            paddingBlock:'var(--sp-5) var(--sp-4)', paddingInline:'clamp(20px, 4vw, 32px)',
+            background:'linear-gradient(180deg, var(--sky-3), var(--gray-50))',
+            borderBlockEnd:'1px solid var(--hair)',
+          }}>
             <StepIndicator steps={steps} currentStep={step} />
           </div>
-          <div className="card-body" style={{ padding:'32px' }}>
+          <div className="card-body" style={{ padding:'clamp(24px, 4vw, 40px)' }}>
 
         {/* STEP 1 — PERSONAL DETAILS */}
         {step === 1 && (
           <div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'16px', flexWrap:'wrap', marginBottom:'24px' }}>
-              <h3 style={{ fontSize:'1.25rem', fontWeight:700, color:'var(--ink)', margin:0 }}>{rq.step1.title}</h3>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:'var(--sp-4)', flexWrap:'wrap', marginBlockEnd:'var(--sp-6)' }}>
+              <div style={{ minWidth:0 }}>
+                <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+                  {lang === 'he' ? `שלב 1 מתוך 4` : `Step 1 of 4`}
+                </span>
+                <h3 style={{
+                  fontFamily:'Frank Ruhl Libre, Georgia, serif',
+                  fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
+                  lineHeight:1.2, letterSpacing:'-0.01em', margin:0,
+                }}>{rq.step1.title}</h3>
+              </div>
               {/* #67 — auto-fill button */}
               <button
                 type="button"
@@ -352,7 +388,7 @@ export default function RequestsPage() {
                 onClick={fillFromProfile}
                 disabled={profileLoading}
                 aria-busy={profileLoading}
-                style={{ color:'var(--ember)' }}
+                style={{ color:'var(--ember)', flexShrink:0 }}
               >
                 <Sparkles size={14} /> {s2.autoFill.fillBtn}
               </button>
@@ -466,8 +502,15 @@ export default function RequestsPage() {
         {/* STEP 2 — REQUEST TYPE */}
         {step === 2 && (
           <div>
-            <h3 style={{ fontSize:'1.25rem', fontWeight:700, color:'var(--ink)', marginBottom:'4px' }}>{rq.step2.title}</h3>
-            <p style={{ fontSize:'14px', color:'var(--gray-600)', marginBottom:'20px' }}>{rq.step2.subtitle}</p>
+            <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+              {lang === 'he' ? `שלב 2 מתוך 4` : `Step 2 of 4`}
+            </span>
+            <h3 style={{
+              fontFamily:'Frank Ruhl Libre, Georgia, serif',
+              fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
+              lineHeight:1.2, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-2)',
+            }}>{rq.step2.title}</h3>
+            <p style={{ fontSize:'var(--fs-sm)', color:'var(--gray-600)', marginBlockEnd:'var(--sp-5)', lineHeight:1.6 }}>{rq.step2.subtitle}</p>
             <div className="choice-grid" role="radiogroup" aria-label={rq.step2.title} style={{ marginBottom:'24px' }}>
               {CATS.map(({ key, Icon, bg, color }) => {
                 const cat = rq.step2.cats[key]
@@ -530,8 +573,15 @@ export default function RequestsPage() {
         {/* STEP 3 — DOCUMENTS */}
         {step === 3 && (
           <div>
-            <h3 style={{ fontSize:'1.25rem', fontWeight:700, color:'var(--ink)', marginBottom:'4px' }}>{rq.step3.title}</h3>
-            <p style={{ fontSize:'14px', color:'var(--gray-600)', marginBottom:'20px' }}>{rq.step3.subtitle}</p>
+            <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+              {lang === 'he' ? `שלב 3 מתוך 4` : `Step 3 of 4`}
+            </span>
+            <h3 style={{
+              fontFamily:'Frank Ruhl Libre, Georgia, serif',
+              fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
+              lineHeight:1.2, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-2)',
+            }}>{rq.step3.title}</h3>
+            <p style={{ fontSize:'var(--fs-sm)', color:'var(--gray-600)', marginBlockEnd:'var(--sp-5)', lineHeight:1.6 }}>{rq.step3.subtitle}</p>
             <FormGroup>
               <UploadArea
                 label={rq.step3.idLabel}
@@ -567,7 +617,14 @@ export default function RequestsPage() {
         {/* STEP 4 — SUMMARY + CONSENT */}
         {step === 4 && (
           <div>
-            <h3 style={{ fontSize:'1.25rem', fontWeight:700, color:'var(--ink)', marginBottom:'20px' }}>{rq.step4.title}</h3>
+            <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+              {lang === 'he' ? `שלב 4 מתוך 4` : `Step 4 of 4`}
+            </span>
+            <h3 style={{
+              fontFamily:'Frank Ruhl Libre, Georgia, serif',
+              fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
+              lineHeight:1.2, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-5)',
+            }}>{rq.step4.title}</h3>
             <div className="review-panel" style={{ marginBottom:'24px' }}>
               <dl className="review-grid">
                 {[
@@ -625,9 +682,10 @@ export default function RequestsPage() {
 
           </div>
         </div>
+        </Reveal>
 
         {/* NAV BUTTONS */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'12px', marginTop:'24px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'var(--sp-3)', marginBlockStart:'var(--sp-5)' }}>
           {step > 1 ? (
             <button className="btn btn-outline" onClick={() => setStep(s => s - 1)} disabled={submitting}>
               <BackArrow size={16} /> {rq.nav.back}
@@ -648,6 +706,36 @@ export default function RequestsPage() {
             )}
           </button>
         </div>
+
+        {/* Quiet reassurance strip — sets expectations and signals trust. */}
+        <Reveal delay={0.1}>
+          <ul style={{
+            listStyle:'none', margin:'var(--sp-7) 0 0', padding:0,
+            display:'grid', gap:'var(--sp-3)',
+            gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',
+          }}>
+            {trustItems.map(({ Icon, text }, i) => (
+              <li key={i} style={{
+                display:'flex', alignItems:'center', gap:'var(--sp-3)',
+                padding:'var(--sp-4)',
+                background:'var(--white)', border:'1px solid var(--hair)',
+                borderRadius:'var(--radius)', boxShadow:'var(--shadow-xs)',
+              }}>
+                <span aria-hidden="true" style={{
+                  flexShrink:0, width:'38px', height:'38px',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  background:'var(--ember-soft)', color:'var(--ember)',
+                  borderRadius:'var(--radius-sm)',
+                }}>
+                  <Icon size={18} />
+                </span>
+                <span style={{ fontSize:'var(--fs-sm)', color:'var(--gray-700)', lineHeight:1.45, textAlign:'start' }}>
+                  {text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
       </div>
     </>
   )
