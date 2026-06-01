@@ -31,7 +31,14 @@ export type AssetSlotKey =
   | 'hero'
   | 'authAside'
   | 'communityImpact'
-  | 'volunteerInvite';
+  | 'volunteerInvite'
+  | 'heroMontageA'
+  | 'heroMontageB'
+  | 'heroMontageC'
+  | 'story1'
+  | 'story2'
+  | 'story3'
+  | 'story4';
 
 // Unsplash delivery URL helper. Verified IDs (HTTP 200) chosen for warm,
 // community-centred imagery that matches the brand's editorial palette.
@@ -72,6 +79,62 @@ export const assetManifest: Record<AssetSlotKey, AssetSlot> = {
       en: 'A group of young people smiling together outdoors',
     },
     ratio: '16 / 9',
+  },
+  heroMontageA: {
+    src: u('photo-1582213782179-e0d53f98f2ca'),
+    alt: {
+      he: 'מתנדבים מסדרים תרומות ומסייעים לחברי הקהילה',
+      en: 'Volunteers sorting donations and supporting community members',
+    },
+    ratio: '4 / 5',
+  },
+  heroMontageB: {
+    src: u('photo-1573497019940-1c28c88b4f3e'),
+    alt: {
+      he: 'אשה מחייכת ומלאת ביטחון מבני הקהילה',
+      en: 'A confident, smiling woman from the community',
+    },
+    ratio: '1 / 1',
+  },
+  heroMontageC: {
+    src: u('photo-1531206715517-5c0ba140b2b8'),
+    alt: {
+      he: 'צעירים לומדים ועובדים יחד סביב שולחן',
+      en: 'Young people studying and working together around a table',
+    },
+    ratio: '4 / 3',
+  },
+  story1: {
+    src: u('photo-1607746882042-944635dfe10e'),
+    alt: {
+      he: 'דיוקן של סטודנט צעיר ומחייך',
+      en: 'Portrait of a young, smiling student',
+    },
+    ratio: '4 / 5',
+  },
+  story2: {
+    src: u('photo-1494790108377-be9c29b29330'),
+    alt: {
+      he: 'דיוקן של אם מחייכת מבני הקהילה',
+      en: 'Portrait of a smiling mother from the community',
+    },
+    ratio: '4 / 5',
+  },
+  story3: {
+    src: u('photo-1542178243-bc20204b769f'),
+    alt: {
+      he: 'דיוקן של בעל עסק מחייך',
+      en: 'Portrait of a smiling business owner',
+    },
+    ratio: '4 / 5',
+  },
+  story4: {
+    src: u('photo-1438761681033-6461ffad8d80'),
+    alt: {
+      he: 'דיוקן של בוגרת תכנית ליווי מחייכת',
+      en: 'Portrait of a smiling program graduate',
+    },
+    ratio: '4 / 5',
   },
 };
 

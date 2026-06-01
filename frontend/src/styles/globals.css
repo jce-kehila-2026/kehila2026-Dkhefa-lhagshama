@@ -2611,3 +2611,240 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
   .tooltip-bubble { transition: opacity 0.01ms, visibility 0.01ms; transform: translateX(-50%); }
   [dir="rtl"] .tooltip-bubble { transform: translateX(50%); }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   HOMEPAGE DESIGN REFRESH (design/homepage-refresh)
+   Centered nav badge · hero photo montage · 4-up areas grid ·
+   expanding success-stories gallery · partner marquee.
+   Palette-native recolour of motion patterns ported from demo/momentum.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Navbar centered logo badge (desktop ≥1180px) ───────────────────────── */
+.nav-logo-badge {
+  position: absolute;
+  left: 50%;
+  inset-block-start: 50%;
+  transform: translate(-50%, -36%);
+  inline-size: 74px;
+  block-size: 74px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--white);
+  border: 3px solid var(--white);
+  box-shadow: var(--shadow-lg);
+  display: block;
+  z-index: 1;
+  transition: transform var(--dur-3) var(--ease-out), box-shadow var(--dur-3) var(--ease-out);
+}
+.nav-logo-badge img { inline-size: 100%; block-size: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.nav-logo-badge:hover { transform: translate(-50%, -36%) scale(1.05); box-shadow: var(--shadow-xl); }
+.nav-logo-badge:focus-visible { outline: none; box-shadow: var(--ring), var(--shadow-lg); }
+
+/* ── Hero photo montage — three-photo collage ───────────────────────────── */
+.hero-montage {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+  block-size: clamp(360px, 42vw, 520px);
+}
+.hero-montage-main { grid-row: 1 / 3; }
+.hero-montage > .asset-image-shell { block-size: 100%; inline-size: 100%; }
+@media (max-width: 860px) {
+  .hero-montage { order: 2; block-size: clamp(320px, 72vw, 440px); }
+}
+
+/* ── Areas of activity — four evenly-weighted icon explainers ───────────── */
+.areas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(16px, 2.5vw, 32px);
+}
+@media (max-width: 900px) { .areas-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .areas-grid { grid-template-columns: 1fr; } }
+.areas-grid > * { min-inline-size: 0; }
+.area-item {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: clamp(20px, 2.5vw, 32px) 16px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  transition: transform var(--dur-3) var(--ease-out), background-color var(--dur-3) var(--ease-out);
+}
+.area-item:hover { background: var(--sky-3); transform: translateY(-3px); }
+.area-item:focus-visible { outline: none; box-shadow: var(--ring); }
+.area-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 76px;
+  block-size: 76px;
+  border-radius: 50%;
+  background: var(--ember-soft);
+  color: var(--ember);
+  transition: transform var(--dur-3) var(--ease-out), background-color var(--dur-3) var(--ease-out), color var(--dur-3) var(--ease-out);
+}
+.area-item:hover .area-icon { background: var(--ember); color: var(--white); transform: scale(1.08) rotate(-4deg); }
+.area-title { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fs-h3); font-weight: 700; color: var(--ink); margin: 0; }
+.area-desc { font-size: var(--fs-sm); line-height: 1.6; color: var(--gray-600); margin: 0; max-inline-size: 28ch; }
+
+/* ── Success stories — image-led expanding gallery ──────────────────────── */
+.story-gallery {
+  display: flex;
+  gap: 12px;
+  block-size: clamp(380px, 52vh, 520px);
+}
+.story-panel {
+  position: relative;
+  flex: 1 1 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  background: var(--ink-2);
+  isolation: isolate;
+  transition: flex-grow var(--dur-4) var(--ease-out), block-size var(--dur-4) var(--ease-out);
+}
+.story-panel.is-active { flex-grow: 5; }
+.story-panel:focus-visible { outline: none; box-shadow: var(--ring); }
+.story-panel-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to top, rgba(15,30,45,0.94) 0%, rgba(15,30,45,0.48) 38%, rgba(15,30,45,0.08) 72%);
+  transition: background var(--dur-3) var(--ease-out);
+}
+.story-panel:not(.is-active) .story-panel-scrim { background: rgba(15,30,45,0.60); }
+.story-panel-label {
+  position: absolute;
+  z-index: 2;
+  inset-block-end: 18px;
+  inset-inline: 16px;
+  color: var(--cream);
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+  text-wrap: balance;
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+.story-panel.is-active .story-panel-label { opacity: 0; pointer-events: none; }
+.story-panel-body {
+  position: absolute;
+  z-index: 2;
+  inset-block-end: 0;
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: clamp(20px, 2.5vw, 34px);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity var(--dur-3) var(--ease-out) 80ms, transform var(--dur-3) var(--ease-out) 80ms;
+}
+.story-panel.is-active .story-panel-body { opacity: 1; transform: none; }
+.story-panel-stars { display: flex; gap: 3px; }
+.story-panel-quote {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(1rem, 0.85rem + 0.7vw, 1.375rem);
+  line-height: 1.5;
+  color: var(--cream);
+  text-wrap: balance;
+  max-inline-size: 32rem;
+}
+.story-panel-meta { display: flex; flex-direction: column; gap: 2px; margin-block-start: 4px; }
+.story-panel-name { font-weight: 700; font-size: 15px; color: var(--cream); }
+.story-panel-role {
+  font-size: 11px;
+  color: rgba(244,238,224,0.7);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@media (max-width: 720px) {
+  .story-gallery { flex-direction: column; block-size: auto; }
+  .story-panel { flex: 0 0 auto; block-size: 84px; }
+  .story-panel.is-active { block-size: clamp(360px, 86vw, 460px); }
+}
+
+/* ── Partners — auto-scrolling trail (light band, brand palette) ────────── */
+.home-marquee {
+  position: relative;
+  inline-size: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+.home-marquee-track {
+  display: flex;
+  gap: 14px;
+  inline-size: max-content;
+  animation: homeMarquee 38s linear infinite;
+}
+[dir="rtl"] .home-marquee-track { animation-direction: reverse; }
+.home-marquee:hover .home-marquee-track { animation-play-state: paused; }
+@keyframes homeMarquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.home-marquee[data-reduce="true"] .home-marquee-track { animation: none; flex-wrap: wrap; inline-size: 100%; }
+.home-partner {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  padding: 14px 22px;
+  background: var(--white);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.home-partner:hover { border-color: var(--ember); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.home-partner-mark {
+  inline-size: 38px;
+  block-size: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--sky-2);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 800;
+  font-size: 15px;
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+.home-partner:hover .home-partner-mark { background: var(--ember); color: var(--white); }
+.home-partner-name { display: block; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.home-partner-area {
+  display: block;
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-block-start: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Reduced-motion: keep everything legible, drop the kinetics ─────────── */
+@media (prefers-reduced-motion: reduce) {
+  .home-marquee-track { animation: none; flex-wrap: wrap; inline-size: 100%; }
+  .story-panel, .story-panel-body, .story-panel-label, .story-panel-scrim,
+  .area-item, .area-icon, .nav-logo-badge { transition: none; }
+  .nav-logo-badge:hover { transform: translate(-50%, -36%); }
+  .area-item:hover { transform: none; }
+  .area-item:hover .area-icon { transform: none; }
+  .home-partner:hover { transform: none; }
+}

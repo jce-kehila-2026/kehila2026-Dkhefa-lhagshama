@@ -72,11 +72,14 @@ export default function Navbar() {
           // Wider than the 1120px content column so the full signed-in nav
           // (links + lang + account chip + Sign Out + CTA) never overflows.
           maxWidth: "1320px",
+          // Positioning context for the centered logo badge (desktop).
+          position: "relative",
         }}
       >
-        {/* LOGO */}
+        {/* LOGO — inline on mobile only; desktop uses the centered badge below */}
         <Link
           href="/"
+          className="hide-desktop"
           style={{
             display: "flex",
             alignItems: "center",
@@ -107,15 +110,26 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* DESKTOP TRAILING GROUP — links + controls in one container
-            so only ONE marginInlineStart:auto fires (prevents EN overflow) */}
+        {/* CENTERED LOGO BADGE — desktop: a circular mark centered in the bar
+            that protrudes slightly below it (editorial NGO style). */}
+        <Link
+          href="/"
+          className="nav-logo-badge hide-mobile"
+          aria-label={t.nav.brand}
+        >
+          <img src="/logo.jpg" alt={t.nav.brand} />
+        </Link>
+
+        {/* DESKTOP GROUP — links pinned to the start, controls to the end, so
+            the centered logo badge sits in the clear gap between them. */}
         <div
           className="hide-mobile"
           style={{
             display: "flex",
             alignItems: "center",
             gap: "12px",
-            marginInlineStart: "auto",
+            inlineSize: "100%",
+            justifyContent: "space-between",
             minWidth: 0,
           }}
         >

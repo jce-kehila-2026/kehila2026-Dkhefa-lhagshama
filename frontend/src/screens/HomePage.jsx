@@ -1,9 +1,13 @@
+import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Star } from 'lucide-react'
+import { useReducedMotion } from 'motion/react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { mockStories, mockStats, mockNGOs } from '../data/mockData'
 import StatCard from '../components/StatCard'
 import AssetImage from '../components/AssetImage'
+import Reveal from '../components/motion/Reveal'
+import MagneticButton from '../components/motion/MagneticButton'
 
 const useNavigate = () => {
   const router = useRouter()
@@ -11,42 +15,52 @@ const useNavigate = () => {
 }
 
 const SERVICE_ICONS = {
-  education:  <GraduationCap size={24} />,
-  employment: <Briefcase size={24} />,
-  legal:      <Scale size={24} />,
-  social:     <Users size={24} />,
+  education:  <GraduationCap size={30} />,
+  employment: <Briefcase size={30} />,
+  legal:      <Scale size={30} />,
+  social:     <Users size={30} />,
 }
 
 export default function HomePage() {
   const { t, isRTL, lang } = useLanguage()
   const navigate = useNavigate()
+  const reduce = useReducedMotion()
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight
 
   const serviceEntries = Object.entries(t.services.items)
-  const [featuredKey, featured] = serviceEntries[0]
-  const restServices = serviceEntries.slice(1)
+
+  // Success-stories gallery: one panel is the highlight at a time.
+  const [activeStory, setActiveStory] = useState(0)
 
   return (
     <main>
-      {/* ── HERO — asymmetric: copy leads, portrait anchors the start side ── */}
-      <section
-        className="hero-bold hero-enter"
-        style={{ position: 'relative', overflow: 'hidden' }}
-      >
+      {/* ── HERO — copy leads, a community photo montage speaks for the NGO ── */}
+      <section className="hero-bold hero-enter" style={{ position: 'relative', overflow: 'hidden' }}>
         <div className="page-container" style={{ position: 'relative', zIndex: 1, paddingBlock: 'clamp(56px, 7.5vw, 96px)' }}>
           <div className="hero-grid">
-            <div className="hero-mark">
-              <div className="hero-mark-bold">
-                <AssetImage
-                  slot="logo"
-                  rounded="var(--radius-xl)"
-                  ratio="1 / 1"
-                  priority
-                  shadow="var(--shadow-xl)"
-                  border="1px solid rgba(255,255,255,0.6)"
-                  style={{ width: 'min(360px, 78vw)' }}
-                />
-              </div>
+            {/* Visual side — a three-photo collage of the work itself */}
+            <div className="hero-montage hero-rise" style={{ '--rise-delay': '120ms' }}>
+              <AssetImage
+                slot="heroMontageA"
+                className="hero-montage-main"
+                rounded="var(--radius-lg)"
+                shadow="var(--shadow-lg)"
+                border="1px solid var(--hair)"
+                priority
+                style={{ height: '100%' }}
+              />
+              <AssetImage
+                slot="heroMontageB"
+                rounded="var(--radius-lg)"
+                shadow="var(--shadow)"
+                border="1px solid var(--hair)"
+              />
+              <AssetImage
+                slot="heroMontageC"
+                rounded="var(--radius-lg)"
+                shadow="var(--shadow)"
+                border="1px solid var(--hair)"
+              />
             </div>
 
             <div className="hero-copy">
@@ -59,10 +73,10 @@ export default function HomePage() {
               <p className="section-lede hero-rise" style={{ margin: '0 0 28px', '--rise-delay': '150ms' }}>{t.hero.subtitle}</p>
 
               <div className="hero-rise" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', '--rise-delay': '210ms' }}>
-                <button className="btn btn-ember btn-lg" onClick={() => navigate('/requests')}>
+                <MagneticButton className="btn btn-ember btn-lg" onClick={() => navigate('/requests')}>
                   {t.hero.cta}
                   <ArrowIcon size={16} />
-                </button>
+                </MagneticButton>
                 <button
                   className="btn btn-outline btn-lg"
                   onClick={() => document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' })}
@@ -111,220 +125,193 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── SERVICES — featured-first, NOT an identical 4-up grid ──────────── */}
+      {/* ── AREAS OF ACTIVITY — four evenly-weighted icon explainers ────────── */}
       <section id="services-section" className="section-padding" style={{ background: 'var(--paper)' }}>
         <div className="page-container">
-          <header style={{ maxWidth: '46rem', marginBlockEnd: '40px' }}>
-            <h2 className="section-display-bold">{t.services.title}</h2>
-            <p className="section-lede" style={{ margin: 0 }}>{t.services.subtitle}</p>
-          </header>
+          <Reveal>
+            <header style={{ maxWidth: '46rem', margin: '0 auto 48px', textAlign: 'center' }}>
+              <h2 className="section-display-bold">{t.services.title}</h2>
+              <p className="section-lede" style={{ margin: '12px auto 0' }}>{t.services.subtitle}</p>
+            </header>
+          </Reveal>
 
-          <div className="services-layout">
-            {/* Lead service — large, with the call to act */}
-            <button
-              type="button"
-              className="card card-interactive service-feature"
-              onClick={() => navigate('/requests')}
-            >
-              <div className="service-icon service-icon-lead">{SERVICE_ICONS[featuredKey]}</div>
-              <h3 className="service-feature-title">{featured.title}</h3>
-              <p className="service-feature-desc">{featured.desc}</p>
-              <span className="service-cta">
-                {lang === 'he' ? 'הגשת בקשה' : 'Start a request'}
-                <ArrowIcon size={15} />
-              </span>
-            </button>
-
-            {/* Remaining services — compact rows, distinct rhythm from the feature */}
-            <div className="service-rows">
-              {restServices.map(([key, svc]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className="service-row"
-                  onClick={() => navigate('/requests')}
-                >
-                  <span className="service-icon">{SERVICE_ICONS[key]}</span>
-                  <span style={{ minWidth: 0 }}>
-                    <span className="service-row-title">{svc.title}</span>
-                    <span className="service-row-desc">{svc.desc}</span>
-                  </span>
-                  <ArrowIcon size={16} className="service-row-arrow" />
+          <div className="areas-grid">
+            {serviceEntries.map(([key, svc], i) => (
+              <Reveal key={key} delay={i * 0.08}>
+                <button type="button" className="area-item" onClick={() => navigate('/requests')}>
+                  <span className="area-icon">{SERVICE_ICONS[key]}</span>
+                  <h3 className="area-title">{svc.title}</h3>
+                  <p className="area-desc">{svc.desc}</p>
                 </button>
-              ))}
-            </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── COMMUNITY IMPACT — text + image, generous, no card ─────────────── */}
       <section style={{ background: 'var(--cream)', paddingBlock: 'clamp(56px, 8vw, 96px)' }}>
-        <div
-          className="page-container impact-grid"
-        >
-          <div>
+        <div className="page-container impact-grid">
+          <Reveal>
             <h2 className="section-display-bold" style={{ marginBlockEnd: '16px' }}>{t.home.impactTitle}</h2>
             <p className="section-lede" style={{ margin: 0 }}>{t.home.impactBody}</p>
-          </div>
-          <AssetImage
-            slot="communityImpact"
-            ratio="4 / 3"
-            rounded="var(--radius-lg)"
-            shadow="var(--shadow)"
-            border="1px solid var(--hair)"
-          />
+          </Reveal>
+          <Reveal delay={0.1} y={32}>
+            <AssetImage
+              slot="communityImpact"
+              ratio="4 / 3"
+              rounded="var(--radius-lg)"
+              shadow="var(--shadow)"
+              border="1px solid var(--hair)"
+            />
+          </Reveal>
         </div>
       </section>
 
-      {/* ── SUCCESS STORIES — dark editorial colophon ─────────────────────── */}
+      {/* ── SUCCESS STORIES — image-led, one story takes the stage at a time ── */}
       <section className="section-padding" style={{ background: 'var(--ink)' }}>
         <div className="page-container">
-          <header style={{ maxWidth: '40rem', marginBlockEnd: '40px' }}>
-            <span
-              style={{
-                fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.12em',
-                textTransform: 'uppercase', color: 'var(--ember)', display: 'block', marginBlockEnd: '14px',
-              }}
-            >
-              {lang === 'he' ? 'קולות מהקהילה' : 'Voices from the community'}
-            </span>
-            <h2
-              style={{
-                fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-                fontSize: 'var(--fs-display)', fontWeight: 400, color: 'var(--cream)',
-                lineHeight: 1.14, letterSpacing: '-0.01em', margin: '0 0 16px', textWrap: 'balance',
-              }}
-            >
-              {t.stories.title}
-            </h2>
-            <p style={{ color: 'rgba(244,238,224,0.78)', fontSize: 'var(--fs-lede)', lineHeight: 1.6, margin: 0 }}>
-              {t.stories.subtitle}
-            </p>
-          </header>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-            {mockStories.map((s) => (
-              <figure
-                key={s.id}
-                className="story-figure"
+          <Reveal>
+            <header style={{ maxWidth: '40rem', marginBlockEnd: '40px' }}>
+              <span
                 style={{
-                  background: 'rgba(244,238,224,0.05)',
-                  border: '1px solid rgba(244,238,224,0.12)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '28px',
-                  margin: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
+                  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                  fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.12em',
+                  textTransform: 'uppercase', color: 'var(--ember)', display: 'block', marginBlockEnd: '14px',
                 }}
               >
-                <div style={{ display: 'flex', gap: '3px' }} aria-label={`${s.rating}/5`}>
-                  {Array(s.rating).fill(0).map((_, i) => (
-                    <Star key={i} size={14} fill="var(--ember)" color="var(--ember)" />
-                  ))}
-                </div>
-                <blockquote
-                  style={{
-                    fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-                    fontSize: '1.0625rem', lineHeight: 1.65, color: 'var(--cream)',
-                    fontStyle: 'italic', margin: 0, flex: 1,
-                  }}
-                >
-                  &ldquo;{lang === 'he' ? s.quote : s.quoteEn}&rdquo;
-                </blockquote>
-                <figcaption style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span
-                    style={{
-                      width: '40px', height: '40px', borderRadius: '50%',
-                      background: 'rgba(185,105,78,0.2)', border: '1.5px solid rgba(185,105,78,0.45)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'Frank Ruhl Libre, serif', fontWeight: 700, color: 'var(--ember)',
-                      fontSize: '15px', flexShrink: 0,
-                    }}
+                {lang === 'he' ? 'קולות מהקהילה' : 'Voices from the community'}
+              </span>
+              <h2
+                style={{
+                  fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+                  fontSize: 'var(--fs-display)', fontWeight: 400, color: 'var(--cream)',
+                  lineHeight: 1.14, letterSpacing: '-0.01em', margin: '0 0 16px', textWrap: 'balance',
+                }}
+              >
+                {t.stories.title}
+              </h2>
+              <p style={{ color: 'rgba(244,238,224,0.78)', fontSize: 'var(--fs-lede)', lineHeight: 1.6, margin: 0 }}>
+                {t.stories.subtitle}
+              </p>
+            </header>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <div className="story-gallery" role="tablist" aria-label={t.stories.title}>
+              {mockStories.map((s, i) => {
+                const active = i === activeStory
+                const name = lang === 'he' ? s.name : s.nameEn
+                const role = lang === 'he' ? s.role : s.roleEn
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    aria-label={name}
+                    className={`story-panel${active ? ' is-active' : ''}`}
+                    onClick={() => setActiveStory(i)}
+                    onMouseEnter={() => !reduce && setActiveStory(i)}
+                    onFocus={() => setActiveStory(i)}
                   >
-                    {s.avatar}
-                  </span>
-                  <span>
-                    <span style={{ display: 'block', fontWeight: 600, fontSize: '14px', color: 'var(--cream)' }}>
-                      {lang === 'he' ? s.name : s.nameEn}
+                    <AssetImage
+                      slot={s.image}
+                      className="story-panel-img"
+                      rounded="0"
+                      style={{ position: 'absolute', inset: 0, height: '100%', width: '100%' }}
+                    />
+                    <span className="story-panel-scrim" aria-hidden="true" />
+
+                    {/* Collapsed: a vertical name label. Expanded: the full quote. */}
+                    <span className="story-panel-label">{name}</span>
+
+                    <span className="story-panel-body">
+                      <span className="story-panel-stars" aria-label={`${s.rating}/5`}>
+                        {Array(s.rating).fill(0).map((_, j) => (
+                          <Star key={j} size={14} fill="var(--ember)" color="var(--ember)" />
+                        ))}
+                      </span>
+                      <span className="story-panel-quote">
+                        &ldquo;{lang === 'he' ? s.quote : s.quoteEn}&rdquo;
+                      </span>
+                      <span className="story-panel-meta">
+                        <span className="story-panel-name">{name}</span>
+                        <span className="story-panel-role">{role}</span>
+                      </span>
                     </span>
-                    <span
-                      style={{
-                        display: 'block', fontSize: '11px', color: 'rgba(244,238,224,0.6)',
-                        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                        letterSpacing: '0.06em', textTransform: 'uppercase', marginBlockStart: '2px',
-                      }}
-                    >
-                      {lang === 'he' ? s.role : s.roleEn}
-                    </span>
-                  </span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+                  </button>
+                )
+              })}
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ── HOW IT WORKS — a real ordered sequence, numbers earn their place ── */}
       <section className="section-padding" style={{ background: 'var(--paper)' }}>
         <div className="page-container">
-          <header style={{ maxWidth: '40rem', marginBlockEnd: '40px' }}>
-            <h2 className="section-display-bold">
-              {lang === 'he' ? 'איך זה עובד' : 'How it works'}
-            </h2>
-            <p className="section-lede" style={{ margin: 0 }}>
-              {lang === 'he' ? 'שלושה צעדים מהגשת הבקשה ועד הסיוע.' : 'Three steps from request to support.'}
-            </p>
-          </header>
+          <Reveal>
+            <header style={{ maxWidth: '40rem', marginBlockEnd: '40px' }}>
+              <h2 className="section-display-bold">
+                {lang === 'he' ? 'איך זה עובד' : 'How it works'}
+              </h2>
+              <p className="section-lede" style={{ margin: 0 }}>
+                {lang === 'he' ? 'שלושה צעדים מהגשת הבקשה ועד הסיוע.' : 'Three steps from request to support.'}
+              </p>
+            </header>
+          </Reveal>
 
-          <ol className="steps-flow">
-            {[
-              {
-                n: '1',
-                he: { title: 'הגשת הבקשה', desc: 'מילוי הטופס הדיגיטלי לוקח פחות מחמש דקות.' },
-                en: { title: 'Submit the request', desc: 'The digital form takes under five minutes to fill in.' },
-              },
-              {
-                n: '2',
-                he: { title: 'נציג חוזר אליך', desc: 'נציג מהעמותה יוצר קשר תוך 48 שעות.' },
-                en: { title: 'A representative reaches out', desc: 'Someone from the team contacts you within 48 hours.' },
-              },
-              {
-                n: '3',
-                he: { title: 'סיוע מותאם', desc: 'מקבלים ליווי בדיוק בתחום שבו צריך עזרה.' },
-                en: { title: 'Get matched support', desc: 'You receive guidance in the exact area you need.' },
-              },
-            ].map((step, i, arr) => (
-              <li key={step.n} className="step-item">
-                <span className="step-num">{step.n}</span>
-                <div>
-                  <h3 className="step-title">{lang === 'he' ? step.he.title : step.en.title}</h3>
-                  <p className="step-desc">{lang === 'he' ? step.he.desc : step.en.desc}</p>
-                </div>
-                {i < arr.length - 1 && <span className="step-line" aria-hidden="true" />}
-              </li>
-            ))}
-          </ol>
+          <Reveal>
+            <ol className="steps-flow">
+              {[
+                {
+                  n: '1',
+                  he: { title: 'הגשת הבקשה', desc: 'מילוי הטופס הדיגיטלי לוקח פחות מחמש דקות.' },
+                  en: { title: 'Submit the request', desc: 'The digital form takes under five minutes to fill in.' },
+                },
+                {
+                  n: '2',
+                  he: { title: 'נציג חוזר אליך', desc: 'נציג מהעמותה יוצר קשר תוך 48 שעות.' },
+                  en: { title: 'A representative reaches out', desc: 'Someone from the team contacts you within 48 hours.' },
+                },
+                {
+                  n: '3',
+                  he: { title: 'סיוע מותאם', desc: 'מקבלים ליווי בדיוק בתחום שבו צריך עזרה.' },
+                  en: { title: 'Get matched support', desc: 'You receive guidance in the exact area you need.' },
+                },
+              ].map((step, i, arr) => (
+                <li key={step.n} className="step-item">
+                  <span className="step-num">{step.n}</span>
+                  <div>
+                    <h3 className="step-title">{lang === 'he' ? step.he.title : step.en.title}</h3>
+                    <p className="step-desc">{lang === 'he' ? step.he.desc : step.en.desc}</p>
+                  </div>
+                  {i < arr.length - 1 && <span className="step-line" aria-hidden="true" />}
+                </li>
+              ))}
+            </ol>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── PARTNERS — quiet logo wall ────────────────────────────────────── */}
-      <section style={{ background: 'var(--sky-2)', paddingBlock: 'clamp(48px, 6vw, 72px)' }}>
+      {/* ── PARTNERS — an auto-scrolling trail of partner organisations ─────── */}
+      <section style={{ background: 'var(--sky-2)', paddingBlock: 'clamp(48px, 6vw, 72px)', overflow: 'hidden' }}>
         <div className="page-container">
-          <h2
-            className="section-display"
-            style={{ fontSize: 'var(--fs-h2)', margin: '0 0 24px' }}
-          >
-            {t.partners.title}
-          </h2>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {mockNGOs.slice(0, 5).map((ngo) => (
-              <div key={ngo.id} className="partner-pill">
-                <span className="partner-mark">{ngo.logo}</span>
+          <Reveal>
+            <h2 className="section-display" style={{ fontSize: 'var(--fs-h2)', margin: '0 0 24px' }}>
+              {t.partners.title}
+            </h2>
+          </Reveal>
+        </div>
+        <div className="home-marquee" data-reduce={reduce ? 'true' : 'false'}>
+          <div className="home-marquee-track">
+            {[...mockNGOs, ...mockNGOs].map((ngo, i) => (
+              <div key={`${ngo.id}-${i}`} className="home-partner" aria-hidden={i >= mockNGOs.length ? 'true' : undefined}>
+                <span className="home-partner-mark">{ngo.logo}</span>
                 <span>
-                  <span className="partner-name">{lang === 'he' ? ngo.name : ngo.nameEn}</span>
-                  <span className="partner-area">{lang === 'he' ? ngo.area : ngo.areaEn}</span>
+                  <span className="home-partner-name">{lang === 'he' ? ngo.name : ngo.nameEn}</span>
+                  <span className="home-partner-area">{lang === 'he' ? ngo.area : ngo.areaEn}</span>
                 </span>
               </div>
             ))}
@@ -334,28 +321,30 @@ export default function HomePage() {
 
       {/* ── FINAL CTA — full-bleed ink band ───────────────────────────────── */}
       <section style={{ background: 'var(--ink)', paddingBlock: 'clamp(56px, 8vw, 88px)' }}>
-        <div className="page-container" style={{ textAlign: 'center', maxWidth: '46rem' }}>
-          <h2
-            style={{
-              fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-              fontSize: 'var(--fs-display)', fontWeight: 400, color: 'var(--cream)',
-              lineHeight: 1.14, letterSpacing: '-0.01em', margin: '0 0 14px', textWrap: 'balance',
-            }}
-          >
-            {t.cta.title}
-          </h2>
-          <p style={{ color: 'rgba(244,238,224,0.8)', fontSize: 'var(--fs-lede)', lineHeight: 1.6, margin: '0 auto 28px', maxWidth: '36rem' }}>
-            {t.cta.subtitle}
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-ember btn-lg" onClick={() => navigate('/requests')}>
-              {t.cta.primary} <ArrowIcon size={16} />
-            </button>
-            <button className="btn btn-nav-outline btn-lg" onClick={() => navigate('/volunteer')}>
-              {t.cta.secondary}
-            </button>
+        <Reveal>
+          <div className="page-container" style={{ textAlign: 'center', maxWidth: '46rem' }}>
+            <h2
+              style={{
+                fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+                fontSize: 'var(--fs-display)', fontWeight: 400, color: 'var(--cream)',
+                lineHeight: 1.14, letterSpacing: '-0.01em', margin: '0 0 14px', textWrap: 'balance',
+              }}
+            >
+              {t.cta.title}
+            </h2>
+            <p style={{ color: 'rgba(244,238,224,0.8)', fontSize: 'var(--fs-lede)', lineHeight: 1.6, margin: '0 auto 28px', maxWidth: '36rem' }}>
+              {t.cta.subtitle}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <MagneticButton className="btn btn-ember btn-lg" onClick={() => navigate('/requests')}>
+                {t.cta.primary} <ArrowIcon size={16} />
+              </MagneticButton>
+              <button className="btn btn-nav-outline btn-lg" onClick={() => navigate('/volunteer')}>
+                {t.cta.secondary}
+              </button>
+            </div>
           </div>
-        </div>
+        </Reveal>
       </section>
     </main>
   )

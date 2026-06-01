@@ -553,6 +553,7 @@ export const mockStories = [
     category: 'education',
     rating: 5,
     avatar: 'מ',
+    image: 'story1',
   },
   {
     id: 2,
@@ -565,6 +566,7 @@ export const mockStories = [
     category: 'legal',
     rating: 5,
     avatar: 'ת',
+    image: 'story2',
   },
   {
     id: 3,
@@ -577,6 +579,7 @@ export const mockStories = [
     category: 'employment',
     rating: 5,
     avatar: 'ד',
+    image: 'story3',
   },
   {
     id: 4,
@@ -589,6 +592,7 @@ export const mockStories = [
     category: 'education',
     rating: 5,
     avatar: 'ש',
+    image: 'story4',
   },
 ]
 
