@@ -11,7 +11,7 @@
  *
  * Issue #69.
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { CSSProperties, FormEvent, ReactNode } from 'react'
 import { Check, X as XIcon, AlertCircle, ArrowLeft, ArrowRight, HeartHandshake, ShieldCheck, Users } from 'lucide-react'
 import Link from 'next/link'
@@ -593,9 +593,19 @@ export default function RegisterPage() {
   const v = t.volunteerSignup
   const a = t.auth.register
 
+  const router = useRouter()
   const [tab, setTab] = useState('beneficiary') // 'beneficiary' | 'volunteer'
   const [volStep, setVolStep] = useState(1)      // 1 | 2
   const [accountData, setAccountData] = useState<AccountData | null>(null) // { email, password }
+
+  // Preselect the volunteer tab when arrived via the /volunteer "Apply" CTA
+  // (/register?role=volunteer). Runs once router.query is populated; the user
+  // can still switch tabs afterwards (deps don't change on manual switch).
+  useEffect(() => {
+    if (router.isReady && router.query.role === 'volunteer') {
+      setTab('volunteer')
+    }
+  }, [router.isReady, router.query.role])
 
   const tabLabels: Record<string, ReactNode> = {
     beneficiary: v.tabBeneficiary,
