@@ -1,0 +1,186 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ─────────────────────────────────────────
+   LAYOUT UTILITIES
+───────────────────────────────────────── */
+
+.page-container {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding-inline: 1.5rem;
+}
+
+.section-padding {
+  padding-block: clamp(48px, 6vw, 88px);
+}
+
+/* ─────────────────────────────────────────
+   TYPOGRAPHY
+───────────────────────────────────────── */
+
+.font-display {
+  font-family: 'Frank Ruhl Libre', serif;
+}
+
+/* ─────────────────────────────────────────
+   GOLD ACCENT LINE
+───────────────────────────────────────── */
+
+.gold-line {
+  width: 48px;
+  height: 1px;
+  background: var(--ember);
+  border-radius: 0;
+  margin-bottom: 16px;
+}
+
+.gold-line.center { margin-left: auto; margin-right: auto; }
+
+.gold-line.light { background: var(--ink-2); }
+
+.hero-copy .section-lede { max-width: 38rem; }
+
+/* ── Elevated landing rhythm (additive) ───────────────────────────────
+   Section headers get a quiet ember tick; service feature + stories +
+   partners gain a touch more hover life without changing structure.    */
+
+.section-head-bold { position: relative; }
+
+.section-display-bold {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 500;
+  font-size: var(--fs-display);
+  line-height: 1.1;
+  letter-spacing: -0.014em;
+  color: var(--ink);
+  margin: 0 0 14px;
+  text-wrap: balance;
+}
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .section-padding { padding: 48px 0; }
+}
+
+/* Skip link — keyboard users jump past the nav to main content. */
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 12px;
+  inset-block-start: -200px;
+  z-index: var(--z-tooltip);
+  background: var(--ink);
+  color: var(--cream);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: inset-block-start var(--dur-2) var(--ease-out);
+}
+
+.skip-link:focus { inset-block-start: 12px; outline: 2px solid var(--cream); }
+
+/* ─────────────────────────────────────────
+   ANIMATIONS
+───────────────────────────────────────── */
+
+.animate-fade-up {
+  animation: fadeUp 0.45s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.delay-100 { animation-delay: 0.1s; }
+
+.delay-200 { animation-delay: 0.2s; }
+
+.delay-300 { animation-delay: 0.3s; }
+
+.delay-400 { animation-delay: 0.4s; }
+
+.delay-500 { animation-delay: 0.5s; }
+
+/* ─────────────────────────────────────────
+   EDITORIAL UTILITIES (new — Phase 1)
+───────────────────────────────────────── */
+
+/* Eyebrow: mono, uppercase. A deliberate brand device — use it as a label
+   (the org name, a section kicker), NOT above every section. */
+
+.eyebrow {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-block-end: 12px;
+  display: block;
+}
+
+/* Section header composition: eyebrow + serif display heading. */
+
+.section-eyebrow {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-block-end: 14px;
+}
+
+.section-display {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 400;
+  font-size: var(--fs-display);
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-block-end: 18px;
+  text-wrap: balance;
+}
+
+.section-display em {
+  font-style: italic;
+  color: var(--ember);
+}
+
+/* Lede sits at ink-2 for ≥4.5:1 on paper/cream/sky-2; readable, not pale. */
+
+.section-lede {
+  font-size: var(--fs-lede);
+  line-height: 1.6;
+  color: var(--ink-2);
+  max-width: 40rem;
+}
+
+/* ── Page-enter: a single calm fade-rise applied at the route level.
+   Not a per-section staggered reflex; one gentle settle on load.    ── */
+
+.page-enter { animation: pageEnter var(--dur-4) var(--ease-out) both; }
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Reveal-on-scroll helper. Default is VISIBLE; the class only adds a
+   gentle entrance so content never ships blank in headless renders. */
+
+.reveal { animation: revealUp var(--dur-4) var(--ease-out) both; }
+
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Hairline divider used between editorial bands. */
+
+.rule { height: 1px; background: var(--hair); border: 0; }

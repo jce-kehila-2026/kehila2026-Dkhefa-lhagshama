@@ -1,0 +1,115 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ─────────────────────────────────────────
+   STATUS BADGES
+───────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.badge-pending  { background: var(--sky-2);     color: var(--ink); }
+
+.badge-review   { background: var(--warning-soft);color: var(--warning); }
+
+.badge-approved { background: var(--success-soft);color: var(--success); }
+
+.badge-rejected { background: var(--danger-soft); color: var(--danger); }
+
+.badge-new      { background: var(--ember);      color: var(--cream); }
+
+.stat-card {
+  background: var(--paper);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+
+.stat-card-label { color: var(--gray-500); font-size: 0.9rem; font-weight: 600; }
+
+.stat-card-value { font-size: 2rem; font-weight: 800; color: var(--ink); line-height: 1; }
+
+/* ── Badge tones (extend existing .badge) ── */
+
+.badge-amber { background: #FBF0C8; color: #7C5F00; }
+
+.badge-blue  { background: var(--sky-2); color: var(--ink); }
+
+.badge-green { background: #DCEAE0; color: #2E6E45; }
+
+.badge-red   { background: #F4DDD3; color: var(--ember); }
+
+.badge-gray  { background: var(--gray-100); color: var(--gray-600); }
+
+.badge-ember { background: var(--ember); color: var(--cream); }
+
+/* ── Reduced motion ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell *,
+  .stat-card,
+  .admin-nav-item,
+  .admin-filter-tab,
+  .skeleton { transition: none !important; animation: none !important; }
+}
+
+/* ── Stat card: head row, icon, tone dot, hint ── */
+
+.stat-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.stat-card-icon { color: var(--gray-400); flex: 0 0 auto; }
+
+.stat-card-hint { font-size: 0.8rem; color: var(--gray-500); }
+
+/* Tone shows as a small dot before the label, not a full fill. */
+
+.stat-card-label::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-inline-end: 0.45rem;
+  border-radius: 999px;
+  background: var(--gray-300);
+  vertical-align: middle;
+}
+
+.stat-card--amber .stat-card-label::before { background: var(--warning); }
+
+.stat-card--green .stat-card-label::before { background: var(--success); }
+
+.stat-card--blue  .stat-card-label::before { background: var(--info); }
+
+.stat-card--ember .stat-card-label::before { background: var(--ember); }
+
+.stat-card-value { font-variant-numeric: tabular-nums; }
+
+/* ── Badge dot: non-color status cue (shape + position) ── */
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: 0 0 auto;
+}

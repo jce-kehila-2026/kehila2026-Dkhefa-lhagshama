@@ -1,0 +1,554 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ─────────────────────────────────────────
+   FORMS
+───────────────────────────────────────── */
+
+.form-group { margin-block-end: 20px; }
+
+.form-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-block-end: 7px;
+}
+
+.form-label .required { color: var(--danger); margin-inline-start: 3px; }
+
+/* Hints must read at ≥4.5:1; gray-500 clears it on white, gray-400 did not. */
+
+.form-hint { font-size: 12.5px; color: var(--gray-500); margin-block-start: 5px; }
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--white);
+  transition: border-color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out);
+  font-family: inherit;
+  direction: inherit;
+}
+
+.form-input:hover:not(:focus),
+.form-select:hover:not(:focus),
+.form-textarea:hover:not(:focus) { border-color: var(--gray-400); }
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: var(--ring-ink);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder { color: var(--gray-500); opacity: 1; }
+
+.form-input.error,
+.form-select.error,
+.form-textarea.error,
+[aria-invalid="true"].form-input,
+[aria-invalid="true"].form-textarea {
+  border-color: var(--danger);
+}
+
+.form-input.error:focus,
+.form-select.error:focus,
+.form-textarea.error:focus { box-shadow: 0 0 0 3px rgba(160,72,53,0.18); }
+
+.form-error { font-size: 12.5px; color: var(--danger); margin-block-start: 6px; display: flex; align-items: center; gap: 5px; }
+
+.form-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+.form-select { cursor: pointer; }
+
+/* ─────────────────────────────────────────
+   UPLOAD AREA
+───────────────────────────────────────── */
+
+.upload-area {
+  border: 2px dashed var(--hair);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--dur-2) var(--ease-out),
+              background-color var(--dur-2) var(--ease-out);
+  background: var(--sky-2);
+}
+
+.upload-area:hover {
+  border-color: var(--ember);
+  background: var(--cream);
+}
+
+.upload-area.has-file {
+  border-color: var(--ink);
+  background: var(--paper);
+  cursor: default;
+}
+
+/* ─────────────────────────────────────────
+   STEP INDICATOR
+───────────────────────────────────────── */
+
+.step-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  transition: background-color var(--dur-3) var(--ease-out),
+              color var(--dur-3) var(--ease-out),
+              box-shadow var(--dur-3) var(--ease-out);
+  flex-shrink: 0;
+}
+
+.step-dot.done { background: var(--ink); color: var(--cream); }
+
+.step-dot.active { background: var(--ember); color: var(--cream); box-shadow: 0 0 0 4px rgba(185,105,78,0.18); }
+
+.step-dot.todo { background: var(--sky-2); color: var(--ink-2); }
+
+.step-connector { flex: 1; height: 1px; background: var(--hair); transition: background 0.3s; }
+
+.step-connector.done { background: var(--ink); }
+
+/* ─────────────────────────────────────────
+   CATEGORY OPTION
+───────────────────────────────────────── */
+
+.cat-option {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color var(--dur-2) var(--ease-out),
+              background-color var(--dur-2) var(--ease-out);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: var(--paper);
+}
+
+.cat-option:hover { border-color: var(--ink); background: var(--sky-2); }
+
+.cat-option.selected { border-color: var(--ember); background: var(--sky-2); }
+
+/* Inline form banner (errors/notices) — full border, never a side stripe. */
+
+.form-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.form-banner svg { flex-shrink: 0; }
+
+.form-banner-error   { background: var(--danger-soft);  color: var(--danger);  border: 1px solid #E8C4B6; }
+
+.form-banner-success { background: var(--success-soft); color: var(--success); border: 1px solid #BFD8C8; }
+
+.form-banner-info    { background: var(--sky-2);        color: var(--ink);     border: 1px solid var(--sky); }
+
+.admin-detail-side .field { margin-bottom: 1.25rem; }
+
+.admin-detail-side .field:last-child { margin-bottom: 0; }
+
+/* #91 — deactivated ("former") volunteer tag */
+
+.former-tag {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fdecea;
+  color: #b3261e;
+  border: 1px solid #f5c6c0;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   BENEFICIARY FLOWS (UC-01) — request form, my-requests, register
+   Composed from existing tokens. RTL-safe via logical properties.
+═════════════════════════════════════════════════════════════ */
+
+/* ── Multi-step progress: dot row with a connecting rail ──────── */
+
+.stepper {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin-block-end: var(--sp-6);
+}
+
+.stepper-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 0;
+}
+
+.stepper-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  transition: background-color var(--dur-3) var(--ease-out),
+              color var(--dur-3) var(--ease-out),
+              border-color var(--dur-3) var(--ease-out),
+              box-shadow var(--dur-3) var(--ease-out);
+}
+
+.stepper-node.is-active .stepper-dot {
+  background: var(--ember);
+  color: var(--cream);
+  border-color: var(--ember);
+  box-shadow: 0 0 0 4px var(--ember-soft);
+}
+
+.stepper-node.is-done .stepper-dot {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+
+.stepper-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-500);
+  line-height: 1.3;
+  max-width: 11ch;
+}
+
+.stepper-node.is-active .stepper-label { color: var(--ink); font-weight: 600; }
+
+.stepper-node.is-done .stepper-label { color: var(--ink-2); }
+
+.stepper-rail {
+  flex: 1 1 auto;
+  height: 2px;
+  background: var(--gray-200);
+  margin-block-start: 17px;
+  border-radius: 1px;
+  transition: background-color var(--dur-4) var(--ease-out);
+}
+
+.stepper-rail.is-done { background: var(--ink); }
+
+/* ── Choice cards: single-select option tiles (category, etc.) ── */
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--sp-3);
+}
+
+.choice-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: start;
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--white);
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  transition: border-color var(--dur-2) var(--ease-out),
+              background-color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              transform var(--dur-1) var(--ease-out);
+}
+
+.choice-tile:hover { border-color: var(--gray-400); background: var(--gray-50); }
+
+.choice-tile:focus-visible { outline: none; box-shadow: var(--ring); }
+
+.choice-tile:active { transform: translateY(1px); }
+
+.choice-tile[aria-pressed="true"] {
+  border-color: var(--ember);
+  background: var(--ember-soft);
+  box-shadow: inset 0 0 0 1px var(--ember);
+}
+
+.choice-tile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.choice-tile-title { display: block; font-size: 14.5px; font-weight: 600; color: var(--ink); }
+
+.choice-tile-hint { display: block; font-size: 12px; color: var(--gray-500); margin-block-start: 2px; }
+
+/* ── Option pills: radio/multi-select chips (idType, gender, areas) ── */
+
+.opt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--gray-700);
+  cursor: pointer;
+  font-size: 13.5px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: border-color var(--dur-2) var(--ease-out),
+              background-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out);
+}
+
+.opt-pill:hover { border-color: var(--gray-400); }
+
+.opt-pill input { accent-color: var(--ember); cursor: pointer; }
+
+.opt-pill:has(input:checked),
+.opt-pill.is-on {
+  border-color: var(--ember);
+  background: var(--ember-soft);
+  color: var(--ink);
+}
+
+.opt-pill:focus-within { outline: none; box-shadow: var(--ring); }
+
+/* ── Review summary rows (confirm step) ──────────────────────── */
+
+.review-panel {
+  background: var(--gray-50);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  padding: var(--sp-5);
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sp-4) var(--sp-5);
+}
+
+.review-item dt { font-size: 12px; color: var(--gray-500); margin: 0 0 3px; }
+
+.review-item dd { font-size: 14.5px; font-weight: 600; color: var(--ink); margin: 0; word-break: break-word; }
+
+.review-note {
+  margin-block-start: var(--sp-4);
+  padding-block-start: var(--sp-4);
+  border-block-start: 1px solid var(--gray-200);
+}
+
+/* ── Inline consent / checkbox row ───────────────────────────── */
+
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  cursor: pointer;
+}
+
+.consent-row input[type="checkbox"] {
+  margin-block-start: 3px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--ember);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.consent-row span { font-size: 13.5px; color: var(--gray-700); line-height: 1.6; }
+
+/* ── Soft info callout (security note, save-profile offer) ────── */
+
+.soft-note {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  padding: var(--sp-4);
+  background: var(--sky-3);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+}
+
+.soft-note-icon { color: var(--ink-2); flex-shrink: 0; margin-block-start: 1px; }
+
+.soft-note p { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin: 0; }
+
+/* ── Rating stars (rate-your-experience) ─────────────────────── */
+
+.rate-stars { display: inline-flex; gap: var(--sp-1); }
+
+.rate-star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 0;
+  border-radius: var(--radius-sm);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.rate-star:hover { transform: scale(1.12); }
+
+.rate-star:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* ── Segmented tab toggle (register: beneficiary / volunteer) ── */
+
+.seg {
+  display: flex;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  background: var(--gray-100);
+  border-radius: var(--radius);
+}
+
+.seg-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gray-600);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out);
+}
+
+.seg-btn:hover { color: var(--ink); }
+
+.seg-btn.is-active { background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm); }
+
+.seg-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* ── Password policy checklist (register) ────────────────────── */
+
+.pw-checks { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.pw-check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 12.5px;
+  color: var(--gray-500);
+  transition: color var(--dur-2) var(--ease-out);
+}
+
+.pw-check svg { color: var(--gray-300); transition: color var(--dur-2) var(--ease-out); }
+
+.pw-check.is-ok { color: var(--success); }
+
+.pw-check.is-ok svg { color: var(--success); }
+
+/* ── Success panel (request submitted) ───────────────────────── */
+
+.success-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--success-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--sp-5);
+  animation: successPop var(--dur-4) var(--ease-out-expo) both;
+}
+
+@keyframes successPop {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepper-dot, .stepper-rail, .choice-tile, .opt-pill,
+  .seg-btn, .pw-check, .pw-check svg, .rate-star { transition: none !important; }
+  .success-mark { animation: none !important; }
+  .rate-star:hover { transform: none !important; }
+}
+
+/* Drag-over state for the request-form upload dropzone */
+
+.upload-area.is-dragging { border-color: var(--ember); background: var(--ember-soft); }
+
+/* ── Category option (legacy request form): focus ring missing. */
+
+.cat-option:focus-visible,
+.cat-option:focus-within { outline: none; box-shadow: var(--ring); border-color: var(--ember); }
+
+/* ── Upload area: hover present, focus ring missing (it's a button/label). */
+
+.upload-area:focus-visible,
+.upload-area:focus-within { outline: none; box-shadow: var(--ring); border-color: var(--ember); }
+
+/* ── Invalid-input motion: a short horizontal nudge + soft danger glow.
+   Applied when .form-input.error gains the .shake hook (one-shot).     */
+
+.form-input.error.shake,
+.form-textarea.error.shake,
+.form-select.error.shake { animation: inputShake 0.32s var(--ease-out) both; }
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* A calmer always-on cue: error fields get a faint danger ring even
+   without the shake, so the invalid state reads at a glance. */
+
+.form-input.error,
+.form-textarea.error,
+.form-select.error { box-shadow: 0 0 0 1px rgba(160,72,53,0.18); }
+
+@media (prefers-reduced-motion: reduce) {
+  .form-input.error.shake,
+  .form-textarea.error.shake,
+  .form-select.error.shake { animation: none !important; }
+}

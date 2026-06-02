@@ -1,0 +1,215 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ─────────────────────────────────────────
+   NAVBAR (dark editorial — ink background, cream text)
+───────────────────────────────────────── */
+
+.navbar {
+  /* Ink with a touch of translucency + blur so content scrolls under it. */
+  background: rgba(15,30,45,0.88);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-block-end: 1px solid rgba(244,238,224,0.10);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+
+/* Solid fallback where blur is unsupported. */
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .navbar { background: var(--ink); }
+}
+
+.nav-link {
+  position: relative;
+  padding: 8px 13px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(244,238,224,0.82);
+  cursor: pointer;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out);
+  background: none;
+  border: none;
+  font-family: inherit;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.nav-link:hover { color: var(--cream); background: rgba(244,238,224,0.08); }
+
+.nav-link:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(244,238,224,0.5); }
+
+/* Active route: ember text + a grown underline anchored to the link. */
+
+.nav-link.active { color: var(--cream); }
+
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  inset-block-end: 2px;
+  inset-inline: 13px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ember);
+  animation: navUnderline var(--dur-3) var(--ease-out);
+}
+
+@keyframes navUnderline {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+/* Language toggle pill — sits on the dark nav, stays legible. */
+
+.nav-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(244,238,224,0.10);
+  color: var(--cream);
+  border: 1px solid rgba(244,238,224,0.28);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background-color var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
+}
+
+.nav-lang-toggle:hover { background: rgba(244,238,224,0.18); border-color: rgba(244,238,224,0.5); }
+
+.nav-lang-toggle:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(244,238,224,0.55); }
+
+/* Mobile menu slide/fade entrance. */
+
+.nav-mobile-menu { animation: navMenuIn var(--dur-3) var(--ease-out); transform-origin: top; }
+
+@keyframes navMenuIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─────────────────────────────────────────
+   PAGINATION
+───────────────────────────────────────── */
+
+.page-btn {
+  width: 34px; height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--hair);
+  background: var(--paper);
+  font-size: 13.5px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color var(--dur-2) var(--ease-out),
+              background-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out);
+  color: var(--ink-2);
+}
+
+.page-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+.page-btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─────────────────────────────────────────
+   FOOTER SOCIAL ICONS (RTL-safe, logical hover)
+───────────────────────────────────────── */
+
+.social-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: rgba(244, 238, 224, 0.08);
+  border: 1px solid rgba(244, 238, 224, 0.12);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(244, 238, 224, 0.7);
+  margin-inline-start: 0;
+  transition: background .2s, color .2s;
+}
+
+.social-icon:hover {
+  background: rgba(185, 105, 78, 0.25);
+  color: var(--ember);
+}
+
+/* ─────────────────────────────────────────
+   PRINT STYLES
+───────────────────────────────────────── */
+
+@media print {
+  .navbar, .toast-container, .no-print { display: none !important; }
+  body { background: white; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+}
+
+/* ── Nav link: hover present; ensure the lang toggle + links keep rings
+   (declared above). Add a hover lift to the account chip / cta if used. */
+
+/* ── Pagination: hover present, focus ring was missing. */
+
+.page-btn:focus-visible { outline: none; box-shadow: var(--ring-ink); }
+
+.page-btn:not(:disabled):hover { background: var(--sky-3); }
+
+/* ── Social icons: hover present, focus ring missing (footer keyboard nav). */
+
+.social-icon {
+  transition: background-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              transform var(--dur-2) var(--ease-out);
+}
+
+.social-icon:hover { transform: translateY(-2px); }
+
+.social-icon:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(244,238,224,0.6); }
+
+@media (prefers-reduced-motion: reduce) { .social-icon:hover { transform: none; } }
+
+/* ════════════════════════════════════════════════════════════════════════
+   HOMEPAGE DESIGN REFRESH (design/homepage-refresh)
+   Centered nav badge · hero photo montage · 4-up areas grid ·
+   expanding success-stories gallery · partner marquee.
+   Palette-native recolour of motion patterns ported from demo/momentum.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Navbar centered logo badge (desktop ≥1180px) ───────────────────────── */
+
+.nav-logo-badge {
+  position: absolute;
+  left: 50%;
+  inset-block-start: 50%;
+  transform: translate(-50%, -36%);
+  inline-size: 74px;
+  block-size: 74px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--white);
+  border: 3px solid var(--white);
+  box-shadow: var(--shadow-lg);
+  display: block;
+  z-index: 1;
+  transition: transform var(--dur-3) var(--ease-out), box-shadow var(--dur-3) var(--ease-out);
+}
+
+.nav-logo-badge img { inline-size: 100%; block-size: 100%; object-fit: cover; border-radius: 50%; display: block; }
+
+.nav-logo-badge:hover { transform: translate(-50%, -36%) scale(1.05); box-shadow: var(--shadow-xl); }
+
+.nav-logo-badge:focus-visible { outline: none; box-shadow: var(--ring), var(--shadow-lg); }
+
+/* ── Reduced-motion: keep everything legible, drop the kinetics ─────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .home-marquee-track { animation: none; flex-wrap: wrap; inline-size: 100%; }
+  .story-panel, .story-panel-body, .story-panel-label, .story-panel-scrim,
+  .area-item, .area-icon, .nav-logo-badge { transition: none; }
+  .nav-logo-badge:hover { transform: translate(-50%, -36%); }
+  .area-item:hover { transform: none; }
+  .area-item:hover .area-icon { transform: none; }
+  .home-partner:hover { transform: none; }
+}

@@ -1,0 +1,217 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ─────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────── */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 26px;
+  border-radius: var(--radius-sm);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              transform var(--dur-1) var(--ease-out);
+  border: 1px solid transparent;
+  outline: none;
+  font-family: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:focus-visible { box-shadow: var(--ring); }
+
+.btn:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
+
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+  box-shadow: var(--shadow);
+}
+
+.btn-navy { /* legacy alias — same as .btn-primary now */
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+
+.btn-navy:hover:not(:disabled) {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+  box-shadow: var(--shadow);
+}
+
+/* Ember accent button — primary CTA on light editorial surfaces. */
+
+.btn-ember {
+  background: var(--ember);
+  color: var(--cream);
+  border-color: var(--ember);
+}
+
+.btn-ember:hover:not(:disabled) {
+  background: var(--ember-700);
+  border-color: var(--ember-700);
+  box-shadow: var(--shadow);
+}
+
+.btn-outline {
+  background: var(--white);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--gray-600);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--gray-100);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: transparent;
+}
+
+.btn-danger:hover:not(:disabled) { background: #ECCBBE; }
+
+.btn-sm  { padding: 7px 16px; font-size: 13px; }
+
+.btn-lg  { padding: 14px 32px; font-size: 16px; }
+
+.btn-xl  { padding: 16px 40px; font-size: 17px; }
+
+.btn-full { width: 100%; }
+
+/* Loading state: hide label, show a centered spinner. Add aria-busy in JSX. */
+
+.btn.is-loading { color: transparent !important; pointer-events: none; }
+
+.btn.is-loading::after {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(50% - 8px);
+  inset-inline-start: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-block-start-color: transparent;
+  color: var(--cream);
+  opacity: 0.9;
+  animation: btnSpin 0.6s linear infinite;
+}
+
+.btn-outline.is-loading::after,
+.btn-ghost.is-loading::after { color: var(--ink); }
+
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+
+/* Nav-only button variants — work on dark ink background */
+
+.btn-nav-primary {
+  background: var(--ember);
+  color: var(--cream);
+  border: 1px solid var(--ember);
+}
+
+.btn-nav-primary:hover:not(:disabled) {
+  background: #A65B43;
+  border-color: #A65B43;
+}
+
+.btn-nav-outline {
+  background: transparent;
+  color: var(--cream);
+  border: 1.5px solid rgba(244,238,224,0.35);
+}
+
+.btn-nav-outline:hover:not(:disabled) {
+  background: rgba(244,238,224,0.08);
+  border-color: var(--cream);
+  color: var(--cream);
+}
+
+/* ── Global reduced-motion: collapse choreography to instant/crossfade ── */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active:not(:disabled),
+  .card-interactive:hover,
+  .stat-card:hover { transform: none !important; }
+}
+
+.admin-gate-denied .btn { margin-block-start: 1rem; }
+
+/* ═════════════════════════════════════════════════════════════
+   UNIVERSAL HOVER / FOCUS — micro-interaction pass (additive)
+   Every interactive class gets a deliberate :hover AND a visible
+   :focus-visible ring. Lift/scale tuned for affordance, not theatrics.
+   Tokens only; RTL via logical properties; reduced-motion guarded.
+═════════════════════════════════════════════════════════════ */
+
+/* ── Buttons: add a subtle lift on hover + focus rings on every variant.
+   The base .btn already rings on focus-visible; these tune per variant
+   and add the lift that signals "press me". Primary/ember/navy lift;
+   ghost/outline stay flat (they're lower-emphasis) but still ring.   */
+
+.btn-primary:hover:not(:disabled),
+.btn-navy:hover:not(:disabled),
+.btn-ember:hover:not(:disabled) { transform: translateY(-1px); }
+
+.btn-primary:active:not(:disabled),
+.btn-navy:active:not(:disabled),
+.btn-ember:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+
+.btn-outline:focus-visible,
+.btn-ghost:focus-visible,
+.btn-danger:focus-visible { box-shadow: var(--ring-ink); }
+
+.btn-ember:focus-visible,
+.btn-primary:focus-visible,
+.btn-navy:focus-visible { box-shadow: var(--ring); }
+
+.btn-nav-primary:focus-visible,
+.btn-nav-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(244,238,224,0.55); }
+
+.btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary:hover:not(:disabled),
+  .btn-navy:hover:not(:disabled),
+  .btn-ember:hover:not(:disabled),
+  .btn-danger:hover:not(:disabled) { transform: none; }
+}

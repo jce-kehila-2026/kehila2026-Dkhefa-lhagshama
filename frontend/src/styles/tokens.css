@@ -1,0 +1,105 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ─────────────────────────────────────────
+   CSS CUSTOM PROPERTIES
+───────────────────────────────────────── */
+
+:root {
+  /* ── Brand palette (locked — do not retune the hues) ────────── */
+  --sky:        #BFD3E6;
+  --sky-2:      #DCE7F0;
+  --sky-3:      #ECF2F8;   /* lighter sky wash — added: tints, hover fills */
+  --ink:        #0F1E2D;
+  --ink-2:      #2C3D52;
+  --cream:      #F4EEE0;
+  --paper:      #FAFAF7;
+  --ember:      #B9694E;
+  --ember-700:  #9C5440;   /* pressed/hover ember on light surfaces */
+  --ember-soft: #F4DDD3;   /* ember tint for fills/badges */
+  --hair:       rgba(15,30,45,0.10);
+  --line:       rgba(15,30,45,0.12);   /* alias used by some cards/inputs */
+
+  /* True white — cards, inputs, modals. */
+  --white:      #FFFFFF;
+
+  /* Grays — cooler, sky-tinted ramp. Body text uses 700+ for ≥4.5:1. */
+  --gray-50:    #F6F7F9;
+  --gray-100:   #EEF1F4;
+  --gray-200:   #DDE3E9;
+  --gray-300:   #C4CDD6;
+  --gray-400:   #8A97A4;
+  --gray-500:   #5C6975;
+  --gray-600:   #3F4A55;
+  --gray-700:   #2A333C;
+  --gray-800:   var(--ink);
+
+  /* Semantic */
+  --success:    #2E6E45;
+  --success-soft:#DCEAE0;
+  --danger:     #A04835;
+  --danger-soft:#F4DDD3;
+  --warning:    #8A5A00;
+  --warning-soft:#FBF0C8;
+  --info:       #2C3D52;
+  --info-soft:  var(--sky-2);
+
+  /* Radius — editorial */
+  --radius-sm:  8px;
+  --radius:     12px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  /* ── Elevation scale — layered, sky-tinted, restrained ──────── */
+  --shadow-xs:  0 1px 2px rgba(15,30,45,0.05);
+  --shadow-sm:  0 1px 0 rgba(15,30,45,0.04), 0 4px 12px rgba(15,30,45,0.05);
+  --shadow:     0 1px 0 rgba(15,30,45,0.04), 0 8px 24px rgba(15,30,45,0.06);
+  --shadow-lg:  0 1px 0 rgba(15,30,45,0.04), 0 14px 40px rgba(15,30,45,0.10);
+  --shadow-xl:  0 2px 4px rgba(15,30,45,0.05), 0 24px 60px rgba(15,30,45,0.14);
+
+  /* ── Focus ring — single source of truth ────────────────────── */
+  --ring:       0 0 0 3px rgba(185,105,78,0.35);
+  --ring-ink:   0 0 0 3px rgba(15,30,45,0.14);
+
+  /* ── Fluid type scale (clamp). Hero capped ≤ 3.4rem per brief.
+       Used by marketing surfaces; product/admin keep fixed rem.  ── */
+  --fs-hero:    clamp(2rem, 1.3rem + 3.4vw, 3.4rem);
+  --fs-display: clamp(1.65rem, 1.2rem + 2.2vw, 2.6rem);
+  --fs-h2:      clamp(1.4rem, 1.1rem + 1.5vw, 2rem);
+  --fs-h3:      clamp(1.15rem, 1.02rem + 0.6vw, 1.4rem);
+  --fs-lede:    clamp(1.0625rem, 1rem + 0.35vw, 1.2rem);
+  --fs-body:    1rem;
+  --fs-sm:      0.875rem;
+  --fs-xs:      0.75rem;
+
+  /* ── Spacing scale (4px base, geometric-ish for rhythm) ──────── */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  24px;
+  --sp-6:  32px;
+  --sp-7:  48px;
+  --sp-8:  64px;
+  --sp-9:  96px;
+
+  /* ── Motion tokens ──────────────────────────────────────────── */
+  --ease-out:      cubic-bezier(0.22, 1, 0.36, 1);     /* ease-out-quint */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 240ms;
+  --dur-4: 360ms;
+
+  /* ── Semantic z-index scale ─────────────────────────────────── */
+  --z-base:     1;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-backdrop: 400;
+  --z-modal:    500;
+  --z-toast:    600;
+  --z-tooltip:  700;
+
+  /* Layout */
+  --maxw:  1120px;
+  --nav-h: 64px;
+}

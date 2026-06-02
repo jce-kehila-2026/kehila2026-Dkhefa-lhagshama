@@ -1,0 +1,61 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ── #87 Account-disabled page + #91/#95 admin detail edge-case UI ───────── */
+
+.disabled-card {
+  text-align: center;
+}
+
+.disabled-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+
+.disabled-lead {
+  margin-bottom: 24px;
+}
+
+.disabled-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background-color .18s ease, border-color .18s ease;
+}
+
+.disabled-contact:hover {
+  background: var(--paper);
+  border-color: var(--ember);
+}
+
+.disabled-contact:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.disabled-home {
+  display: block;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disabled-contact {
+    transition: none;
+  }
+}

@@ -1,0 +1,90 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* LTR mode (English) */
+
+body.ltr {
+  font-family: 'Inter', 'Noto Sans Hebrew', sans-serif;
+}
+
+/* ─────────────────────────────────────────
+   CARDS
+───────────────────────────────────────── */
+
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+  transition: box-shadow var(--dur-3) var(--ease-out),
+              transform var(--dur-3) var(--ease-out),
+              border-color var(--dur-3) var(--ease-out);
+}
+
+/* Flat variant for panels that sit on tinted backgrounds. */
+
+.card-flat { box-shadow: none; border-color: var(--hair); }
+
+/* ─────────────────────────────────────────
+   BAR CHARTS (ADMIN)
+───────────────────────────────────────── */
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─────────────────────────────────────────
+   SKELETON LOADER
+───────────────────────────────────────── */
+
+.skeleton {
+  background: linear-gradient(100deg, var(--gray-200) 30%, var(--gray-100) 50%, var(--gray-200) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-text { height: 0.85em; border-radius: 4px; margin-block: 0.35em; }
+
+.skeleton-block { width: 100%; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Nav uses a wider breakpoint than the body — the full desktop nav (logo +
+   wordmark + links + lang + account + 2 controls) needs room to breathe.
+   Below ~1180px, switch to the hamburger menu rather than cramming. */
+
+@media (max-width: 1179px) {
+  .hide-mobile { display: none !important; }
+}
+
+@media (min-width: 1180px) {
+  .hide-desktop { display: none !important; }
+}
+
+/* Account chip name only fits once the viewport is wide enough to host the
+   whole signed-in cluster. Below 1340px, collapse to just the avatar circle
+   (still indicates signed-in). */
+
+@media (max-width: 1339px) {
+  .account-chip-name { display: none !important; }
+}
+
+.filter-chip.active { background: var(--ember); color: var(--cream); border-color: var(--ember); }
+
+/* ── Skeleton variants (base .skeleton already defined above) ── */
+
+.skeleton-line { height: 0.9rem; width: 100%; }
+
+/* ── Request timeline (my-requests expanded row) ─────────────── */
+
+.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+
+/* ── Row bones: a generic table/list row placeholder ── */
+
+.row-bones { display: flex; align-items: center; gap: 16px; padding: 14px 16px; }

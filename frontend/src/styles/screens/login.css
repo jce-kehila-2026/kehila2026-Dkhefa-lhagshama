@@ -1,0 +1,48 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ── Auth surfaces (Login + Register) ───────────────────────── */
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--paper);
+}
+
+@media (min-width: 900px) {
+  .auth-grid { grid-template-columns: 1.05fr 1fr; }
+}
+
+.auth-aside {
+  display: none;
+  background:
+    radial-gradient(120% 120% at 80% 0%, rgba(185,105,78,0.08), transparent 55%),
+    var(--sky-2);
+  padding: clamp(40px, 5vw, 72px);
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 900px) { .auth-aside { display: flex; } }
+
+.auth-aside-inner { display: flex; flex-direction: column; align-items: center; max-width: 30rem; }
+
+.auth-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 40px);
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(24px, 4vw, 36px);
+}

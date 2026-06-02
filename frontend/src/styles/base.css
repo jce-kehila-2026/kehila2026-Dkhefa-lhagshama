@@ -1,0 +1,62 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* ─────────────────────────────────────────
+   BASE RESET & TYPOGRAPHY
+───────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* clip (not hidden) prevents horizontal scroll WITHOUT establishing a
+     scroll container — so the sticky navbar keeps sticking to the viewport. */
+  overflow-x: clip;
+}
+
+body {
+  font-family: 'Noto Sans Hebrew', 'Inter', sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  line-height: 1.65;
+  font-size: var(--fs-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+/* Even line breaks on headings; fewer orphans in prose. */
+
+h1, h2, h3 { text-wrap: balance; }
+
+p { text-wrap: pretty; }
+
+/* Selection picks up the brand accent. */
+
+::selection { background: rgba(185,105,78,0.22); color: var(--ink); }
+
+/* Links inherit the editorial accent by default; underline offset for legibility. */
+
+a { color: inherit; }
+
+/* ─────────────────────────────────────────
+   SCROLLBAR
+───────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+
+::-webkit-scrollbar-track { background: var(--gray-100); }
+
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+::-webkit-scrollbar-thumb:hover { background: var(--ink-2); }
+
+h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
+
+*:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}

@@ -1,0 +1,128 @@
+/* Auto-split from globals.css — do not edit class names. */
+
+/* Opt-in lift for cards that are actually clickable (links/buttons).
+   Static info cards stay still — motion should signal affordance. */
+
+.card-interactive { cursor: pointer; }
+
+.card-interactive:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-3px);
+  border-color: var(--sky);
+}
+
+.card-interactive:focus-within { box-shadow: var(--ring-ink); }
+
+/* ─────────────────────────────────────────
+   FILTER BUTTONS
+───────────────────────────────────────── */
+
+.filter-chip {
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out);
+  background: var(--white);
+  color: var(--gray-600);
+  border: 1px solid var(--gray-300);
+}
+
+.filter-chip:hover { border-color: var(--ink); color: var(--ink); }
+
+.filter-chip:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* Directory empty state — calm, teaches the next action. */
+
+.dir-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--white);
+  border: 1px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+}
+
+.dir-empty-icon {
+  color: var(--gray-400);
+  background: var(--sky-2);
+  border-radius: 50%;
+  padding: 14px;
+  box-sizing: content-box;
+}
+
+/* ── Cards: interactive cards already lift; add a keyboard focus ring on
+   the card itself (not just :focus-within) so tab-stops are visible.   */
+
+.card-interactive:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-ink), var(--shadow);
+  border-color: var(--sky);
+}
+
+/* ── Filter chip: already has hover + focus ring; add active-press feel. */
+
+.filter-chip:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) { .filter-chip:active { transform: none; } }
+
+/* ── Directory tab buttons (inline-styled in DirectoryPage) reach through
+   a shared class hook so keyboard users get a ring there too.          */
+
+.dir-tab:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--radius-sm); }
+
+/* ═════════════════════════════════════════════════════════════
+   BRANDED SKELETONS + ERROR MOTION + HELP TOOLTIPS (additive)
+   Reuses the existing .skeleton shimmer. Loading bones for list/card
+   and table-row layouts; a gentle invalid-input shake; an accessible
+   icon-help tooltip. All motion reduced-motion guarded.
+═════════════════════════════════════════════════════════════ */
+
+/* ── Card bones: a directory/list card placeholder (logo + lines + tag) ── */
+
+.card-bones {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-bones-head { display: flex; align-items: center; gap: 12px; margin-block-end: 4px; }
+
+.card-bones-avatar { width: 52px; height: 52px; border-radius: 10px; flex-shrink: 0; }
+
+.card-bones-head-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+.bone { display: block; }
+
+/* a single shimmer line/shape */
+
+.bone-line { height: 0.85em; border-radius: 4px; }
+
+.bone-title { height: 1.3em; width: 60%; border-radius: 6px; }
+
+.bone-sub { height: 0.8em; width: 45%; border-radius: 4px; }
+
+.bone-pill { height: 1.9em; width: 40%; border-radius: 999px; margin-block-start: 6px; }
+
+.bone-w-90 { width: 90%; }
+
+.bone-w-75 { width: 75%; }
+
+.row-bones .bone-line { flex: 1; }
+
+.row-bones .bone-line:nth-child(2) { flex: 0 0 22%; }
+
+.row-bones .bone-line:nth-child(3) { flex: 0 0 14%; }
