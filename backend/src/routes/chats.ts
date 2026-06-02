@@ -13,6 +13,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
+import { mintSignedReadUrl } from '@/lib/signedUrl';
 import { authenticate } from '@/middleware/auth';
 
 const router = Router();
@@ -142,6 +143,56 @@ router.post('/:id/messages', authenticate, async (req: Request, res: Response) =
   await db().collection('chats').doc(chatId).update({ lastMessageAt: now });
 
   res.status(201).json({ messageId: msgRef.id });
+});
+
+// ── GET /api/chats/:id/participants ──────────────────────────────────────────
+// Participant identity for the chat UI (Note 11): photo + name for each
+// participant, so the volunteer's face is visible to the beneficiary (trust).
+// Participant-only — same guard as POST /:id/messages (403 otherwise).
+// `avatarUrl` is a short-lived signed URL minted from users/{uid}.photoURL,
+// or null when the user has no photo.
+router.get('/:id/participants', authenticate, async (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+
+  const chatId = req.params.id;
+
+  const chatSnap = await db().collection('chats').doc(chatId).get();
+  if (!chatSnap.exists) {
+    res.status(404).json({ error: 'chat_not_found' });
+    return;
+  }
+
+  const chatData = chatSnap.data() as { participants: string[] };
+  // Same participant guard as the messages route.
+  if (!chatData.participants.includes(req.user.uid)) {
+    res.status(403).json({ error: 'forbidden', detail: 'not a participant' });
+    return;
+  }
+
+  try {
+    const participants = await Promise.all(
+      (chatData.participants ?? []).map(async (uid) => {
+        const userSnap = await db().collection('users').doc(uid).get();
+        const data = userSnap.exists ? userSnap.data() : undefined;
+        const displayName =
+          (typeof data?.displayName === 'string' && data.displayName.trim()) ||
+          [data?.firstName, data?.lastName].filter(Boolean).join(' ').trim() ||
+          null;
+        const avatarUrl = await mintSignedReadUrl(
+          typeof data?.photoURL === 'string' ? data.photoURL : null,
+        );
+        return { uid, displayName, avatarUrl };
+      }),
+    );
+    res.status(200).json(participants);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[chats.participants] failed:', err);
+    res.status(500).json({ error: 'internal' });
+  }
 });
 
 export default router;

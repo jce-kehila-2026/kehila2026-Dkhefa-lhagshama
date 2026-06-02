@@ -302,6 +302,11 @@ export const translations = {
         areasList:  ['חינוך וחניכה','ייעוץ משפטי','תעסוקה','שילוב חברתי','בריאות ורווחה','יזמות ועסקים'],
       },
       available: 'זמין לשיוך',
+      // Note 4 — role-adaptive VolunteerPage content
+      applyCta:    'הגשת מועמדות להתנדבות',
+      memberTitle: 'אתם חלק מהצוות',
+      memberBlurb: 'תודה שהתנדבתם בעמותת דחיפה להגשמה. כאן תוכלו להתחבר עם הפונים שהוקצו אליכם ולתת יד במקום שבו זה הכי חשוב.',
+      goToChats:   'מעבר לשיחות שלי',
     },
 
     // ── ADMIN ─────────────────────────────────────────────────
@@ -697,6 +702,11 @@ export const translations = {
       motivation:     'מוטיבציה / הערות נוספות',
       motivationPH:   'ספר/י לנו קצת על עצמך...',
       consent:        'אני מאשר/ת את תנאי השימוש ומדיניות הפרטיות ומסכים/ה שפרטי יישמרו לצורך תיאום פעילות ההתנדבות.',
+      // Note 11 — optional profile photo upload in the volunteer-apply step
+      photoLabel:     'תמונת פרופיל (אופציונלי)',
+      photoHint:      'תמונה שלכם עוזרת לפונים לדעת עם מי הם משוחחים ובונה אמון בצ׳אט.',
+      photoTypeError: 'יש להעלות קובץ תמונה בלבד (JPG, PNG או WEBP).',
+      photoSizeError: 'התמונה גדולה מדי. הגודל המרבי הוא 5MB.',
       areasList:      ['חינוך וחניכה', 'ייעוץ משפטי', 'תעסוקה', 'שילוב חברתי', 'בריאות ורווחה', 'יזמות ועסקים'],
 
       // Navigation
@@ -755,6 +765,9 @@ export const translations = {
       // Note 9 — chat window cosmetics
       noAccess:        'אין לך גישה לשיחה זו.',
       titleFallback:   'שיחה',
+      // Note 11 — participant identity (photo + name)
+      participantFallback: 'משתתף/ת',
+      avatarAlt:           (name: string) => `תמונה של ${name}`,
     },
 
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
@@ -1162,6 +1175,11 @@ export const translations = {
         areasList:  ['Education & Mentoring','Legal Consulting','Employment','Social Integration','Health & Welfare','Entrepreneurship & Business'],
       },
       available: 'Available for Assignment',
+      // Note 4 — role-adaptive VolunteerPage content
+      applyCta:    'Apply to volunteer',
+      memberTitle: "You're part of the team",
+      memberBlurb: 'Thank you for volunteering with Push for Fulfillment. From here you can connect with the people assigned to you and lend a hand where it matters most.',
+      goToChats:   'Go to my chats',
     },
 
     admin: {
@@ -1548,6 +1566,11 @@ export const translations = {
       motivation:     'Motivation / Additional Notes',
       motivationPH:   'Tell us a bit about yourself...',
       consent:        'I agree to the Terms of Use and Privacy Policy, and consent to my details being stored for volunteer coordination purposes.',
+      // Note 11 — optional profile photo upload in the volunteer-apply step
+      photoLabel:     'Profile photo (optional)',
+      photoHint:      'A photo of you helps the people you talk to know who they are chatting with and builds trust.',
+      photoTypeError: 'Please upload an image file only (JPG, PNG or WEBP).',
+      photoSizeError: 'That image is too large. The maximum size is 5MB.',
       areasList:      ['Education & Mentoring', 'Legal Consulting', 'Employment', 'Social Integration', 'Health & Welfare', 'Entrepreneurship & Business'],
 
       // Navigation
@@ -1606,6 +1629,9 @@ export const translations = {
       // Note 9 — chat window cosmetics
       noAccess:        "You don't have access to this conversation.",
       titleFallback:   'Conversation',
+      // Note 11 — participant identity (photo + name)
+      participantFallback: 'Participant',
+      avatarAlt:           (name: string) => `Photo of ${name}`,
     },
 
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────

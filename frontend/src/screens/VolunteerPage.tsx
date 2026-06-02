@@ -1,68 +1,30 @@
-import { useState } from 'react'
-import type { ChangeEvent } from 'react'
-import { CheckCircle, MapPin, Clock, HeartHandshake, Users, Sparkles } from 'lucide-react'
-import { FormGroup, Label, Input, Select } from '@/components/forms/FormElements'
+import Link from 'next/link'
+import { MapPin, Clock, HeartHandshake, Users, Sparkles, ArrowLeft, MessagesSquare } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useApp } from '../contexts/AppContext'
-import { useForm } from '../hooks/useForm'
+import { useAuth } from '../contexts/AuthContext'
 import Reveal from '../components/motion/Reveal'
-import type { TNode } from '@/types'
 
 const MONO = 'ui-monospace, "SF Mono", Menlo, monospace'
 const SERIF = 'Frank Ruhl Libre, Georgia, serif'
 
 export default function VolunteerPage() {
-  const { t, lang } = useLanguage()
-  const { volunteers, addVolunteer, toast } = useApp()
+  const { t, lang, isRTL } = useLanguage()
+  const { volunteers } = useApp()
+  const { hasRole } = useAuth()
   const v = t.volunteers
-  const [submitted, setSubmitted] = useState(false)
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([])
-  const [focusedArea, setFocusedArea] = useState<string | null>(null)
-  const [focusedAvail, setFocusedAvail] = useState<string | null>(null)
 
-  const { values, errors, handleChange, setFieldErrors, reset } = useForm({
-    fullName:'', profession:'', availability:'1', city:'',
-  }) as unknown as {
-    values: { fullName: string; profession: string; availability: string; city: string }
-    errors: Record<string, string>
-    handleChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
-    setFieldErrors: (errs: Record<string, string>) => void
-    reset: () => void
-  }
+  // Volunteers and admins (admin satisfies any role) see the team panel;
+  // logged-out visitors and beneficiaries see the info + apply CTA.
+  const isTeamMember = hasRole('volunteer')
 
-  const toggleArea = (area: string) => {
-    setSelectedAreas(prev =>
-      prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
-    )
-  }
-
-  const handleSubmit = () => {
-    const errs: Record<string, string> = {}
-    if (!values.fullName.trim())    errs.fullName   = t.request.validation.required
-    if (!values.profession.trim())  errs.profession = t.request.validation.required
-    if (!values.city.trim())        errs.city       = t.request.validation.required
-    if (Object.keys(errs).length)   { setFieldErrors(errs); return }
-
-    addVolunteer({
-      name:         values.fullName,
-      nameEn:       values.fullName,
-      initials:     values.fullName.split(' ').slice(0,2).map((w: string) => w[0]).join(''),
-      profession:   values.profession,
-      professionEn: values.profession,
-      areas:        selectedAreas,
-      availability: (v.form as unknown as TNode)[`avail${values.availability}`],
-      availabilityEn: (v.form as unknown as TNode)[`avail${values.availability}`],
-      city:         values.city,
-      cityEn:       values.city,
-    })
-    toast(lang === 'he' ? 'תודה על הרשמתך! נצור קשר בקרוב.' : 'Thank you! We\'ll contact you soon.', 'success')
-    setSubmitted(true)
-    reset()
-    setSelectedAreas([])
-  }
-
-  const STATUS_COLORS: Record<string, string> = { available:'var(--success)', assigned:'var(--ember)' }
+  const STATUS_COLORS: Record<string, string> = { available: 'var(--success)', assigned: 'var(--ember)' }
   const availableCount = volunteers.filter(vol => vol.status === 'available').length
+
+  // Directional arrow for CTAs (points "forward" in the reading direction).
+  const DirArrow = isRTL
+    ? <ArrowLeft size={18} aria-hidden="true" />
+    : <ArrowLeft size={18} aria-hidden="true" style={{ transform: 'scaleX(-1)' }} />
 
   return (
     <main>
@@ -90,159 +52,121 @@ export default function VolunteerPage() {
             }}
           >
 
-            {/* ── REGISTRATION FORM ─────────────────────────────────────── */}
+            {/* ── ROLE-ADAPTIVE PANEL ─────────────────────────────────────
+                 logged-out / beneficiary → info + "Apply to volunteer" CTA
+                 volunteer / admin        → "you're part of the team" panel */}
             <Reveal>
               <div>
-                <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '12px' }}>
-                  {lang === 'he' ? 'טופס הרשמה' : 'Sign up'}
-                </span>
-                <h2 className="section-display-bold" style={{ marginBlockEnd: '10px', fontSize: 'var(--fs-h2)' }}>
-                  {v.registerTitle}
-                </h2>
-                <p className="section-lede" style={{ margin: '0 0 24px', fontSize: 'var(--fs-body)' }}>
-                  {v.registerSub}
-                </p>
-
-                {submitted ? (
-                  <div
-                    className="card"
-                    style={{
-                      padding: 'clamp(32px, 5vw, 48px) 32px',
-                      textAlign: 'center',
-                      border: '1px solid var(--hair)',
-                      boxShadow: 'var(--shadow-sm)',
-                    }}
-                  >
+                {isTeamMember ? (
+                  <>
+                    <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '12px' }}>
+                      {lang === 'he' ? 'הצוות שלנו' : 'Our team'}
+                    </span>
                     <div
+                      className="card"
                       style={{
-                        width: '72px', height: '72px',
-                        background: 'var(--success-soft)',
-                        borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        margin: '0 auto 20px',
+                        padding: 'clamp(28px, 4vw, 44px) clamp(24px, 4vw, 36px)',
+                        border: '1px solid var(--hair)',
+                        boxShadow: 'var(--shadow-sm)',
                       }}
                     >
-                      <CheckCircle size={34} color="var(--success)" strokeWidth={2} />
+                      <div
+                        style={{
+                          width: '64px', height: '64px',
+                          background: 'var(--ember-soft)',
+                          borderRadius: '50%',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          marginBlockEnd: '20px',
+                        }}
+                        aria-hidden="true"
+                      >
+                        <HeartHandshake size={30} color="var(--ember)" strokeWidth={2} />
+                      </div>
+                      <h2
+                        className="section-display-bold"
+                        style={{ marginBlockEnd: '12px', fontSize: 'var(--fs-h2)' }}
+                      >
+                        {v.memberTitle}
+                      </h2>
+                      <p
+                        style={{
+                          color: 'var(--gray-600)', lineHeight: 1.7,
+                          margin: '0 0 28px', fontSize: 'var(--fs-body)', maxWidth: '34rem',
+                        }}
+                      >
+                        {v.memberBlurb}
+                      </p>
+                      <Link href="/chats" className="btn btn-ember btn-lg">
+                        <MessagesSquare size={18} aria-hidden="true" /> {v.goToChats}
+                      </Link>
                     </div>
-                    <h3 style={{ fontFamily: SERIF, fontSize: 'var(--fs-h3)', fontWeight: 700, color: 'var(--ink)', marginBlockEnd: '8px' }}>
-                      {lang === 'he' ? 'תודה רבה!' : 'Thank You!'}
-                    </h3>
-                    <p style={{ color: 'var(--gray-600)', lineHeight: 1.6, margin: '0 auto 24px', maxWidth: '24rem' }}>
-                      {lang === 'he' ? 'הרשמתך התקבלה. נציג יצור איתך קשר בקרוב.' : 'Your registration was received. A representative will contact you soon.'}
-                    </p>
-                    <button className="btn btn-outline" onClick={() => setSubmitted(false)}>
-                      {lang === 'he' ? 'הרשמה נוספת' : 'Register Another'}
-                    </button>
-                  </div>
+                  </>
                 ) : (
-                  <div
-                    className="card"
-                    style={{
-                      padding: 'clamp(24px, 4vw, 36px)',
-                      border: '1px solid var(--hair)',
-                      boxShadow: 'var(--shadow-sm)',
-                    }}
-                  >
-                    <FormGroup>
-                      <Label htmlFor="fullName" required>{v.form.fullName}</Label>
-                      <Input id="fullName" name="fullName" value={values.fullName}
-                        onChange={handleChange} error={errors.fullName} />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label htmlFor="profession" required>{v.form.profession}</Label>
-                      <Input id="profession" name="profession" value={values.profession}
-                        onChange={handleChange} placeholder={v.form.profPH} error={errors.profession} />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label htmlFor="vol-city" required>{t.request.step1.city}</Label>
-                      <Select id="vol-city" name="city" value={values.city} onChange={handleChange} error={errors.city}>
-                        <option value="">{lang === 'he' ? 'בחר עיר...' : 'Select city...'}</option>
-                        {t.request.cities.map(c => <option key={c} value={c}>{c}</option>)}
-                      </Select>
-                    </FormGroup>
+                  <>
+                    <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '12px' }}>
+                      {lang === 'he' ? 'הצטרפו אלינו' : 'Join us'}
+                    </span>
+                    <h2 className="section-display-bold" style={{ marginBlockEnd: '10px', fontSize: 'var(--fs-h2)' }}>
+                      {v.registerTitle}
+                    </h2>
+                    <p className="section-lede" style={{ margin: '0 0 24px', fontSize: 'var(--fs-body)', maxWidth: '34rem' }}>
+                      {v.registerSub}
+                    </p>
 
-                    {/* Areas of interest — selectable chips */}
-                    <FormGroup>
-                      <Label>{v.form.areas}</Label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBlockStart: '8px' }}>
-                        {v.form.areasList.map(area => {
-                          const on = selectedAreas.includes(area)
-                          const focused = focusedArea === area
-                          return (
-                            <label
-                              key={area}
+                    <div
+                      className="card"
+                      style={{
+                        padding: 'clamp(28px, 4vw, 44px) clamp(24px, 4vw, 36px)',
+                        border: '1px solid var(--hair)',
+                        boxShadow: 'var(--shadow-sm)',
+                      }}
+                    >
+                      {/* What volunteering involves — informational chips */}
+                      <span
+                        className="eyebrow"
+                        style={{ color: 'var(--gray-500)', display: 'block', marginBlockEnd: '12px' }}
+                      >
+                        {v.form.areas}
+                      </span>
+                      <ul
+                        style={{
+                          listStyle: 'none', margin: '0 0 28px', padding: 0,
+                          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+                        }}
+                      >
+                        {v.form.areasList.map(area => (
+                          <li
+                            key={area}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '10px',
+                              padding: '11px 14px', borderRadius: 'var(--radius-sm)',
+                              border: '1px solid var(--hair)', background: 'var(--white)',
+                              color: 'var(--gray-700)', fontWeight: 500,
+                              fontSize: 'var(--fs-sm)', textAlign: 'start',
+                            }}
+                          >
+                            <span
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
-                                padding: '11px 14px', borderRadius: 'var(--radius-sm)',
-                                border: `1px solid ${(on || focused) ? 'var(--ember)' : 'var(--hair)'}`,
-                                background: on ? 'var(--ember-soft)' : 'var(--white)',
-                                color: on ? 'var(--ember-700)' : 'var(--gray-700)',
-                                fontWeight: on ? 600 : 500,
-                                cursor: 'pointer', fontSize: 'var(--fs-sm)',
-                                textAlign: 'start',
-                                boxShadow: focused ? '0 0 0 4px var(--ember-soft)' : 'none',
-                                transition: 'border-color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out)',
+                                width: '7px', height: '7px', borderRadius: '50%',
+                                background: 'var(--ember)', flexShrink: 0,
                               }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={on}
-                                onChange={() => toggleArea(area)}
-                                onFocus={() => setFocusedArea(area)}
-                                onBlur={() => setFocusedArea(null)}
-                                style={{ accentColor: 'var(--ember)', width: '16px', height: '16px', flexShrink: 0 }}
-                              />
-                              {area}
-                            </label>
-                          )
-                        })}
-                      </div>
-                    </FormGroup>
+                              aria-hidden="true"
+                            />
+                            {area}
+                          </li>
+                        ))}
+                      </ul>
 
-                    {/* Availability — radio cards */}
-                    <FormGroup>
-                      <Label>{v.form.availability}</Label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBlockStart: '8px' }}>
-                        {[['1', v.form.avail1], ['2', v.form.avail2], ['3', v.form.avail3]].map(([val, label]) => {
-                          const on = values.availability === val
-                          const focused = focusedAvail === val
-                          return (
-                            <label
-                              key={val}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '12px',
-                                padding: '13px 16px', borderRadius: 'var(--radius-sm)',
-                                border: `1px solid ${(on || focused) ? 'var(--ember)' : 'var(--hair)'}`,
-                                background: on ? 'var(--ember-soft)' : 'var(--white)',
-                                color: on ? 'var(--ember-700)' : 'var(--gray-700)',
-                                fontWeight: on ? 600 : 500,
-                                cursor: 'pointer', fontSize: 'var(--fs-sm)',
-                                textAlign: 'start',
-                                boxShadow: focused ? '0 0 0 4px var(--ember-soft)' : 'none',
-                                transition: 'border-color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out)',
-                              }}
-                            >
-                              <input type="radio" name="availability" value={val}
-                                checked={on} onChange={handleChange}
-                                onFocus={() => setFocusedAvail(val)}
-                                onBlur={() => setFocusedAvail(null)}
-                                style={{ accentColor: 'var(--ember)', width: '16px', height: '16px', flexShrink: 0 }} />
-                              {label}
-                            </label>
-                          )
-                        })}
-                      </div>
-                    </FormGroup>
-
-                    <button className="btn btn-ember btn-full btn-lg" style={{ marginBlockStart: '12px' }} onClick={handleSubmit}>
-                      <CheckCircle size={18} /> {v.form.submitBtn}
-                    </button>
-                  </div>
+                      <Link href="/register?role=volunteer" className="btn btn-ember btn-full btn-lg">
+                        {v.applyCta} {DirArrow}
+                      </Link>
+                    </div>
+                  </>
                 )}
               </div>
             </Reveal>
 
-            {/* ── ACTIVE VOLUNTEERS LIST ─────────────────────────────────── */}
+            {/* ── ACTIVE VOLUNTEERS LIST (informational, read-only) ──────── */}
             <Reveal delay={0.1}>
               <div>
                 <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '12px' }}>
@@ -276,6 +200,7 @@ export default function VolunteerPage() {
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           border: '1px solid var(--hair)', flexShrink: 0,
                         }}
+                        aria-hidden="true"
                       >
                         {stat.icon}
                       </span>
@@ -306,6 +231,7 @@ export default function VolunteerPage() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         margin: '0 auto 16px',
                       }}
+                      aria-hidden="true"
                     >
                       <HeartHandshake size={26} />
                     </div>

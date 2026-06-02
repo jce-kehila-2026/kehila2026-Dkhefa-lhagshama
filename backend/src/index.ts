@@ -21,6 +21,7 @@ import answersRouter from '@/routes/answers';
 import authRouter from '@/routes/auth';
 import businessesRouter from '@/routes/businesses';
 import chatsRouter from '@/routes/chats';
+import profileRouter from '@/routes/profile';
 import ratingsRouter from '@/routes/ratings';
 import requestsRouter from '@/routes/requests';
 import uploadsRouter from '@/routes/uploads';
@@ -96,6 +97,7 @@ app.get('/api/me', authenticate, (req: Request, res: Response) => {
 // Auth + write routes get the stricter 30 req/15 min limiter (#82).
 app.use('/api/auth',       authWriteLimiter, authRouter);
 app.use('/api/chats',      authWriteLimiter, chatsRouter);
+app.use('/api/profile',    authWriteLimiter, profileRouter);
 app.use('/api/requests',   authWriteLimiter, requestsRouter);
 app.use('/api/uploads',    authWriteLimiter, uploadsRouter);
 app.use('/api/users',      authWriteLimiter, usersRouter);

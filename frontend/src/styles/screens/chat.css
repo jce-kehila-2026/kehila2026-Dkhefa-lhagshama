@@ -38,3 +38,74 @@
   color: var(--gray-500);
   font-size: var(--fs-sm);
 }
+
+/* ── Note 11 — participant identity (photo + name) ────────────────────
+   Avatar shown for the other participant in the panel header and on
+   incoming message rows. Photo variant is a cover-cropped circle; the
+   initials variant is the same circle filled with the editorial sky
+   tint + ember letters, matching the admin roster avatars. */
+.chat-avatar {
+  flex-shrink: 0;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--hair);
+  background: var(--white);
+}
+
+.chat-avatar--md {
+  width: 40px;
+  height: 40px;
+}
+
+.chat-avatar--sm {
+  width: 28px;
+  height: 28px;
+}
+
+.chat-avatar--initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sky-3);
+  color: var(--ember);
+  font-family: "Frank Ruhl Libre", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.chat-avatar--initials.chat-avatar--md {
+  font-size: var(--fs-sm);
+}
+
+.chat-avatar--initials.chat-avatar--sm {
+  font-size: var(--fs-xs);
+}
+
+/* Message row: avatar + bubble column. flex-direction is set inline per
+   message (row / row-reverse) so the avatar sits on the correct side in
+   both LTR and RTL — the logical alignment falls out of that. */
+.chat-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  max-width: 82%;
+}
+
+/* Mine rows (row-reverse, justify flex-end) push to the inline-end edge. */
+.chat-msg-row {
+  margin-inline-start: auto;
+}
+
+.chat-msg-row:has(.chat-msg-row__avatar) {
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+
+.chat-msg-row__avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-block-end: 22px; /* aligns avatar with the bubble, clearing the timestamp line */
+}

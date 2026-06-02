@@ -19,6 +19,26 @@ import { apiFetch } from "../lib/apiClient";
 import { useMessages } from "../hooks/useMessages";
 import Reveal from "../components/motion/Reveal";
 
+/** A chat participant as returned by GET /api/chats/:id/participants. */
+interface ChatParticipant {
+  uid: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
+/**
+ * Initials for the identity avatar — first glyphs of up to two words,
+ * falling back to the leading character of the label. Mirrors the pattern
+ * used in the admin user/volunteer rosters so avatars look consistent.
+ */
+function toInitials(label: string | undefined | null): string {
+  const s = String(label ?? "").trim();
+  if (!s) return "?";
+  const parts = s.replace(/[._-]+/g, " ").split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return s.slice(0, 2).toUpperCase();
+}
+
 export default function ChatWindowPage() {
   const { t, lang, isRTL } = useLanguage();
   const { user, loading: authLoading } = useAuth();
@@ -30,6 +50,46 @@ export default function ChatWindowPage() {
   // so logged-out visitors never trigger a permission-denied snapshot.
   const listenChatId = !authLoading && user && typeof chatId === "string" ? chatId : null;
   const { messages, loading: msgsLoading, error: msgsError } = useMessages(listenChatId);
+
+  // ── Note 11 — participant identity (photo + name) ──────────────────────
+  // Fetch the chat's participants ONCE on open (authenticated, participant-
+  // only). Build a senderId → { displayName, avatarUrl } map used to render
+  // a real name + photo for both sides; initials fallback when no photo.
+  const [participants, setParticipants] = useState<Record<string, ChatParticipant>>({});
+
+  useEffect(() => {
+    if (!listenChatId) {
+      setParticipants({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch(`/api/chats/${listenChatId}/participants`);
+        if (!res.ok) return; // 403/other — keep the title-only fallback
+        const list = (await res.json()) as ChatParticipant[];
+        if (cancelled || !Array.isArray(list)) return;
+        const map: Record<string, ChatParticipant> = {};
+        for (const p of list) {
+          if (p && typeof p.uid === "string") map[p.uid] = p;
+        }
+        setParticipants(map);
+      } catch {
+        // Network error — leave the map empty; UI degrades to the title.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [listenChatId]);
+
+  // The "other" participant (everyone who isn't the signed-in user) — used to
+  // headline the conversation with a human name + face.
+  const otherParticipant =
+    Object.values(participants).find((p) => p.uid !== user?.uid) ?? null;
+  const otherName =
+    (otherParticipant?.displayName && otherParticipant.displayName.trim()) ||
+    c.participantFallback;
 
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
@@ -81,6 +141,31 @@ export default function ChatWindowPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  // ── Note 11 — avatar: photo when available, initials circle otherwise ──
+  function renderAvatar(name: string, avatarUrl: string | null, size: "sm" | "md") {
+    const px = size === "sm" ? 28 : 40;
+    if (avatarUrl) {
+      return (
+        <img
+          src={avatarUrl}
+          alt={c.avatarAlt(name)}
+          width={px}
+          height={px}
+          className={`chat-avatar chat-avatar--${size}`}
+        />
+      );
+    }
+    return (
+      <span
+        className={`chat-avatar chat-avatar--initials chat-avatar--${size}`}
+        role="img"
+        aria-label={c.avatarAlt(name)}
+      >
+        {toInitials(name)}
+      </span>
+    );
   }
 
   // ── Shared centred-state shell (loading / empty / error / permission) ──
@@ -231,7 +316,9 @@ export default function ChatWindowPage() {
         <header className="chat-inline-header__inner chat-inline-header__inner--window">
           <div>
             <span className="eyebrow chat-inline-header__eyebrow">{c.inlineHeader.eyebrow}</span>
-            <h1 className="chat-inline-header__title">{c.titleFallback}</h1>
+            <h1 className="chat-inline-header__title">
+              {otherParticipant ? otherName : c.titleFallback}
+            </h1>
           </div>
           <Link
             href="/chats"
@@ -278,22 +365,26 @@ export default function ChatWindowPage() {
                 background: "var(--sky-3)",
               }}
             >
-              <span
-                aria-hidden="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "var(--radius)",
-                  background: "var(--white)",
-                  color: "var(--ember)",
-                  border: "1px solid var(--hair)",
-                }}
-              >
-                <MessageCircle size={20} />
-              </span>
+              {otherParticipant ? (
+                renderAvatar(otherName, otherParticipant.avatarUrl, "md")
+              ) : (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "var(--radius)",
+                    background: "var(--white)",
+                    color: "var(--ember)",
+                    border: "1px solid var(--hair)",
+                  }}
+                >
+                  <MessageCircle size={20} />
+                </span>
+              )}
               <div style={{ textAlign: "start", minWidth: 0 }}>
                 <p
                   className="eyebrow"
@@ -315,7 +406,7 @@ export default function ChatWindowPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {c.titleFallback}
+                  {otherParticipant ? otherName : c.titleFallback}
                 </p>
               </div>
             </div>
@@ -365,46 +456,67 @@ export default function ChatWindowPage() {
 
               {messages.map((msg) => {
                 const isMine = msg.senderId === user?.uid;
+                // Incoming rows show the sender's avatar (photo or initials),
+                // keyed by senderId, so the beneficiary sees the volunteer's
+                // face next to their words.
+                const sender = participants[msg.senderId];
+                const senderName =
+                  (sender?.displayName && sender.displayName.trim()) ||
+                  c.participantFallback;
                 return (
                   <div
                     key={msg.id}
+                    className="chat-msg-row"
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: isMine ? "flex-end" : "flex-start",
+                      flexDirection: isMine ? "row-reverse" : "row",
+                      justifyContent: isMine ? "flex-end" : "flex-start",
                     }}
                   >
+                    {!isMine && (
+                      <span className="chat-msg-row__avatar">
+                        {renderAvatar(senderName, sender?.avatarUrl ?? null, "sm")}
+                      </span>
+                    )}
                     <div
                       style={{
-                        maxWidth: "74%",
-                        background: isMine ? "var(--ink)" : "var(--white)",
-                        color: isMine ? "var(--cream)" : "var(--gray-700)",
-                        border: isMine ? "1px solid var(--ink)" : "1px solid var(--hair)",
-                        borderRadius: isMine
-                          ? "var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg)"
-                          : "var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm)",
-                        padding: "10px 14px",
-                        fontSize: "var(--fs-sm)",
-                        lineHeight: 1.6,
-                        wordBreak: "break-word",
-                        boxShadow: isMine ? "var(--shadow-sm)" : "var(--shadow-xs)",
-                        direction: isRtl ? "rtl" : "ltr",
-                        textAlign: "start",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: isMine ? "flex-end" : "flex-start",
+                        minWidth: 0,
                       }}
                     >
-                      {msg.content}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "var(--fs-xs)",
-                        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                        letterSpacing: "0.04em",
-                        color: "var(--gray-500)",
-                        marginBlockStart: "4px",
-                        marginInline: "4px",
-                      }}
-                    >
-                      {formatTime(msg.timestamp)}
+                      <div
+                        style={{
+                          maxWidth: "100%",
+                          background: isMine ? "var(--ink)" : "var(--white)",
+                          color: isMine ? "var(--cream)" : "var(--gray-700)",
+                          border: isMine ? "1px solid var(--ink)" : "1px solid var(--hair)",
+                          borderRadius: isMine
+                            ? "var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg)"
+                            : "var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm)",
+                          padding: "10px 14px",
+                          fontSize: "var(--fs-sm)",
+                          lineHeight: 1.6,
+                          wordBreak: "break-word",
+                          boxShadow: isMine ? "var(--shadow-sm)" : "var(--shadow-xs)",
+                          direction: isRtl ? "rtl" : "ltr",
+                          textAlign: "start",
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "var(--fs-xs)",
+                          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                          letterSpacing: "0.04em",
+                          color: "var(--gray-500)",
+                          marginBlockStart: "4px",
+                          marginInline: "4px",
+                        }}
+                      >
+                        {formatTime(msg.timestamp)}
+                      </div>
                     </div>
                   </div>
                 );

@@ -23,7 +23,34 @@ import { useAuth } from '../contexts/AuthContext'
 import { useApp } from '../contexts/AppContext'
 import { validateRedirect } from '../utils/validateRedirect'
 import { apiFetch } from '../lib/apiClient'
+import { getIdToken } from '../lib/auth'
+import UploadArea from '../components/forms/UploadArea'
 import Reveal from '../components/motion/Reveal'
+
+// ── Note 11: optional volunteer profile photo ────────────────────────────────
+// Client-side guards that mirror the backend avatar endpoint contract.
+const AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024 // 5MB
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001'
+
+/**
+ * Upload the chosen volunteer avatar via the backend (Admin SDK writes to
+ * Storage `avatars/{uid}` and sets `users/{uid}.photoURL`). Uses a raw fetch +
+ * FormData so the browser sets the multipart boundary itself — `apiFetch`
+ * forces a JSON Content-Type, which would corrupt the multipart body.
+ * The photo is OPTIONAL: callers must catch failures and continue.
+ */
+async function uploadAvatar(file: File): Promise<void> {
+  const idToken = await getIdToken()
+  const form = new FormData()
+  form.append('avatar', file)
+  const res = await fetch(`${API_BASE}/api/profile/avatar`, {
+    method: 'POST',
+    headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+    body: form,
+  })
+  if (!res.ok) throw new Error(`avatar_upload_failed_${res.status}`)
+}
 
 // Slices of the canonical translation table consumed by the sub-forms.
 type Translations = TFull
@@ -316,7 +343,7 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
 
 // ── VOLUNTEER FORM — step 2 (details) ────────────────────────────────────────
 function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: VolunteerSignup; a: AuthRegister; lang: string; isRTL: boolean; accountData: AccountData; onBack: () => void }) {
-  const { register } = useAuth()
+  const { register, refreshClaims } = useAuth()
   const router = useRouter()
   const BackArrow = isRTL ? ArrowRight : ArrowLeft
 
@@ -332,11 +359,30 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
   const [consent, setConsent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  // Note 11 — optional profile photo (held client-side until after sign-up,
+  // then POSTed to /api/profile/avatar). photoNotice is a non-blocking warning.
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoError, setPhotoError] = useState('')
+  const [photoNotice, setPhotoNotice] = useState('')
 
   const toggleArea = (area: string) => {
     setSelectedAreas((prev) =>
       prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area]
     )
+  }
+
+  // Validate the picked image client-side (type + size) before holding it.
+  // UploadArea is used without a requestId, so it reports the raw File without
+  // performing a real upload — the actual upload happens on submit via the
+  // backend avatar endpoint.
+  const onPhotoPicked = (result: { file: File } | null) => {
+    setPhotoNotice('')
+    if (!result) { setPhotoFile(null); setPhotoError(''); return }
+    const { file } = result
+    if (!AVATAR_TYPES.has(file.type)) { setPhotoFile(null); setPhotoError(v.photoTypeError); return }
+    if (file.size > AVATAR_MAX_BYTES) { setPhotoFile(null); setPhotoError(v.photoSizeError); return }
+    setPhotoError('')
+    setPhotoFile(file)
   }
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -349,10 +395,30 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
     if (!consent) { setError(v.consentRequired); return }
 
     setSubmitting(true)
+    setPhotoNotice('')
     try {
       // Step A: Firebase Auth sign-up + set beneficiary claim (same as beneficiary tab)
       // The admin will later promote to 'volunteer' after reviewing the application.
       await register(accountData.email, accountData.password)
+
+      // Step A2: force a token refresh so freshly-minted claims are reflected
+      // without a re-login (pragmatic refresh per the role-model contract).
+      await refreshClaims()
+
+      // Step A3 (Note 11): optional profile photo. An upload failure must NOT
+      // block the application — catch, surface a non-blocking notice, continue.
+      if (photoFile) {
+        try {
+          await uploadAvatar(photoFile)
+        } catch (photoErr) {
+          console.error('[RegisterPage] avatar upload failed (non-blocking):', photoErr)
+          // No dedicated translation key for this rare, non-blocking case —
+          // inline HE/EN string, mirroring the AdminGate inline-message pattern.
+          setPhotoNotice(lang === 'he'
+            ? 'התמונה לא הועלתה, אך הבקשה נשלחה. ניתן להוסיף תמונה מאוחר יותר.'
+            : "Your photo wasn't uploaded, but your application was sent. You can add a photo later.")
+        }
+      }
 
       // Step B: POST volunteer application
       const res = await apiFetch('/api/volunteers/apply', {
@@ -481,9 +547,29 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
           style={{ resize: 'vertical', minHeight: 72 }} />
       </label>
 
+      {/* Note 11 — optional profile photo. Reuses UploadArea without a
+          requestId (no real Storage write here); the chosen image is held in
+          state and uploaded to the backend on submit. Image-only client-side
+          validation runs in onPhotoPicked. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <UploadArea
+          label={v.photoLabel}
+          hint={v.photoHint}
+          formats="JPG · PNG · WEBP"
+          onUpload={onPhotoPicked}
+          error={photoError || undefined}
+        />
+      </div>
+
       <Checkbox checked={consent} onChange={setConsent} label={v.consent} />
 
       {error && <div className="form-error" role="alert"><AlertCircle size={12} /><span>{error}</span></div>}
+
+      {photoNotice && (
+        <div className="form-error" role="status" style={{ color: 'var(--gray-600)' }}>
+          <AlertCircle size={12} /><span>{photoNotice}</span>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 10, marginBlockStart: 4 }}>
         <button type="button" onClick={onBack} className="btn btn-outline btn-lg" style={{ flex: '0 0 auto', gap: 6 }}>

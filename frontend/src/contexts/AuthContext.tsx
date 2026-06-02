@@ -24,22 +24,42 @@ import {
   logout as fbLogout,
   registerWithEmail,
 } from '../lib/auth';
+import type { Role } from '../types';
 
-export type Role = 'beneficiary' | 'businessOwner' | 'volunteer' | 'admin';
+// Re-export the canonical role type so existing `import { Role } from
+// '../contexts/AuthContext'` call sites keep working.
+export type { Role };
+
+/**
+ * Stored role, as read from the Firebase custom claim. Wider than the gated
+ * {@link Role} union because the claim may legitimately hold the legacy
+ * `businessOwner` value (admin user management persists it). It is kept as a
+ * raw role for display, but is *not* part of the gated {@link Role} set, so
+ * {@link hasRole} treats it as satisfying no gated role.
+ */
+type StoredRole = Role | 'businessOwner';
 
 interface AuthContextValue {
   user: User | null;
-  role: Role | null;
+  /**
+   * The signed-in user's role from custom claims, or `null` while resolving /
+   * when signed out. Kept nullable for existing consumers (e.g. AdminGate's
+   * `role !== 'admin'` check); prefer {@link hasRole} for gating.
+   */
+  role: StoredRole | null;
   loading: boolean;
+  /** True when the user's role satisfies `r`. Admin satisfies any role. */
+  hasRole: (r: Role) => boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Force a token refresh and re-read claims (e.g. after a role change). */
   refreshClaims: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function readRoleFromToken(user: User, forceRefresh = false): Promise<Role | null> {
+async function readRoleFromToken(user: User, forceRefresh = false): Promise<StoredRole | null> {
   const tokenResult = await user.getIdTokenResult(forceRefresh);
   const role = tokenResult.claims.role;
   if (
@@ -55,7 +75,7 @@ async function readRoleFromToken(user: User, forceRefresh = false): Promise<Role
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<Role | null>(null);
+  const [role, setRole] = useState<StoredRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u);
       if (u) {
         try {
-          let nextRole = await readRoleFromToken(u);
+          // Force a token refresh once on auth-state-init/login so a freshly
+          // promoted user (e.g. just granted `volunteer`) isn't stuck reading a
+          // stale role from a cached token. Pragmatic — not a live listener.
+          let nextRole = await readRoleFromToken(u, /*forceRefresh*/ true);
           // Self-heal: a signed-in user with no role can't submit requests.
           // Assign the default `beneficiary` role, then re-read with a forced
           // token refresh so the new claim is reflected immediately.
@@ -114,6 +137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsub;
   }, [user]);
 
+  // Admin is a superset: it satisfies any role check. Otherwise an exact match.
+  // (Fixes the old exact-match bug where an admin failed a `volunteer` check.)
+  const hasRole = useCallback(
+    (r: Role) => role === 'admin' || role === r,
+    [role],
+  );
+
   const refreshClaims = useCallback(async () => {
     if (!firebaseAuth.currentUser) return;
     setRole(await readRoleFromToken(firebaseAuth.currentUser, /*forceRefresh*/ true));
@@ -136,8 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
-    user, role, loading, login, register, logout, refreshClaims,
-  }), [user, role, loading, login, register, logout, refreshClaims]);
+    user, role, loading, hasRole, login, register, logout, refreshClaims,
+  }), [user, role, loading, hasRole, login, register, logout, refreshClaims]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

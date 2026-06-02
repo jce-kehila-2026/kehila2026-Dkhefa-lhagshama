@@ -44,7 +44,20 @@ service cloud.firestore {
     // this prevents role/email self-escalation.
     match /users/{uid} {
       allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
-      allow create, update, delete: if false;
+
+      // Note 11: a user may set ONLY their own photoURL (a Storage path) on
+      // their own profile doc. Every other field stays server-only so the
+      // role/email self-escalation guard is preserved. The backend
+      // (POST /api/profile/avatar) does this via the Admin SDK in practice;
+      // this rule is the defense-in-depth grant for a direct client write of
+      // just photoURL. Any update that touches a field other than photoURL is
+      // denied here and must go through Express.
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoURL'])
+        && request.resource.data.photoURL is string;
+
+      allow create, delete: if false;
     }
 
     // ── /requestEvents — request timeline (#65) ──────────────────────────

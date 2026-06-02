@@ -28,6 +28,17 @@ export interface CaughtError {
 export type TNode = string &
   ((...args: unknown[]) => TNode) & { [key: string]: TNode };
 
+/**
+ * Platform access role, sourced from a Firebase custom claim. These are the
+ * three roles the role model (`useAuth().role` / `hasRole`) reasons about.
+ * `admin` is a superset: it satisfies any `hasRole` check.
+ *
+ * Note: the wider codebase (admin user management) may also persist the legacy
+ * `businessOwner` value as a raw claim string; it is intentionally outside this
+ * gated union and is treated as "no gated role" by `hasRole`.
+ */
+export type Role = 'beneficiary' | 'volunteer' | 'admin';
+
 /** UI language. Hebrew is the default / RTL language. */
 export type Lang = 'he' | 'en';
 
@@ -140,9 +151,16 @@ export interface AdminUser {
   id: number | string;
   name: string;
   nameEn?: string;
+  /** Optional human-friendly name (backs the chat identity, Note 11). */
+  displayName?: string;
   email?: string;
   phone?: string;
   city?: string;
+  /**
+   * Storage path to the user's avatar (e.g. `avatars/{uid}/avatar.jpg`), not a
+   * public URL — short-lived signed URLs are minted by the backend (Note 11).
+   */
+  photoURL?: string;
   requests?: number;
   joined?: string;
   active?: boolean;
