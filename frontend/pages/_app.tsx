@@ -15,15 +15,18 @@ import '@/styles/components/badges.css'
 import '@/styles/components/buttons.css'
 import '@/styles/components/feedback.css'
 import '@/styles/components/forms.css'
+import '@/styles/components/menu.css'
 import '@/styles/components/misc.css'
 import '@/styles/components/navigation.css'
 import '@/styles/screens/account-disabled.css'
 import '@/styles/screens/admin.css'
+import '@/styles/screens/chat.css'
 import '@/styles/screens/directory.css'
 import '@/styles/screens/home.css'
 import '@/styles/screens/login.css'
 import '@/styles/screens/my-requests.css'
 import '@/styles/screens/requests.css'
+import '@/styles/screens/volunteer.css'
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter()

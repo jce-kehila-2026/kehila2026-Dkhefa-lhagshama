@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import translations from '../data/translations'
 
@@ -7,6 +7,26 @@ import translations from '../data/translations'
 // are re-exported so existing `import type { ... }` consumers keep working.
 export type Lang = 'he' | 'en'
 
+/** Text direction for a language. */
+export type Dir = 'rtl' | 'ltr'
+
+/** A selectable interface language. */
+export interface LanguageOption {
+  code: Lang
+  label: string
+  dir: Dir
+}
+
+/**
+ * List-driven language model. Adding a language is an entry here (plus its
+ * translation table) — the provider derives dir/RTL/persistence from this list
+ * rather than a hardcoded he-branch.
+ */
+export const LANGUAGES: readonly LanguageOption[] = [
+  { code: 'he', label: 'עברית', dir: 'rtl' },
+  { code: 'en', label: 'English', dir: 'ltr' },
+] as const
+
 /** Active-language translation table — shape inferred from data/translations. */
 export type Translations = (typeof import('@/data/translations'))['default'][Lang]
 
@@ -14,6 +34,7 @@ export interface LanguageContextValue {
   lang: Lang
   setLang: (lang: Lang) => void
   toggleLang: () => void
+  languages: readonly LanguageOption[]
   t: Translations
   isRTL: boolean
   hydrated: boolean
@@ -23,29 +44,46 @@ const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 const DEFAULT_LANG: Lang = 'he'
 
+/** Look up a language option by code, falling back to the default language. */
+function optionFor(code: Lang): LanguageOption {
+  return (
+    LANGUAGES.find((l) => l.code === code) ??
+    LANGUAGES.find((l) => l.code === DEFAULT_LANG)!
+  )
+}
+
+/** Type guard: is this a known language code? */
+function isLang(value: unknown): value is Lang {
+  return LANGUAGES.some((l) => l.code === value)
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   // SSR-safe: start with the default and adopt the saved preference after mount.
-  const [lang, setLang] = useState<Lang>(DEFAULT_LANG)
+  const [lang, setLangState] = useState<Lang>(DEFAULT_LANG)
   const [hydrated, setHydrated] = useState(false)
+
+  const setLang = useCallback((next: Lang) => setLangState(next), [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const saved = window.localStorage.getItem('pff-lang')
-    if ((saved === 'he' || saved === 'en') && saved !== lang) setLang(saved)
+    if (isLang(saved) && saved !== lang) setLangState(saved)
     setHydrated(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const active = optionFor(lang)
   const t = translations[lang] || translations[DEFAULT_LANG]
+  const isRTL = active.dir === 'rtl'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     window.localStorage.setItem('pff-lang', lang)
 
     document.documentElement.lang = lang
-    document.documentElement.dir = t.dir
+    document.documentElement.dir = active.dir
 
-    if (t.dir === 'rtl') {
+    if (active.dir === 'rtl') {
       document.body.classList.add('rtl')
       document.body.classList.remove('ltr')
     } else {
@@ -56,13 +94,21 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.title = lang === 'he'
       ? 'דחיפה להגשמה | Push for Fulfillment'
       : 'Push for Fulfillment | דחיפה להגשמה'
-  }, [lang, t])
+  }, [lang, active.dir])
 
-  const toggleLang = () => setLang((prev) => (prev === 'he' ? 'en' : 'he'))
-  const isRTL = t.dir === 'rtl'
+  // Thin wrapper: still consumed by the navbar flip control until Note 5's
+  // menu refactor lands. Cycles through the language list.
+  const toggleLang = useCallback(() => {
+    setLangState((prev) => {
+      const idx = LANGUAGES.findIndex((l) => l.code === prev)
+      return LANGUAGES[(idx + 1) % LANGUAGES.length].code
+    })
+  }, [])
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggleLang, t, isRTL, hydrated }}>
+    <LanguageContext.Provider
+      value={{ lang, setLang, toggleLang, languages: LANGUAGES, t, isRTL, hydrated }}
+    >
       {children}
     </LanguageContext.Provider>
   )

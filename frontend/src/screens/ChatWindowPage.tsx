@@ -13,7 +13,6 @@ import {
   Send,
 } from "lucide-react";
 
-import PageHeader from "@/components/layout/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { apiFetch } from "../lib/apiClient";
@@ -161,8 +160,16 @@ export default function ChatWindowPage() {
   if (!authLoading && !user) {
     return (
       <>
-        <PageHeader eyebrow={c.windowTitle} title={c.signInRequired} subtitle="" />
-        <div className="page-container" style={{ maxWidth: "640px", paddingBlock: "var(--sp-7) var(--sp-9)" }}>
+        <div
+          className="page-container chat-inline-header"
+          style={{ maxWidth: "640px", paddingBlock: "clamp(36px, 5vw, 56px) clamp(20px, 3vw, 28px)" }}
+        >
+          <header className="chat-inline-header__inner">
+            <span className="eyebrow chat-inline-header__eyebrow">{c.inlineHeader.eyebrow}</span>
+            <h1 className="chat-inline-header__title">{c.signInRequired}</h1>
+          </header>
+        </div>
+        <div className="page-container" style={{ maxWidth: "640px", paddingBlock: "0 var(--sp-9)" }}>
           <Reveal>
             <div className="card" style={{ padding: "var(--sp-7)", textAlign: "center" }}>
               <span
@@ -216,18 +223,26 @@ export default function ChatWindowPage() {
 
   return (
     <>
-      <PageHeader eyebrow={c.windowTitle} title={c.windowTitle} subtitle="">
-        <div style={{ marginBlockStart: "var(--sp-4)", display: "flex", justifyContent: "center" }}>
+      {/* ── Inline editorial header: eyebrow (Messages) + human title ── */}
+      <div
+        className="page-container chat-inline-header"
+        style={{ maxWidth: "760px", paddingBlock: "clamp(36px, 5vw, 56px) clamp(20px, 3vw, 28px)" }}
+      >
+        <header className="chat-inline-header__inner chat-inline-header__inner--window">
+          <div>
+            <span className="eyebrow chat-inline-header__eyebrow">{c.inlineHeader.eyebrow}</span>
+            <h1 className="chat-inline-header__title">{c.titleFallback}</h1>
+          </div>
           <Link
             href="/chats"
             className="btn btn-outline btn-sm"
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexShrink: 0 }}
           >
             <BackArrow size={16} />
             {c.allChats.replace(/^[←→]\s*/, "")}
           </Link>
-        </div>
-      </PageHeader>
+        </header>
+      </div>
 
       <div
         className="page-container"
@@ -287,13 +302,12 @@ export default function ChatWindowPage() {
                     color: "var(--gray-600)",
                   }}
                 >
-                  {c.windowTitle}
+                  {c.inlineHeader.eyebrow}
                 </p>
                 <p
                   style={{
-                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                    fontSize: "var(--fs-sm)",
-                    letterSpacing: "0.02em",
+                    fontFamily: "Frank Ruhl Libre, Georgia, serif",
+                    fontSize: "var(--fs-body)",
                     color: "var(--ink)",
                     margin: "3px 0 0",
                     overflow: "hidden",
@@ -301,7 +315,7 @@ export default function ChatWindowPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {typeof chatId === "string" ? chatId : ""}
+                  {c.titleFallback}
                 </p>
               </div>
             </div>
@@ -331,7 +345,7 @@ export default function ChatWindowPage() {
                 renderFeedState({
                   tone: "muted",
                   icon: <ShieldOff size={26} />,
-                  body: c.permissionWindow,
+                  title: c.noAccess,
                 })}
               {msgsError &&
                 msgsError !== "permission" &&

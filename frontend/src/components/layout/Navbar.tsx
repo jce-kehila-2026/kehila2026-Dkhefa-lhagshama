@@ -1,8 +1,10 @@
 import type { ComponentProps, ReactNode } from "react";
-import { Globe, Menu, X } from "lucide-react";
+import { ChevronDown, Globe, LogOut, Menu as MenuIcon, Shield, User as UserIcon, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import type { NextRouter } from "next/router";
 import { useState } from "react";
+import MenuPrimitive, { MenuItem } from "@/components/feedback/Menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -10,10 +12,29 @@ import { useLanguage } from "@/contexts/LanguageContext";
 type NavClassName = string | ((s: { isActive: boolean }) => string);
 
 interface NavLinkProps extends Omit<ComponentProps<typeof Link>, "href" | "className"> {
+  router: NextRouter;
   to: string;
   end?: boolean;
   className?: NavClassName;
   children?: ReactNode;
+}
+
+/**
+ * NavLink shim: forwards `className` (optionally a fn of {isActive}) to next/link.
+ * Defined at module scope (not inside Navbar) so it is a stable component type
+ * across renders; the active router is passed in as a prop.
+ */
+function NavLink({ router, to, end, className, children, ...rest }: NavLinkProps) {
+  const isActivePath = (target: string) =>
+    target === "/" ? router.pathname === "/" : router.pathname.startsWith(target);
+  const active = end ? router.pathname === to : isActivePath(to);
+  const resolved =
+    typeof className === "function" ? className({ isActive: active }) : className;
+  return (
+    <Link href={to} className={resolved} {...rest}>
+      {children}
+    </Link>
+  );
 }
 
 /** A single navigation entry. */
@@ -24,26 +45,12 @@ interface NavItem {
 }
 
 export default function Navbar() {
-  const { t, toggleLang } = useLanguage();
+  const { t, lang, setLang, languages } = useLanguage();
   const { user, role, logout, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const navigate = (to: string) => router.push(to);
-  const isActivePath = (to: string) =>
-    to === "/" ? router.pathname === "/" : router.pathname.startsWith(to);
-  // NavLink shim: forwards `className` (optionally a fn of {isActive}) to next/link.
-  const NavLink = ({ to, end, className, children, ...rest }: NavLinkProps) => {
-    const active = end ? router.pathname === to : isActivePath(to);
-    const resolved =
-      typeof className === "function"
-        ? className({ isActive: active })
-        : className;
-    return (
-      <Link href={to} className={resolved} {...rest}>
-        {children}
-      </Link>
-    );
-  };
+  const isAdmin = role === "admin";
 
   // Build link set conditional on auth state.
   // Only pages that actually exist — /about, /contact, /track are not built.
@@ -65,7 +72,7 @@ export default function Navbar() {
             ]
           : []),
         { key: "chats", to: "/chats", label: t.nav.chats },
-        ...(role === "admin" ? [{ key: "admin", to: "/admin" }] : []),
+        ...(isAdmin ? [{ key: "admin", to: "/admin" }] : []),
       ]
     : [
         { key: "home", to: "/" },
@@ -78,6 +85,63 @@ export default function Navbar() {
     await logout();
     router.push("/");
   };
+
+  const activeLang = languages.find((l) => l.code === lang) ?? languages[0];
+  const accountInitial = (user?.email || "?").charAt(0);
+  const accountName = (user?.email || "").split("@")[0];
+
+  // Language menu — current label as trigger, both options listed with a check
+  // on the active one. Selecting calls setLang(code).
+  const languageMenu = (
+    <MenuPrimitive
+      align="end"
+      label={t.nav.menuLanguageAria}
+      trigger={
+        <span className="nav-menu-trigger nav-lang-trigger">
+          <Globe size={14} aria-hidden="true" />
+          <span>{activeLang.label}</span>
+          <ChevronDown size={14} aria-hidden="true" className="nav-menu-caret" />
+        </span>
+      }
+    >
+      {languages.map((l) => (
+        <MenuItem
+          key={l.code}
+          selected={l.code === lang}
+          onSelect={() => setLang(l.code)}
+        >
+          {l.label}
+        </MenuItem>
+      ))}
+    </MenuPrimitive>
+  );
+
+  // Account menu — chip as trigger; My Requests / Admin (admin only) / Sign Out.
+  const accountMenu = (
+    <MenuPrimitive
+      align="end"
+      label={t.nav.menuAccountAria}
+      trigger={
+        <span className="nav-menu-trigger nav-account-chip">
+          <span className="nav-account-avatar">{accountInitial}</span>
+          <span className="account-chip-name">{accountName}</span>
+          <ChevronDown size={14} aria-hidden="true" className="nav-menu-caret" />
+        </span>
+      }
+    >
+      <MenuItem icon={<UserIcon size={16} />} onSelect={() => navigate("/my-requests")}>
+        {t.nav.menuMyRequests}
+      </MenuItem>
+      {isAdmin && (
+        <MenuItem icon={<Shield size={16} />} onSelect={() => navigate("/admin")}>
+          {t.nav.menuAdmin}
+        </MenuItem>
+      )}
+      <MenuItem icon={<LogOut size={16} />} onSelect={handleLogout}>
+        {t.nav.menuSignOut}
+      </MenuItem>
+    </MenuPrimitive>
+  );
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
@@ -162,6 +226,7 @@ export default function Navbar() {
             {links.map((l) => (
               <NavLink
                 key={l.key}
+                router={router}
                 to={l.to}
                 className={({ isActive }) =>
                   `nav-link${isActive ? " active" : ""}`
@@ -180,72 +245,15 @@ export default function Navbar() {
               gap: "8px",
             }}
           >
-            {/* Language toggle — prominent pill, the demo switches HE/EN live */}
-            <button
-              onClick={toggleLang}
-              className="nav-lang-toggle"
-              aria-label={t.nav.langSwitch}
-              title={t.nav.langSwitch}
-            >
-              <Globe size={14} aria-hidden="true" />
-              <span style={{ fontWeight: 700 }}>{t.nav.langCode}</span>
-            </button>
+            {/* Language menu — current language label + checkable option list. */}
+            {languageMenu}
 
             {/* Auth controls */}
             {loading ? null : user ? (
               <>
-                {/* Account chip — shows the user is signed in. Initial in a
-                    circle + email-name as a tooltip. Click → My Requests. */}
-                <Link
-                  href="/my-requests"
-                  title={user.email || ""}
-                  aria-label={`Signed in as ${user.email || ""}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "4px 10px 4px 4px",
-                    borderRadius: "999px",
-                    background: "rgba(244,238,224,0.08)",
-                    border: "1px solid rgba(244,238,224,0.18)",
-                    textDecoration: "none",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "26px",
-                      height: "26px",
-                      borderRadius: "50%",
-                      background: "var(--ember)",
-                      color: "var(--cream)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {(user.email || "?").charAt(0)}
-                  </span>
-                  <span
-                    className="account-chip-name"
-                    style={{
-                      color: "var(--cream)",
-                      fontSize: "13px",
-                      maxWidth: "120px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {(user.email || "").split("@")[0]}
-                  </span>
-                </Link>
-                <button className="btn btn-nav-outline btn-sm" onClick={handleLogout}>
-                  {t.auth.logout}
-                </button>
+                {/* Account menu — chip trigger; My Requests / Admin / Sign Out. */}
+                {accountMenu}
+                {/* Primary CTA stays OUTSIDE the account menu. */}
                 <button
                   className="btn btn-nav-primary btn-sm"
                   onClick={() => navigate("/requests")}
@@ -277,14 +285,6 @@ export default function Navbar() {
           }}
         >
           <button
-            onClick={toggleLang}
-            className="nav-lang-toggle"
-            aria-label={t.nav.langSwitch}
-            style={{ padding: "6px 12px", fontWeight: 700 }}
-          >
-            {t.nav.langCode}
-          </button>
-          <button
             aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
             onClick={() => setMenuOpen((o) => !o)}
             style={{
@@ -296,12 +296,12 @@ export default function Navbar() {
               display: "flex",
             }}
           >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            {menuOpen ? <X size={22} /> : <MenuIcon size={22} />}
           </button>
         </div>
       </div>
 
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU — flat list mirroring the desktop menus (no nested popovers). */}
       {menuOpen && (
         <div
           className="hide-desktop nav-mobile-menu"
@@ -325,23 +325,8 @@ export default function Navbar() {
                 borderRadius: "8px",
               }}
             >
-              <span
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: "var(--ember)",
-                  color: "var(--cream)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  flexShrink: 0,
-                }}
-              >
-                {(user.email || "?").charAt(0)}
+              <span className="nav-account-avatar nav-account-avatar-lg">
+                {accountInitial}
               </span>
               <span
                 style={{
@@ -363,6 +348,7 @@ export default function Navbar() {
           {links.map((l) => (
             <NavLink
               key={l.key}
+              router={router}
               to={l.to}
               className={({ isActive }) =>
                 `nav-link${isActive ? " active" : ""}`
@@ -379,9 +365,48 @@ export default function Navbar() {
             </NavLink>
           ))}
 
-          {/* Auth buttons for mobile */}
+          {/* Language — flat list of options (mirrors the desktop language menu). */}
+          <div
+            className="nav-mobile-section"
+            role="group"
+            aria-label={t.nav.menuLanguageAria}
+          >
+            <span className="nav-mobile-section-label">
+              <Globe size={13} aria-hidden="true" /> {t.nav.menuLanguage}
+            </span>
+            {languages.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                className={`nav-link nav-mobile-option${l.code === lang ? " active" : ""}`}
+                aria-current={l.code === lang ? "true" : undefined}
+                style={{ display: "block", width: "100%", textAlign: "start", padding: "11px 14px" }}
+                onClick={() => {
+                  setLang(l.code);
+                  setMenuOpen(false);
+                }}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Auth — flat items mirroring the account menu, plus the CTA. */}
           {!loading && (user ? (
             <>
+              {isAdmin && (
+                <NavLink
+                  router={router}
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `nav-link${isActive ? " active" : ""}`
+                  }
+                  style={{ display: "block", padding: "11px 14px", marginBottom: "4px" }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.nav.menuAdmin}
+                </NavLink>
+              )}
               <button
                 className="btn btn-primary btn-full"
                 style={{ marginTop: "12px" }}
@@ -400,7 +425,7 @@ export default function Navbar() {
                   await handleLogout();
                 }}
               >
-                {t.auth.logout}
+                {t.nav.menuSignOut}
               </button>
             </>
           ) : (

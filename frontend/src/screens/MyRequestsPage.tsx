@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { useEffect, useState, useCallback } from "react";
 import { CheckCircle, ChevronDown, ChevronUp, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus } from "lucide-react";
 
-import PageHeader from "@/components/layout/PageHeader";
 import StatusBadge from "@/components/data-display/StatusBadge";
 import RatingForm from "@/components/forms/RatingForm";
 import Reveal from "../components/motion/Reveal";
@@ -421,14 +420,24 @@ export default function MyRequestsPage() {
 
   return (
     <>
-      <PageHeader title={t.myRequests.title} subtitle={t.myRequests.subtitle}>
-        <div style={{ marginBlockStart: "24px", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px" }}>
-          <Link href="/requests" className="btn btn-ember btn-sm">
-            <Plus size={15} aria-hidden="true" />
-            {t.myRequests.submitCta}
-          </Link>
+      {/* ── COMPACT INLINE HEADER — eyebrow → serif title → lede + CTA (start-aligned) ── */}
+      <section className="myreq-header">
+        <div className="page-container myreq-header-container">
+          <Reveal>
+            <div className="myreq-header-inner">
+              <div className="myreq-header-copy">
+                <span className="eyebrow myreq-header-eyebrow">{t.myRequests.inlineHeader.eyebrow}</span>
+                <h1 className="section-display-bold myreq-header-title">{t.myRequests.inlineHeader.title}</h1>
+                <p className="section-lede myreq-header-lede">{t.myRequests.inlineHeader.lede}</p>
+              </div>
+              <Link href="/requests" className="btn btn-ember myreq-header-cta">
+                <Plus size={16} aria-hidden="true" />
+                {t.myRequests.submitCta}
+              </Link>
+            </div>
+          </Reveal>
         </div>
-      </PageHeader>
+      </section>
 
       <div className="page-container" style={{ maxWidth: "960px", padding: "clamp(32px, 5vw, 56px) 1.5rem 80px" }}>
 

@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import type { CSSProperties } from 'react'
-import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown, Store, HeartHandshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle } from 'lucide-react'
+import type { CSSProperties, ReactNode } from 'react'
+import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown, Store, HeartHandshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle, Globe } from 'lucide-react'
+import { useRouter } from 'next/router'
 import Pagination from '@/components/data-display/Pagination'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog'
+import { useApp } from '@/contexts/AppContext'
 import Reveal from '../components/motion/Reveal'
 import { useLanguage } from '../contexts/LanguageContext'
 import { apiJson } from '../lib/apiClient'
@@ -25,6 +27,8 @@ type NoticeState = { message?: string; variant?: 'danger' | string } | null
 
 export default function DirectoryPage() {
   const { t, lang, isRTL } = useLanguage() as unknown as LangCtx
+  const { openModal, closeModal } = useApp()
+  const router = useRouter()
   const d = t.directory
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight
 
@@ -47,6 +51,82 @@ export default function DirectoryPage() {
     return []
   }, [lang])
 
+  // ── DETAIL MODALS (Note 2) ────────────────────────────────────
+  // The shared <Modal> (pages/_app.tsx) renders an object payload as
+  // { title, content, footer }; openModal is typed ReactNode so we cast the
+  // structured payload through unknown. Content is built in the active language
+  // and direction; CTAs reuse existing button classes/tokens.
+  const openBusinessModal = useCallback((biz: DirRecord) => {
+    const name = L(biz.name)
+    const phone = biz.phone ? String(biz.phone) : ''
+    const website = biz.website ? String(biz.website) : ''
+    const categoryLabel = (d.categories as Record<string, string>)?.[biz.category as string] || String(biz.category ?? '')
+    const callLabel = String(d.modal.call)
+    const visitLabel = String(d.modal.visitWebsite)
+    const content = (
+      <div style={{ textAlign: 'start' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBlockEnd: '18px' }}>
+          {categoryLabel && (
+            <span style={{ background: 'var(--ember-soft)', color: 'var(--ember-700)', paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 600 }}>{categoryLabel}</span>
+          )}
+          {L(biz.city) && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--gray-600)' }}>
+              <MapPin size={13} aria-hidden="true" /> {L(biz.city)}
+            </span>
+          )}
+        </div>
+        {L(biz.description) && (
+          <p style={{ fontSize: '14px', color: 'var(--gray-700)', lineHeight: 1.7, margin: 0 }}>{L(biz.description)}</p>
+        )}
+      </div>
+    )
+    const footer = (
+      <>
+        {phone && (
+          <a href={`tel:${phone}`} className="btn btn-outline btn-sm" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Phone size={14} aria-hidden="true" /> {callLabel}
+          </a>
+        )}
+        {website && (
+          <a href={website} target="_blank" rel="noopener noreferrer" className="btn btn-ember btn-sm" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Globe size={14} aria-hidden="true" /> {visitLabel}
+          </a>
+        )}
+      </>
+    )
+    openModal({ title: name, content, footer } as unknown as ReactNode)
+  }, [L, d, openModal])
+
+  const openAnswerModal = useCallback((answer: DirRecord) => {
+    const title = L(answer.title) || String(d.questionFallback)
+    const region = L(answer.region)
+    const audience = L(answer.audience)
+    const startLabel = String(d.modal.startRequest)
+    const content = (
+      <div style={{ textAlign: 'start' }}>
+        {(region || audience) && (
+          <div style={{ fontSize: '12.5px', color: 'var(--gray-500)', marginBlockEnd: '14px' }}>
+            {region}{region && audience ? ' • ' : ''}{audience}
+          </div>
+        )}
+        {L(answer.body) && (
+          <p style={{ fontSize: '14px', color: 'var(--gray-700)', lineHeight: 1.7, margin: 0 }}>{L(answer.body)}</p>
+        )}
+      </div>
+    )
+    const footer = (
+      <button
+        className="btn btn-ember btn-sm"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        onClick={() => { closeModal(); router.push('/requests') }}
+      >
+        {startLabel}
+        <ArrowIcon size={14} aria-hidden="true" />
+      </button>
+    )
+    openModal({ title, content, footer } as unknown as ReactNode)
+  }, [L, d, openModal, closeModal, router, ArrowIcon])
+
   const [activeTab, setActiveTab] = useState('business')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [bizSearch, setBizSearch] = useState('')
@@ -63,6 +143,7 @@ export default function DirectoryPage() {
     category: 'food',
     city: '',
     desc: '',
+    website: '',
   })
   const [registerSubmitting, setRegisterSubmitting] = useState(false)
   // Branded notice dialog (replaces native alert): { message, variant, onClose? }.
@@ -207,6 +288,8 @@ export default function DirectoryPage() {
       category: registerForm.category,
       city: registerForm.city.trim(),
       description: registerForm.desc.trim(),
+      // Optional: only sent when the owner provided a website. Validated below.
+      website: registerForm.website.trim(),
     }
 
     if (!trimmed.name || !trimmed.ownerName || !trimmed.phone || !trimmed.city || !trimmed.description) {
@@ -221,6 +304,17 @@ export default function DirectoryPage() {
       return
     }
 
+    // Website is optional; when present it must be a valid URL (mirrors the
+    // backend's optional-URL rule, so the user gets a precise message).
+    if (trimmed.website) {
+      try {
+        new URL(trimmed.website)
+      } catch {
+        setNotice({ message: d.invalidWebsite, variant: 'danger' })
+        return
+      }
+    }
+
     setRegisterSubmitting(true)
     try {
       await apiJson('/api/businesses', {
@@ -229,7 +323,7 @@ export default function DirectoryPage() {
       })
       // Reset + close the form, then surface a branded success notice.
       setShowRegForm(false)
-      setRegisterForm({ business_name: '', owner_name: '', phone: '', category: 'food', city: '', desc: '' })
+      setRegisterForm({ business_name: '', owner_name: '', phone: '', category: 'food', city: '', desc: '', website: '' })
       setNotice({ message: d.submitSuccess })
     } catch (rawErr) {
       // Surface the real backend error so failures are diagnosable instead of a
@@ -564,7 +658,7 @@ export default function DirectoryPage() {
                       <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" aria-label={`${L(biz.name)} — ${biz.phone}`} style={{ flex: '1 1 140px', minWidth: 0, textDecoration: 'none', display: 'flex', justifyContent: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         <Phone size={14} aria-hidden="true" /> {biz.phone}
                       </a>
-                      <button className="btn btn-ember btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>{d.moreBtn}</button>
+                      <button className="btn btn-ember btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }} onClick={() => openBusinessModal(biz)}>{d.moreBtn}</button>
                     </div>
                   </Reveal>
                 ))}
@@ -629,7 +723,7 @@ export default function DirectoryPage() {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '8px', paddingBlockStart: '16px', borderBlockStart: '1px solid var(--hair)' }}>
-                      <button className="btn btn-navy btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <button className="btn btn-navy btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => openAnswerModal(answer)}>
                         {d.moreBtn}
                         <ArrowIcon size={14} aria-hidden="true" />
                       </button>
@@ -697,6 +791,21 @@ export default function DirectoryPage() {
                   )}
                 </div>
               ))}
+              {/* Note 2 — optional public website (validated as a URL on submit). */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="biz-website">
+                  {d.websiteLabel}
+                </label>
+                <input
+                  id="biz-website"
+                  className="form-input"
+                  type="url"
+                  inputMode="url"
+                  placeholder={d.websitePH}
+                  value={registerForm.website}
+                  onChange={(e) => updateRegisterField('website', e.target.value)}
+                />
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowRegForm(false)}>{t.common.cancel}</button>

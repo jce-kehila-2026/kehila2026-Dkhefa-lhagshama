@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { CheckCircle, MapPin, Clock, HeartHandshake, Users, Sparkles } from 'lucide-react'
-import PageHeader from '@/components/layout/PageHeader'
 import { FormGroup, Label, Input, Select } from '@/components/forms/FormElements'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useApp } from '../contexts/AppContext'
@@ -67,7 +66,18 @@ export default function VolunteerPage() {
 
   return (
     <main>
-      <PageHeader eyebrow={lang === 'he' ? 'הצטרפות מתנדבים' : 'Join the team'} title={v.pageTitle} subtitle={v.pageSubtitle} />
+      {/* ── COMPACT INLINE HEADER — eyebrow → serif title → lede (start-aligned) ── */}
+      <section className="vol-header">
+        <div className="page-container vol-header-container">
+          <Reveal>
+            <div className="vol-header-inner">
+              <span className="eyebrow vol-header-eyebrow">{v.inlineHeader.eyebrow}</span>
+              <h1 className="section-display-bold vol-header-title">{v.inlineHeader.title}</h1>
+              <p className="section-lede vol-header-lede">{v.inlineHeader.lede}</p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       <section className="section-padding" style={{ background: 'var(--paper)' }}>
         <div className="page-container">

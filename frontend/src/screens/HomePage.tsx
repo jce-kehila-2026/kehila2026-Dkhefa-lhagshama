@@ -36,93 +36,76 @@ export default function HomePage() {
 
   return (
     <main>
-      {/* ── HERO — copy leads, a community photo montage speaks for the NGO ── */}
-      <section className="hero-bold hero-enter" style={{ position: 'relative', overflow: 'hidden' }}>
-        <div className="page-container" style={{ position: 'relative', zIndex: 1, paddingBlock: 'clamp(56px, 7.5vw, 96px)' }}>
-          <div className="hero-grid">
-            {/* Visual side — a three-photo collage of the work itself */}
-            <div className="hero-montage hero-rise" style={{ '--rise-delay': '120ms' } as CSSProperties}>
-              <AssetImage
-                slot="heroMontageA"
-                className="hero-montage-main"
-                rounded="var(--radius-lg)"
-                shadow="var(--shadow-lg)"
-                border="1px solid var(--hair)"
-                priority
-                style={{ height: '100%' }}
-              />
-              <AssetImage
-                slot="heroMontageB"
-                rounded="var(--radius-lg)"
-                shadow="var(--shadow)"
-                border="1px solid var(--hair)"
-              />
-              <AssetImage
-                slot="heroMontageC"
-                rounded="var(--radius-lg)"
-                shadow="var(--shadow)"
-                border="1px solid var(--hair)"
-              />
-            </div>
+      {/* ── HERO — a single full-bleed community photo with overlaid copy ──── */}
+      <section className="hero-bg hero-enter">
+        {/* Full-bleed photograph (kept as a real <img> for alt text + fallback). */}
+        <AssetImage
+          slot="heroBackground"
+          className="hero-bg-image"
+          rounded="0"
+          priority
+        />
+        {/* Gradient scrim for legibility — mirrors the .story-panel-scrim precedent. */}
+        <span className="hero-bg-scrim" aria-hidden="true" />
 
-            <div className="hero-copy">
-              <span className="eyebrow hero-rise" style={{ color: 'var(--ink-2)', '--rise-delay': '40ms' } as CSSProperties}>{t.hero.badge}</span>
-              <h1 className="hero-title-bold hero-rise" style={{ '--rise-delay': '90ms' } as CSSProperties}>
-                {t.hero.title1}{' '}
-                <em>{t.hero.titleHighlight}</em>{' '}
-                {t.hero.title2}
-              </h1>
-              <p className="section-lede hero-rise" style={{ margin: '0 0 28px', '--rise-delay': '150ms' } as CSSProperties}>{t.hero.subtitle}</p>
+        <div className="page-container hero-bg-inner">
+          <div className="hero-copy hero-copy-onphoto">
+            <span className="eyebrow hero-rise hero-eyebrow-onphoto" style={{ '--rise-delay': '40ms' } as CSSProperties}>{t.hero.badge}</span>
+            <h1 className="hero-title-bold hero-title-onphoto hero-rise" style={{ '--rise-delay': '90ms' } as CSSProperties}>
+              {t.hero.title1}{' '}
+              <em>{t.hero.titleHighlight}</em>{' '}
+              {t.hero.title2}
+            </h1>
+            <p className="section-lede hero-lede-onphoto hero-rise" style={{ margin: '0 0 28px', '--rise-delay': '150ms' } as CSSProperties}>{t.hero.subtitle}</p>
 
-              <div className="hero-rise" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', '--rise-delay': '210ms' } as CSSProperties}>
-                <MagneticButton className="btn btn-ember btn-lg" onClick={() => navigate('/requests')}>
-                  {t.hero.cta}
-                  <ArrowIcon size={16} />
-                </MagneticButton>
-                <button
-                  className="btn btn-outline btn-lg"
-                  onClick={() => document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  {t.hero.ctaSecondary}
-                </button>
-              </div>
-
-              {/* Inline stat strip — woven into the hero, not a separate metric band */}
-              <dl
-                className="hero-rise"
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 'clamp(20px, 4vw, 40px)',
-                  margin: '36px 0 0',
-                  paddingBlockStart: '24px',
-                  borderBlockStart: '1px solid var(--hair)',
-                  '--rise-delay': '270ms',
-                } as CSSProperties}
+            <div className="hero-rise" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', '--rise-delay': '210ms' } as CSSProperties}>
+              <MagneticButton className="btn btn-ember btn-lg" onClick={() => navigate('/requests')}>
+                {t.hero.cta}
+                <ArrowIcon size={16} />
+              </MagneticButton>
+              <button
+                className="btn btn-nav-outline btn-lg"
+                onClick={() => document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                {[
-                  { num: mockStats.beneficiaries, suffix: '',  label: t.hero.stats.beneficiaries },
-                  { num: mockStats.volunteers,    suffix: '+', label: t.hero.stats.volunteers },
-                  { num: mockStats.satisfaction,  suffix: '%', label: t.hero.stats.satisfaction },
-                  { num: mockStats.yearsActive,   suffix: '',  label: t.hero.stats.years },
-                ].map((s, i) => (
-                  <div key={i}>
-                    <dd className="hero-stat-num" style={{ margin: 0 }}>
-                      <StatCard num={s.num} suffix={s.suffix} delay={i * 120} />
-                    </dd>
-                    <dt
-                      style={{
-                        fontSize: '12px', color: 'var(--ink-2)', marginBlockStart: '6px', lineHeight: 1.3,
-                        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                        letterSpacing: '0.06em', textTransform: 'uppercase',
-                      }}
-                    >
-                      {s.label}
-                    </dt>
-                  </div>
-                ))}
-              </dl>
+                {t.hero.ctaSecondary}
+              </button>
             </div>
+
+            {/* Inline stat strip — woven into the hero, not a separate metric band */}
+            <dl
+              className="hero-rise hero-stats-onphoto"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 'clamp(20px, 4vw, 40px)',
+                margin: '36px 0 0',
+                paddingBlockStart: '24px',
+                borderBlockStart: '1px solid rgba(244,238,224,0.28)',
+                '--rise-delay': '270ms',
+              } as CSSProperties}
+            >
+              {[
+                { num: mockStats.beneficiaries, suffix: '',  label: t.hero.stats.beneficiaries },
+                { num: mockStats.volunteers,    suffix: '+', label: t.hero.stats.volunteers },
+                { num: mockStats.satisfaction,  suffix: '%', label: t.hero.stats.satisfaction },
+                { num: mockStats.yearsActive,   suffix: '',  label: t.hero.stats.years },
+              ].map((s, i) => (
+                <div key={i}>
+                  <dd className="hero-stat-num hero-stat-num-onphoto" style={{ margin: 0 }}>
+                    <StatCard num={s.num} suffix={s.suffix} delay={i * 120} />
+                  </dd>
+                  <dt
+                    style={{
+                      fontSize: '12px', color: 'rgba(244,238,224,0.82)', marginBlockStart: '6px', lineHeight: 1.3,
+                      fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                      letterSpacing: '0.06em', textTransform: 'uppercase',
+                    }}
+                  >
+                    {s.label}
+                  </dt>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
       </section>

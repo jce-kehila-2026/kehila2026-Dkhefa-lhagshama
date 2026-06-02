@@ -54,6 +54,14 @@ export const translations = {
       brand:       'דחיפה להגשמה',
       langSwitch:  'Switch to English',
       langCode:    'EN',
+      // Note 5 — language + account menus (flat string keys so t.nav stays a string record)
+      menuLanguage:     'שפה',
+      menuLanguageAria: 'בחירת שפה',
+      menuAccount:      'חשבון',
+      menuAccountAria:  'תפריט חשבון',
+      menuMyRequests:   'הבקשות שלי',
+      menuAdmin:        'ניהול',
+      menuSignOut:      'התנתקות',
     },
 
     // ── HOME HERO ─────────────────────────────────────────────
@@ -118,6 +126,12 @@ export const translations = {
 
     // ── REQUEST FORM ──────────────────────────────────────────
     request: {
+      // Note 3 — compact inline header (eyebrow + title + lede)
+      inlineHeader: {
+        eyebrow: 'בקשת סיוע',
+        title:   'הגשת בקשה',
+        lede:    'מלאו את הטופס ונציג יחזור אליכם תוך 48 שעות.',
+      },
       pageTitle:   'הגשת בקשת סיוע',
       pageSubtitle:'מלא את הטופס ונציג יצור איתך קשר תוך 48 שעות',
       steps: {
@@ -246,10 +260,29 @@ export const translations = {
       loginRequired: 'יש להתחבר כדי לרשום עסק.',
       submitError: 'שגיאה בשליחת העסק.',
       fields: { business_name: 'שם העסק', owner_name: 'שם הבעלים', phone: 'טלפון', category: 'קטגוריה', city: 'עיר', desc: 'תיאור קצר' },
+      // Note 2 — detail modal
+      modal: {
+        details:       'פרטים',
+        call:          'התקשרו',
+        visitWebsite:  'מעבר לאתר',
+        startRequest:  'הגשת בקשה',
+        websiteLabel:  'אתר אינטרנט',
+        close:         'סגירה',
+      },
+      // Note 2 — optional website field on business registration form
+      websiteLabel:    'אתר אינטרנט (אופציונלי)',
+      websitePH:       'https://example.com',
+      invalidWebsite:  'כתובת אתר לא תקינה.',
     },
 
     // ── VOLUNTEERS ────────────────────────────────────────────
     volunteers: {
+      // Note 3 — compact inline header (eyebrow + title + lede)
+      inlineHeader: {
+        eyebrow: 'הצטרפו אלינו',
+        title:   'התנדבות בקהילה',
+        lede:    'הצטרפו לצוות המתנדבים שלנו ועזרו לחברי הקהילה להגשים את עצמם.',
+      },
       pageTitle:    'מתנדבים',
       pageSubtitle: 'הצטרף לצוות המתנדבים שלנו ועזור לקהילה',
       registerTitle:'הרשמה כמתנדב',
@@ -685,6 +718,11 @@ export const translations = {
 
     // ── CHAT (UC-04) ──────────────────────────────────────────
     chat: {
+      // Note 3 — compact inline header for the chat list
+      inlineHeader: {
+        eyebrow: 'הודעות',
+        title:   'השיחות שלי',
+      },
       listTitle:       'השיחות שלי',
       listSubtitle:    'כל השיחות עם הצוות שלנו',
       windowTitle:     'שיחה',
@@ -712,10 +750,21 @@ export const translations = {
       send:            'שלח',
       sending:         'שולח...',
       sendError:       'שגיאה בשליחת ההודעה. נסה/י שוב.',
+      // Note 3 — conversation count shown in the chat-list inline header
+      conversationCount: (count: number) => count === 1 ? 'שיחה אחת' : `${count} שיחות`,
+      // Note 9 — chat window cosmetics
+      noAccess:        'אין לך גישה לשיחה זו.',
+      titleFallback:   'שיחה',
     },
 
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
     myRequests: {
+      // Note 3 — compact inline header (eyebrow + title + lede)
+      inlineHeader: {
+        eyebrow: 'האזור האישי',
+        title:   'הבקשות שלי',
+        lede:    'מעקב אחר הבקשות שהגשתם והסטטוס שלהן.',
+      },
       navLink:  'הבקשות שלי',
       title:    'הבקשות שלי',
       subtitle: 'מעקב אחר הבקשות שהגשת',
@@ -873,6 +922,14 @@ export const translations = {
       brand:       'Push for Fulfillment',
       langSwitch:  'החלף לעברית',
       langCode:    'עב',
+      // Note 5 — language + account menus (flat string keys so t.nav stays a string record)
+      menuLanguage:     'Language',
+      menuLanguageAria: 'Select language',
+      menuAccount:      'Account',
+      menuAccountAria:  'Account menu',
+      menuMyRequests:   'My Requests',
+      menuAdmin:        'Admin',
+      menuSignOut:      'Sign Out',
     },
 
     hero: {
@@ -931,6 +988,12 @@ export const translations = {
     },
 
     request: {
+      // Note 3 — compact inline header (eyebrow + title + lede)
+      inlineHeader: {
+        eyebrow: 'Support request',
+        title:   'Submit a request',
+        lede:    'Fill out the form and a representative will get back to you within 48 hours.',
+      },
       pageTitle:   'Submit a Support Request',
       pageSubtitle:'Fill out the form and a representative will contact you within 48 hours',
       steps: {
@@ -1026,6 +1089,7 @@ export const translations = {
     },
 
     directory: {
+      filters:     'Filters',
       pageTitle:   'Community & Business Directory',
       pageSubtitle:'Database of community businesses and partner organizations',
       tabBusiness: 'Community Businesses',
@@ -1057,9 +1121,28 @@ export const translations = {
       loginRequired: 'Please sign in to register a business.',
       submitError: 'Failed to submit the business.',
       fields: { business_name: 'Business Name', owner_name: 'Owner Name', phone: 'Phone', category: 'Category', city: 'City', desc: 'Short Description' },
+      // Note 2 — detail modal
+      modal: {
+        details:       'Details',
+        call:          'Call',
+        visitWebsite:  'Visit website',
+        startRequest:  'Start a request',
+        websiteLabel:  'Website',
+        close:         'Close',
+      },
+      // Note 2 — optional website field on business registration form
+      websiteLabel:    'Website (optional)',
+      websitePH:       'https://example.com',
+      invalidWebsite:  'Please enter a valid website URL.',
     },
 
     volunteers: {
+      // Note 3 — compact inline header (eyebrow + title + lede)
+      inlineHeader: {
+        eyebrow: 'Join us',
+        title:   'Volunteer with the community',
+        lede:    'Join our volunteer team and help community members fulfill their potential.',
+      },
       pageTitle:    'Volunteers',
       pageSubtitle: 'Join our volunteer team and help the community',
       registerTitle:'Volunteer Registration',
@@ -1486,6 +1569,11 @@ export const translations = {
 
     // ── CHAT (UC-04) ──────────────────────────────────────────
     chat: {
+      // Note 3 — compact inline header for the chat list
+      inlineHeader: {
+        eyebrow: 'Messages',
+        title:   'My Chats',
+      },
       listTitle:       'My Chats',
       listSubtitle:    'All conversations with our team',
       windowTitle:     'Chat',
@@ -1513,10 +1601,21 @@ export const translations = {
       send:            'Send',
       sending:         'Sending...',
       sendError:       'Failed to send. Please try again.',
+      // Note 3 — conversation count shown in the chat-list inline header
+      conversationCount: (count: number) => count === 1 ? '1 conversation' : `${count} conversations`,
+      // Note 9 — chat window cosmetics
+      noAccess:        "You don't have access to this conversation.",
+      titleFallback:   'Conversation',
     },
 
     // ── MY REQUESTS (UC-01-e) ─────────────────────────────────
     myRequests: {
+      // Note 3 — compact inline header (eyebrow + title + lede)
+      inlineHeader: {
+        eyebrow: 'Your space',
+        title:   'My Requests',
+        lede:    'Track the requests you have submitted and their status.',
+      },
       navLink:  'My Requests',
       title:    'My Requests',
       subtitle: 'Track the requests you have submitted',

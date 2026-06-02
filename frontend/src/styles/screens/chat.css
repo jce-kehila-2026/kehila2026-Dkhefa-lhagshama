@@ -1,0 +1,40 @@
+/* Chat screens — screen-specific classes (ChatListPage, ChatWindowPage). */
+
+/* ── Note 3 — compact, start-aligned inline editorial header ──────────
+   Replaces the empty PageHeader band on the chat list + window. Matches
+   the DirectoryPage eyebrow → serif title pattern. */
+.chat-inline-header__inner {
+  text-align: start;
+}
+
+/* Window header places the title block and the "all chats" link on one
+   baseline-aligned row, wrapping on narrow viewports. */
+.chat-inline-header__inner--window {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.chat-inline-header__eyebrow {
+  display: block;
+  color: var(--ember);
+  margin-block-end: 12px;
+}
+
+.chat-inline-header__title {
+  font-family: "Frank Ruhl Libre", Georgia, serif;
+  font-size: var(--fs-h2);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--ink);
+  margin: 0;
+}
+
+.chat-inline-header__count {
+  margin: 10px 0 0;
+  color: var(--gray-500);
+  font-size: var(--fs-sm);
+}

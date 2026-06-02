@@ -1,5 +1,49 @@
 /* Auto-split from globals.css — do not edit class names. */
 
+/* ── Compact inline editorial header (Note 3) ──────────────────
+   Start-aligned eyebrow + serif title + lede, with the "submit a
+   new request" CTA pinned to the inline-end (DirectoryPage style). */
+.myreq-header {
+  background: var(--cream);
+  border-block-end: 1px solid var(--hair);
+}
+
+.myreq-header-container {
+  max-width: 960px;
+  padding-block: clamp(40px, 6vw, 64px) clamp(28px, 4vw, 40px);
+}
+
+.myreq-header-inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.myreq-header-copy {
+  max-width: 40rem;
+  text-align: start;
+}
+
+.myreq-header-eyebrow {
+  color: var(--ember);
+  display: block;
+  margin-block-end: 14px;
+}
+
+.myreq-header-title {
+  margin: 0 0 12px;
+}
+
+.myreq-header-lede {
+  margin: 0;
+}
+
+.myreq-header-cta {
+  flex-shrink: 0;
+}
+
 .timeline-item { display: flex; gap: var(--sp-3); position: relative; padding-block-end: var(--sp-4); }
 
 .timeline-item:last-child { padding-block-end: 0; }

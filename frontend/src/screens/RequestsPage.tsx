@@ -18,7 +18,6 @@ interface RequestFormValues {
 }
 
 import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles, Clock, Lock } from 'lucide-react'
-import PageHeader from '@/components/layout/PageHeader'
 import Reveal from '../components/motion/Reveal'
 import StepIndicator from '@/components/forms/StepIndicator'
 import UploadArea from '@/components/forms/UploadArea'
@@ -311,11 +310,18 @@ export default function RequestsPage() {
   if (role === 'admin') {
     return (
       <>
-        <PageHeader
-          eyebrow={lang === 'he' ? 'הגשת בקשה' : 'Request intake'}
-          title={rq.pageTitle}
-          subtitle={rq.pageSubtitle}
-        />
+        {/* ── COMPACT INLINE HEADER — eyebrow → serif title → lede (start-aligned) ── */}
+        <section className="req-header">
+          <div className="page-container req-header-container">
+            <Reveal>
+              <div className="req-header-inner">
+                <span className="eyebrow req-header-eyebrow">{rq.inlineHeader.eyebrow}</span>
+                <h1 className="section-display-bold req-header-title">{rq.inlineHeader.title}</h1>
+                <p className="section-lede req-header-lede">{rq.inlineHeader.lede}</p>
+              </div>
+            </Reveal>
+          </div>
+        </section>
         <div className="page-container" style={{ maxWidth:'560px', paddingBlock:'clamp(48px, 7vw, 80px)', paddingInline:'1.5rem' }}>
           <Reveal>
             <div className="card" style={{ padding:'clamp(32px, 5vw, 48px)', textAlign:'center', boxShadow:'var(--shadow-lg)' }}>
@@ -360,11 +366,21 @@ export default function RequestsPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow={lang === 'he' ? 'הגשת בקשה' : 'Request intake'}
-        title={rq.pageTitle}
-        subtitle={rq.pageSubtitle}
-      />
+      {/* ── COMPACT INLINE HEADER — eyebrow → serif title → lede + step indicator (start-aligned) ── */}
+      <section className="req-header">
+        <div className="page-container req-header-container">
+          <Reveal>
+            <div className="req-header-inner">
+              <span className="eyebrow req-header-eyebrow">{rq.inlineHeader.eyebrow}</span>
+              <h1 className="section-display-bold req-header-title">{rq.inlineHeader.title}</h1>
+              <p className="section-lede req-header-lede">{rq.inlineHeader.lede}</p>
+            </div>
+          </Reveal>
+          <div className="req-header-stepper">
+            <StepIndicator steps={steps} currentStep={step} />
+          </div>
+        </div>
+      </section>
 
       <div className="page-container" style={{ maxWidth:'820px', paddingBlock:'clamp(32px, 5vw, 56px) clamp(56px, 8vw, 88px)', paddingInline:'1.5rem' }}>
         {/* #86 — email-not-verified banner; shown only when user is signed in but unverified */}
@@ -385,13 +401,6 @@ export default function RequestsPage() {
 
         <Reveal>
         <div className="card" style={{ overflow:'hidden', boxShadow:'var(--shadow-lg)' }}>
-          <div style={{
-            paddingBlock:'var(--sp-5) var(--sp-4)', paddingInline:'clamp(20px, 4vw, 32px)',
-            background:'linear-gradient(180deg, var(--sky-3), var(--gray-50))',
-            borderBlockEnd:'1px solid var(--hair)',
-          }}>
-            <StepIndicator steps={steps} currentStep={step} />
-          </div>
           <div className="card-body" style={{ padding:'clamp(24px, 4vw, 40px)' }}>
 
         {/* STEP 1 — PERSONAL DETAILS */}

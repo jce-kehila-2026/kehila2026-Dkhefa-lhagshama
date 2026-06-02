@@ -32,6 +32,7 @@ export type AssetSlotKey =
   | 'authAside'
   | 'communityImpact'
   | 'volunteerInvite'
+  | 'heroBackground'
   | 'heroMontageA'
   | 'heroMontageB'
   | 'heroMontageC'
@@ -77,6 +78,17 @@ export const assetManifest: Record<AssetSlotKey, AssetSlot> = {
     alt: {
       he: 'קבוצת צעירים מחייכים יושבים יחד בחוץ',
       en: 'A group of young people smiling together outdoors',
+    },
+    ratio: '16 / 9',
+  },
+  heroBackground: {
+    // Reuses the verified `hero`/`heroMontageA` community photo so the
+    // full-bleed hero resolves immediately. A wider crop (w=2000) suits the
+    // full-bleed background; swap for the NGO's own /public/photos/* later.
+    src: u('photo-1582213782179-e0d53f98f2ca', 2000),
+    alt: {
+      he: 'מתנדבים מסדרים ומחלקים תרומות במרכז קהילתי',
+      en: 'Volunteers sorting and handing out donations at a community centre',
     },
     ratio: '16 / 9',
   },

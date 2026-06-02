@@ -20,7 +20,6 @@ import {
   Clock,
 } from "lucide-react";
 
-import PageHeader from "@/components/layout/PageHeader";
 import Reveal from "../components/motion/Reveal";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -87,8 +86,8 @@ export default function ChatListPage() {
     return unsub;
   }, [authLoading, user]);
 
-  const title = c.listTitle;
-  const subtitle = c.listSubtitle;
+  // Conversation count is only meaningful once the list has resolved.
+  const showCount = !authLoading && !!user && !loading && !error;
 
   // ── Shared presentational helpers ──────────────────────────────
   const stateCardStyle: CSSProperties = {
@@ -400,13 +399,34 @@ export default function ChatListPage() {
 
   return (
     <>
-      <PageHeader title={title} subtitle={subtitle} />
+      {/* ── Inline editorial header (eyebrow → serif title → count) ── */}
+      <div
+        className="page-container chat-inline-header"
+        style={{
+          maxWidth: "820px",
+          paddingBlock: "clamp(36px, 5vw, 56px) clamp(20px, 3vw, 28px)",
+        }}
+      >
+        <Reveal>
+          <header className="chat-inline-header__inner">
+            <span className="eyebrow chat-inline-header__eyebrow">
+              {c.inlineHeader.eyebrow}
+            </span>
+            <h1 className="chat-inline-header__title">{c.inlineHeader.title}</h1>
+            {showCount && (
+              <p className="chat-inline-header__count">
+                {c.conversationCount(chats.length)}
+              </p>
+            )}
+          </header>
+        </Reveal>
+      </div>
 
       <div
         className="page-container"
         style={{
           maxWidth: "820px",
-          paddingBlock: "clamp(36px, 5vw, 56px) clamp(56px, 8vw, 88px)",
+          paddingBlock: "0 clamp(56px, 8vw, 88px)",
         }}
       >
         <Reveal>{renderBody()}</Reveal>

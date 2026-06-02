@@ -1,0 +1,32 @@
+/* Volunteer screen — screen-specific classes (VolunteerPage). */
+
+/* ── Compact inline editorial header (Note 3) ──────────────────
+   Replaces the tall, centered PageHeader band with a start-aligned
+   eyebrow + serif title + lede, in the DirectoryPage style. */
+.vol-header {
+  background: var(--cream);
+  border-block-end: 1px solid var(--hair);
+}
+
+.vol-header-container {
+  padding-block: clamp(40px, 6vw, 64px) clamp(28px, 4vw, 40px);
+}
+
+.vol-header-inner {
+  max-width: 40rem;
+  text-align: start;
+}
+
+.vol-header-eyebrow {
+  color: var(--ember);
+  display: block;
+  margin-block-end: 14px;
+}
+
+.vol-header-title {
+  margin: 0 0 12px;
+}
+
+.vol-header-lede {
+  margin: 0;
+}

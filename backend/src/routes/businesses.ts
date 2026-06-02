@@ -17,6 +17,15 @@ const createBusinessSchema = z.object({
   category: businessCategorySchema,
   city: z.string().trim().min(1).max(80),
   description: z.string().trim().min(10).max(1200),
+  // Optional public website for the business; validated as a URL when present.
+  // An empty/blank string is treated as "not provided" so the form can send "".
+  website: z
+    .string()
+    .trim()
+    .max(2000)
+    .url()
+    .optional()
+    .or(z.literal('')),
 });
 
 type CreateBusinessInput = z.infer<typeof createBusinessSchema>;
@@ -43,6 +52,9 @@ router.get('/', async (_req: Request, res: Response) => {
         city: data.city ?? null,
         description: data.description ?? null,
         tags: data.tags ?? { he: [], en: [] },
+        // Optional public website (URL string), null when not set. `category`
+        // stays an enum key.
+        website: data.website ?? null,
         approved: data.approved ?? false,
         featured: data.featured ?? false,
         rating: data.rating ?? 0,
@@ -88,6 +100,10 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     // shape and the directory renderer. We don't have a translation at submit
     // time, so the same submitted string is stored in both `he` and `en` (the
     // owner/admin can refine the second language later). `tags` starts empty.
+    // `website` is a single URL (not translatable). Only persist it when the
+    // owner actually supplied one — an empty string means "not provided".
+    const website = input.website?.trim() ? input.website.trim() : null;
+
     const docRef = await db().collection('businesses').add({
       name: { he: input.name, en: input.name },
       ownerName: input.ownerName,
@@ -95,6 +111,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       category: input.category,
       city: { he: input.city, en: input.city },
       description: { he: input.description, en: input.description },
+      website,
       tags: { he: [], en: [] },
       ownerId,
       approved: false,

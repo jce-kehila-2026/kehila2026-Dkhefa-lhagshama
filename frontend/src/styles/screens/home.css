@@ -393,22 +393,66 @@
 
 .partner-pill:focus-visible { outline: none; box-shadow: var(--ring-ink); border-color: var(--sky); }
 
-/* ── Hero photo montage — three-photo collage ───────────────────────────── */
+/* ── Full-bleed background hero — one photo, overlaid copy ───────────────── */
 
-.hero-montage {
-  display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 14px;
-  block-size: clamp(360px, 42vw, 520px);
+.hero-bg {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-block-size: clamp(520px, 72vh, 720px);
+  display: flex;
+  align-items: center;
+  background: var(--ink); /* fallback while the photo loads */
 }
 
-.hero-montage-main { grid-row: 1 / 3; }
+/* The photograph fills the whole section behind the copy. */
+.hero-bg-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  /* AssetImage normally reserves space via aspect-ratio; override so it
+     stretches to fill the section instead. object-fit:cover keeps focus. */
+  aspect-ratio: auto !important;
+}
 
-.hero-montage > .asset-image-shell { block-size: 100%; inline-size: 100%; }
+.hero-bg-image .asset-image-img { object-position: 50% 35%; }
 
-@media (max-width: 860px) {
-  .hero-montage { order: 2; block-size: clamp(320px, 72vw, 440px); }
+/* Gradient scrim for legibility — mirrors .story-panel-scrim. Darkens the
+   copy (inline-start) edge and the foot so cream text stays readable. */
+.hero-bg-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(to top, rgba(15,30,45,0.86) 0%, rgba(15,30,45,0.40) 46%, rgba(15,30,45,0.18) 100%),
+    linear-gradient(to var(--hero-scrim-dir, right), rgba(15,30,45,0.80) 0%, rgba(15,30,45,0.32) 52%, rgba(15,30,45,0.02) 100%);
+}
+
+[dir="rtl"] .hero-bg-scrim { --hero-scrim-dir: left; }
+
+.hero-bg-inner {
+  position: relative;
+  z-index: 2;
+  inline-size: 100%;
+  padding-block: clamp(56px, 7.5vw, 96px);
+}
+
+/* Copy block sits at the start edge over the darkest part of the scrim. */
+.hero-copy-onphoto { max-inline-size: 40rem; text-align: start; }
+
+/* Light recolour so copy reads over the photograph. */
+.hero-eyebrow-onphoto { color: var(--ember) !important; }
+
+.hero-title-onphoto { color: var(--cream); }
+
+.hero-lede-onphoto { color: rgba(244,238,224,0.88); }
+
+.hero-stat-num-onphoto { color: var(--cream); }
+
+@media (max-width: 720px) {
+  .hero-bg { min-block-size: clamp(480px, 86vh, 640px); }
 }
 
 /* ── Areas of activity — four evenly-weighted icon explainers ───────────── */
