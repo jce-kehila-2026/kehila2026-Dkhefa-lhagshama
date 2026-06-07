@@ -725,15 +725,20 @@ export default function MyRequestsPage() {
   const archivedItems = items.filter((it) => it.archived === true);
 
   // req 10 — group active requests into 3 kanban-style status columns.
-  const COLUMN_DEFS: { key: "open" | "inProgress" | "done"; statuses: string[] }[] = [
-    { key: "open",       statuses: ["pending", "referred"] },
-    { key: "inProgress", statuses: ["in_progress", "awaiting_review"] },
-    { key: "done",       statuses: ["closed", "rejected"] },
-  ];
-  const columns = COLUMN_DEFS.map((def) => ({
-    key: def.key,
-    title: t.myRequests.columns[def.key],
-    items: activeItems.filter((it) => def.statuses.includes(it.status)),
+  // `done` is a CATCH-ALL: anything not explicitly "open" or "in progress"
+  // (closed, rejected, the legacy `resolved`, or any unexpected status) lands
+  // here so a request can never silently vanish from the board.
+  const OPEN_STATUSES = ["pending", "referred"];
+  const IN_PROGRESS_STATUSES = ["in_progress", "awaiting_review"];
+  const columnFor = (status: string): "open" | "inProgress" | "done" => {
+    if (OPEN_STATUSES.includes(status)) return "open";
+    if (IN_PROGRESS_STATUSES.includes(status)) return "inProgress";
+    return "done";
+  };
+  const columns = (["open", "inProgress", "done"] as const).map((key) => ({
+    key,
+    title: t.myRequests.columns[key],
+    items: activeItems.filter((it) => columnFor(it.status) === key),
   }));
 
   return (
