@@ -23,6 +23,8 @@ import { writeAuditLog } from '@/lib/audit';
 import { writeRequestEvent } from '@/lib/requestEvents';
 import { authenticate, requireAnyRole } from '@/middleware/auth';
 import { sortByPriority, type SortableRequest } from '@/lib/requestSort';
+import { applyCloseConsent } from '@/lib/closeConsent';
+import { notifyBeneficiaryOfRequest } from '@/lib/notify';
 
 const router = Router();
 
@@ -526,6 +528,74 @@ router.post('/requests/:id/drop', async (req: Request, res: Response): Promise<v
   }
 
   res.json({ ok: true });
+});
+
+// ── POST /api/volunteer/requests/:id/close (req 25 + 27) ─────────────────────
+// Volunteer side of the mutual-consent close handshake. The router is already
+// gated to volunteer/admin; applyCloseConsent re-checks assignment defensively.
+// On both sides approving (result.closed) we record a status_changed event +
+// audit log AND notify the beneficiary that their request was closed (req 27),
+// since the volunteer completed the close.
+const closeSchema = z.object({
+  action: z.enum(['propose', 'approve', 'decline']),
+});
+
+const CLOSE_HTTP: Record<string, number> = {
+  ok: 200,
+  not_found: 404,
+  forbidden: 403,
+  invalid_state: 409,
+};
+
+router.post('/requests/:id/close', async (req: Request, res: Response): Promise<void> => {
+  const parsed = closeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const uid = req.user!.uid;
+  const requestId = req.params.id;
+  const { action } = parsed.data;
+
+  let result;
+  try {
+    result = await applyCloseConsent(requestId, 'volunteer', uid, action);
+  } catch (err) {
+    console.error('[volunteer] POST /requests/:id/close:', err);
+    res.status(500).json({ error: 'internal_error' });
+    return;
+  }
+
+  if (result.status !== 'ok') {
+    res.status(CLOSE_HTTP[result.status] ?? 500).json({ error: result.status });
+    return;
+  }
+
+  if (result.closed) {
+    try {
+      await writeRequestEvent({
+        requestId,
+        type: 'status_changed',
+        actorId: uid,
+        visibility: 'all',
+        details: { to: 'closed', via: 'consent' },
+      });
+      await writeAuditLog({
+        actorId: uid,
+        action: 'request.close',
+        entityType: 'requests',
+        entityId: requestId,
+        details: { to: 'closed', via: 'consent', role: 'volunteer' },
+      });
+      // req 27: volunteer completed the close → notify the beneficiary.
+      await notifyBeneficiaryOfRequest(requestId, 'closed');
+    } catch (err) {
+      console.error('[volunteer] POST /requests/:id/close side-effects:', err);
+    }
+  }
+
+  res.json({ ok: true, closed: result.closed, closeRequest: result.closeRequest });
 });
 
 // ── GET /api/volunteer/insights (req 14b) ────────────────────────────────────

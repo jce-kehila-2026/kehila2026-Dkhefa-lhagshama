@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import {
   ArrowLeft,
@@ -15,6 +15,10 @@ import {
   CheckCircle2,
   Loader2,
   FileText,
+  Paperclip,
+  Download,
+  XCircle,
+  Clock,
 } from "lucide-react";
 
 import { useApp } from "../contexts/AppContext";
@@ -23,8 +27,31 @@ import { useLanguage } from "../contexts/LanguageContext";
 import { firebaseDb } from "../lib/firebase";
 import { apiFetch } from "../lib/apiClient";
 import { useMessages } from "../hooks/useMessages";
+import type { ChatMessage } from "../hooks/useMessages";
+import { getIdToken } from "../lib/auth";
 import Reveal from "../components/motion/Reveal";
-import type { RequestStatus } from "../types";
+import type { RequestStatus, CloseRequest } from "../types";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
+
+/** Client-side attachment guard (req 26): PDF / JPEG / PNG / DOCX, <= 10MB. */
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const ALLOWED_ATTACHMENT_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+/** Extension fallback for browsers that report an empty/odd MIME type. */
+const ALLOWED_ATTACHMENT_EXTS = [".pdf", ".jpg", ".jpeg", ".png", ".docx"];
+
+/** Human-readable file size (matches the request-form attachment style). */
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes < 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 /** A chat participant as returned by GET /api/chats/:id/participants. */
 interface ChatParticipant {
@@ -44,6 +71,10 @@ interface LinkedRequest {
   status: RequestStatus;
   handler?: string | null;
   assignedVolunteerId?: string | null;
+  /** Owner uid — used to tell whether the current user is the beneficiary. */
+  beneficiaryId?: string | null;
+  /** Mutual-consent close handshake (req 25); null when none is in flight. */
+  closeRequest?: CloseRequest | null;
 }
 
 /**
@@ -112,10 +143,44 @@ export default function ChatWindowPage() {
   // "Mark as done" control without touching message fetching or auth.
   const [linkedRequest, setLinkedRequest] = useState<LinkedRequest | null>(null);
   const [markingDone, setMarkingDone] = useState(false);
+  // Remember the resolved requestId so the close-consent flow can refetch the
+  // request after each handshake action without re-reading the chat doc.
+  const [linkedRequestId, setLinkedRequestId] = useState<string | null>(null);
+
+  // Map a GET /api/requests/:id payload onto our minimal LinkedRequest.
+  function projectLinkedRequest(
+    data: Partial<LinkedRequest> & { id?: string },
+  ): LinkedRequest | null {
+    if (typeof data?.id !== "string" || typeof data.status !== "string") return null;
+    return {
+      id: data.id,
+      status: data.status,
+      handler: data.handler ?? null,
+      assignedVolunteerId: data.assignedVolunteerId ?? null,
+      beneficiaryId: data.beneficiaryId ?? null,
+      closeRequest: data.closeRequest ?? null,
+    };
+  }
+
+  // Refetch the linked request and update the strip. Used after a close-consent
+  // action so the handshake state (closeRequest / status) reflects the server.
+  async function refetchLinkedRequest() {
+    if (!linkedRequestId) return;
+    try {
+      const res = await apiFetch(`/api/requests/${linkedRequestId}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as Partial<LinkedRequest> & { id?: string };
+      const next = projectLinkedRequest(data);
+      if (next) setLinkedRequest(next);
+    } catch {
+      // Leave the last-known state in place; the user can retry.
+    }
+  }
 
   useEffect(() => {
     if (!listenChatId) {
       setLinkedRequest(null);
+      setLinkedRequestId(null);
       return;
     }
     let cancelled = false;
@@ -126,17 +191,14 @@ export default function ChatWindowPage() {
           ? (chatSnap.data()?.requestId as string | undefined)
           : undefined;
         if (cancelled || !requestId) return;
+        if (!cancelled) setLinkedRequestId(requestId);
 
         const res = await apiFetch(`/api/requests/${requestId}`);
         if (!res.ok) return; // 403/other — silently skip the lifecycle control
         const data = (await res.json()) as Partial<LinkedRequest> & { id?: string };
-        if (cancelled || typeof data?.id !== "string" || typeof data.status !== "string") return;
-        setLinkedRequest({
-          id: data.id,
-          status: data.status,
-          handler: data.handler ?? null,
-          assignedVolunteerId: data.assignedVolunteerId ?? null,
-        });
+        if (cancelled) return;
+        const next = projectLinkedRequest(data);
+        if (next) setLinkedRequest(next);
       } catch {
         // Network/permission error — leave the control hidden; chat still works.
       }
@@ -192,6 +254,62 @@ export default function ChatWindowPage() {
     }
   }
 
+  // ── req 25 — mutual-consent close handshake ────────────────────────────
+  // The caller's role is derived from the request: if the signed-in user owns
+  // the request (beneficiaryId), they act as the beneficiary and hit the
+  // beneficiary endpoint; an assigned volunteer/handler/admin acts as the
+  // volunteer side. This mirrors the server's CloseRole split.
+  const isBeneficiary =
+    !!linkedRequest && !!user && linkedRequest.beneficiaryId === user.uid;
+  const myCloseRole: "beneficiary" | "volunteer" = isBeneficiary
+    ? "beneficiary"
+    : "volunteer";
+  // Only beneficiary or assigned volunteer/handler/admin may use the control.
+  const canUseCloseConsent =
+    !!linkedRequest &&
+    !!user &&
+    (isBeneficiary || isAssignedHandler || hasRole("admin")) &&
+    (linkedRequest.status === "in_progress" ||
+      linkedRequest.status === "awaiting_review");
+
+  const closeReq = linkedRequest?.closeRequest ?? null;
+  // Did THIS side already propose / approve? (proposedRole is the initiator.)
+  const iProposed =
+    !!closeReq &&
+    (myCloseRole === "beneficiary"
+      ? closeReq.beneficiaryApproved === true
+      : closeReq.volunteerApproved === true);
+  // The other side initiated and is waiting on me to confirm.
+  const otherProposed = !!closeReq && !iProposed;
+
+  const [closeBusy, setCloseBusy] = useState(false);
+
+  async function handleCloseAction(action: "propose" | "approve" | "decline") {
+    if (!linkedRequest || closeBusy || !canUseCloseConsent) return;
+    setCloseBusy(true);
+    try {
+      const endpoint =
+        myCloseRole === "beneficiary"
+          ? `/api/requests/${linkedRequest.id}/close`
+          : `/api/volunteer/requests/${linkedRequest.id}/close`;
+      const res = await apiFetch(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        toast(c.closeRequestError, "error");
+        return;
+      }
+      // Always refetch so the strip reflects the authoritative server state
+      // (closeRequest handshake fields and/or the new `closed` status).
+      await refetchLinkedRequest();
+    } catch {
+      toast(c.closeRequestError, "error");
+    } finally {
+      setCloseBusy(false);
+    }
+  }
+
   // The "other" participant (everyone who isn't the signed-in user) — used to
   // headline the conversation with a human name + face.
   const otherParticipant =
@@ -200,11 +318,22 @@ export default function ChatWindowPage() {
     (otherParticipant?.displayName && otherParticipant.displayName.trim()) ||
     c.participantFallback;
 
+  // req 25 — the other party's display name for the "X asked to close" copy.
+  const closeProposerName =
+    (otherParticipant?.displayName && otherParticipant.displayName.trim()) ||
+    c.otherPartyFallback;
+
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  // ── req 26 — file attachments ──────────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  // Attachment names currently being fetched a signed URL for (per-bubble busy).
+  const [downloading, setDownloading] = useState<Record<string, boolean>>({});
 
   const isRtl = lang === "he";
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
@@ -241,6 +370,86 @@ export default function ChatWindowPage() {
       setSendError("send_failed");
     } finally {
       setSending(false);
+    }
+  }
+
+  // req 26 — validate then raw-upload a picked file. The realtime listener
+  // renders the resulting attachment message; no optimistic insert needed.
+  async function handleFilePick(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    // Reset the input so picking the same file again re-fires onChange.
+    e.target.value = "";
+    if (!file || uploading || typeof chatId !== "string") return;
+
+    const lowerName = file.name.toLowerCase();
+    const typeOk =
+      ALLOWED_ATTACHMENT_TYPES.has(file.type) ||
+      ALLOWED_ATTACHMENT_EXTS.some((ext) => lowerName.endsWith(ext));
+    if (!typeOk) {
+      toast(c.badFileType, "error");
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      toast(c.fileTooLarge, "error");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const idToken = await getIdToken();
+      if (!idToken) {
+        toast(c.uploadFailed, "error");
+        return;
+      }
+      const url = `${API_BASE}/api/chats/${encodeURIComponent(
+        chatId,
+      )}/attachments?filename=${encodeURIComponent(file.name)}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": file.type || "application/octet-stream",
+        },
+        body: file,
+      });
+      if (!res.ok) {
+        toast(c.uploadFailed, "error");
+        return;
+      }
+    } catch {
+      toast(c.uploadFailed, "error");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  // req 26 — open an attachment: mint a short-lived signed URL, then open it
+  // in a new tab. Works for both mine and incoming messages.
+  async function handleDownload(att: NonNullable<ChatMessage["attachment"]>) {
+    if (typeof chatId !== "string" || downloading[att.name]) return;
+    setDownloading((d) => ({ ...d, [att.name]: true }));
+    try {
+      const res = await apiFetch(
+        `/api/chats/${encodeURIComponent(chatId)}/attachments/${encodeURIComponent(att.name)}`,
+      );
+      if (!res.ok) {
+        toast(c.downloadFailed, "error");
+        return;
+      }
+      const data = (await res.json()) as { url?: string };
+      if (!data?.url) {
+        toast(c.downloadFailed, "error");
+        return;
+      }
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch {
+      toast(c.downloadFailed, "error");
+    } finally {
+      setDownloading((d) => {
+        const next = { ...d };
+        delete next[att.name];
+        return next;
+      });
     }
   }
 
@@ -541,7 +750,9 @@ export default function ChatWindowPage() {
                 "Mark as done" button while it's in progress. */}
             {linkedRequest && (
               <div
-                className="chat-lifecycle-strip"
+                className={`chat-lifecycle-strip${
+                  linkedRequest.status === "closed" ? " chat-lifecycle-strip--closed" : ""
+                }`}
                 style={{ direction: isRtl ? "rtl" : "ltr" }}
               >
                 <span className="chat-lifecycle-strip__status">
@@ -552,22 +763,105 @@ export default function ChatWindowPage() {
                     ] ?? linkedRequest.status}
                   </span>
                 </span>
-                {canMarkDone && (
-                  <button
-                    type="button"
-                    className="btn btn-ember btn-sm chat-lifecycle-strip__action"
-                    onClick={handleMarkDone}
-                    disabled={markingDone}
-                    aria-busy={markingDone}
-                  >
-                    {markingDone ? (
-                      <Loader2 size={15} className="chat-lifecycle-strip__spin" aria-hidden="true" />
-                    ) : (
-                      <CheckCircle2 size={15} aria-hidden="true" />
-                    )}
-                    {lc.actions.markDone}
-                  </button>
-                )}
+
+                <div className="chat-lifecycle-strip__consent">
+                  {canMarkDone && (
+                    <button
+                      type="button"
+                      className="btn btn-ember btn-sm chat-lifecycle-strip__action"
+                      onClick={handleMarkDone}
+                      disabled={markingDone}
+                      aria-busy={markingDone}
+                    >
+                      {markingDone ? (
+                        <Loader2 size={15} className="chat-lifecycle-strip__spin" aria-hidden="true" />
+                      ) : (
+                        <CheckCircle2 size={15} aria-hidden="true" />
+                      )}
+                      {lc.actions.markDone}
+                    </button>
+                  )}
+
+                  {/* ── req 25 — mutual-consent close handshake ──────────── */}
+                  {canUseCloseConsent && !closeReq && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm chat-lifecycle-strip__action"
+                      onClick={() => handleCloseAction("propose")}
+                      disabled={closeBusy}
+                      aria-busy={closeBusy}
+                    >
+                      {closeBusy ? (
+                        <Loader2 size={15} className="chat-lifecycle-strip__spin" aria-hidden="true" />
+                      ) : (
+                        <CheckCircle2 size={15} aria-hidden="true" />
+                      )}
+                      {c.requestClose}
+                    </button>
+                  )}
+
+                  {canUseCloseConsent && closeReq && otherProposed && (
+                    <>
+                      <span className="chat-lifecycle-strip__note">
+                        {c.otherAskedToClose(closeProposerName)}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-ember btn-sm chat-lifecycle-strip__action"
+                        onClick={() => handleCloseAction("approve")}
+                        disabled={closeBusy}
+                        aria-busy={closeBusy}
+                      >
+                        {closeBusy ? (
+                          <Loader2 size={15} className="chat-lifecycle-strip__spin" aria-hidden="true" />
+                        ) : (
+                          <CheckCircle2 size={15} aria-hidden="true" />
+                        )}
+                        {c.confirmClose}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm chat-lifecycle-strip__action"
+                        onClick={() => handleCloseAction("decline")}
+                        disabled={closeBusy}
+                      >
+                        <XCircle size={15} aria-hidden="true" />
+                        {c.declineClose}
+                      </button>
+                    </>
+                  )}
+
+                  {canUseCloseConsent && closeReq && iProposed && (
+                    <>
+                      <span className="chat-lifecycle-strip__note">
+                        <Clock
+                          size={14}
+                          aria-hidden="true"
+                          style={{ verticalAlign: "-2px", marginInlineEnd: "6px" }}
+                        />
+                        {c.waitingToClose}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm chat-lifecycle-strip__action"
+                        onClick={() => handleCloseAction("decline")}
+                        disabled={closeBusy}
+                        aria-busy={closeBusy}
+                      >
+                        {closeBusy ? (
+                          <Loader2 size={15} className="chat-lifecycle-strip__spin" aria-hidden="true" />
+                        ) : (
+                          <XCircle size={15} aria-hidden="true" />
+                        )}
+                        {c.cancelCloseRequest}
+                      </button>
+                    </>
+                  )}
+
+                  {linkedRequest.status === "closed" && (
+                    <span className="chat-lifecycle-strip__note">{c.closed}</span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -645,26 +939,61 @@ export default function ChatWindowPage() {
                         minWidth: 0,
                       }}
                     >
-                      <div
-                        style={{
-                          maxWidth: "100%",
-                          background: isMine ? "var(--ink)" : "var(--white)",
-                          color: isMine ? "var(--cream)" : "var(--gray-700)",
-                          border: isMine ? "1px solid var(--ink)" : "1px solid var(--hair)",
-                          borderRadius: isMine
-                            ? "var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg)"
-                            : "var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm)",
-                          padding: "10px 14px",
-                          fontSize: "var(--fs-sm)",
-                          lineHeight: 1.6,
-                          wordBreak: "break-word",
-                          boxShadow: isMine ? "var(--shadow-sm)" : "var(--shadow-xs)",
-                          direction: isRtl ? "rtl" : "ltr",
-                          textAlign: "start",
-                        }}
-                      >
-                        {msg.content}
-                      </div>
+                      {msg.attachment ? (
+                        // req 26 — downloadable file bubble (mine + incoming).
+                        <button
+                          type="button"
+                          className={`chat-file-bubble${
+                            isMine ? " chat-file-bubble--mine" : ""
+                          }`}
+                          onClick={() => handleDownload(msg.attachment!)}
+                          disabled={!!downloading[msg.attachment.name]}
+                          aria-busy={!!downloading[msg.attachment.name]}
+                          aria-label={`${c.download} — ${msg.attachment.name}`}
+                          title={msg.attachment.name}
+                          style={{ direction: isRtl ? "rtl" : "ltr" }}
+                        >
+                          <span className="chat-file-bubble__icon" aria-hidden="true">
+                            <FileText size={18} />
+                          </span>
+                          <span className="chat-file-bubble__meta">
+                            <span className="chat-file-bubble__name">
+                              {msg.attachment.name}
+                            </span>
+                            <span className="chat-file-bubble__sub">
+                              {formatBytes(msg.attachment.size)}
+                            </span>
+                          </span>
+                          <span className="chat-file-bubble__action" aria-hidden="true">
+                            {downloading[msg.attachment.name] ? (
+                              <Loader2 size={16} className="chat-file-bubble__spin" />
+                            ) : (
+                              <Download size={16} />
+                            )}
+                          </span>
+                        </button>
+                      ) : (
+                        <div
+                          style={{
+                            maxWidth: "100%",
+                            background: isMine ? "var(--ink)" : "var(--white)",
+                            color: isMine ? "var(--cream)" : "var(--gray-700)",
+                            border: isMine ? "1px solid var(--ink)" : "1px solid var(--hair)",
+                            borderRadius: isMine
+                              ? "var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg)"
+                              : "var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm)",
+                            padding: "10px 14px",
+                            fontSize: "var(--fs-sm)",
+                            lineHeight: 1.6,
+                            wordBreak: "break-word",
+                            boxShadow: isMine ? "var(--shadow-sm)" : "var(--shadow-xs)",
+                            direction: isRtl ? "rtl" : "ltr",
+                            textAlign: "start",
+                          }}
+                        >
+                          {msg.content}
+                        </div>
+                      )}
                       <div
                         style={{
                           fontSize: "var(--fs-xs)",
@@ -698,6 +1027,32 @@ export default function ChatWindowPage() {
                 direction: isRtl ? "rtl" : "ltr",
               }}
             >
+              {/* req 26 — file attach: hidden input driven by a paperclip btn */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.docx,application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={handleFilePick}
+                disabled={uploading || sending}
+                style={{ display: "none" }}
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                className="chat-attach-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || sending}
+                aria-busy={uploading}
+                aria-label={uploading ? c.uploading : c.attachFile}
+                title={uploading ? c.uploading : c.attachFile}
+              >
+                {uploading ? (
+                  <Loader2 size={18} className="chat-attach-btn__spin" aria-hidden="true" />
+                ) : (
+                  <Paperclip size={18} aria-hidden="true" />
+                )}
+              </button>
               <input
                 type="text"
                 value={inputText}

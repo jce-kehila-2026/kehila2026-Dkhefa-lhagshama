@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 
 import { firebaseDb } from '../lib/firebase';
+import type { ChatAttachment } from '../types';
 
 export interface ChatMessage {
   id: string;
@@ -28,6 +29,8 @@ export interface ChatMessage {
   content: string;
   timestamp: Date | null;
   status: string;
+  /** Optional file attachment on the message (req 26); null for text-only. */
+  attachment: ChatAttachment | null;
 }
 
 interface UseMessagesResult {
@@ -43,6 +46,19 @@ interface RawMessageDoc {
   content?: string;
   timestamp?: Timestamp | null;
   status?: string;
+  attachment?: ChatAttachment | null;
+}
+
+/** Normalize a raw `attachment` map into a ChatAttachment, or null if absent. */
+function toAttachment(raw: ChatAttachment | null | undefined): ChatAttachment | null {
+  if (!raw || typeof raw !== 'object') return null;
+  if (typeof raw.name !== 'string' || typeof raw.path !== 'string') return null;
+  return {
+    name: raw.name,
+    path: raw.path,
+    type: typeof raw.type === 'string' ? raw.type : 'application/octet-stream',
+    size: typeof raw.size === 'number' ? raw.size : 0,
+  };
 }
 
 export function useMessages(chatId: string | null): UseMessagesResult {
@@ -85,6 +101,7 @@ export function useMessages(chatId: string | null): UseMessagesResult {
             content: d.content ?? '',
             timestamp: d.timestamp?.toDate() ?? null,
             status: d.status ?? 'sent',
+            attachment: toAttachment(d.attachment),
           };
         });
         setMessages(msgs);

@@ -282,6 +282,26 @@ export interface Request {
   dropReports?: DropReport[];
   /** Uid of the assigned volunteer (mirrors `handler` in many flows). */
   assignedVolunteerId?: string | null;
+  /** Mutual-consent close handshake (req 25); null when no close is proposed. */
+  closeRequest?: CloseRequest | null;
+}
+
+/** Mutual-consent close handshake on a request/chat (req 25). */
+export interface CloseRequest {
+  proposedBy: string;
+  proposedRole: 'volunteer' | 'beneficiary';
+  proposedAt?: string;
+  volunteerApproved: boolean;
+  beneficiaryApproved: boolean;
+}
+
+/** A file attached to a chat message (req 26). */
+export interface ChatAttachment {
+  name: string;
+  /** Storage path (not a fetchable URL); download via signed-URL endpoint. */
+  path: string;
+  type: string;
+  size: number;
 }
 
 /** A pending request from a volunteer to take a category of work (req 15). */
@@ -394,6 +414,8 @@ export interface Message {
   text: string;
   createdAt?: string;
   mine?: boolean;
+  /** Optional file attachment on the message (req 26). */
+  attachment?: ChatAttachment | null;
 }
 
 /**

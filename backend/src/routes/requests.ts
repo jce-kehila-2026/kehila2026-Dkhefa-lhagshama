@@ -22,6 +22,7 @@ import { writeRequestEvent } from '@/lib/requestEvents';
 import { authenticate } from '@/middleware/auth';
 import { canTransition, REQUEST_STATUSES, type RequestStatus } from '@/lib/requestTransitions';
 import { mintSignedReadUrl, SIGNED_URL_TTL_MS } from '@/lib/signedUrl';
+import { applyCloseConsent } from '@/lib/closeConsent';
 
 const router = Router();
 
@@ -398,6 +399,79 @@ router.post('/:id/done', authenticate, async (req: Request, res: Response): Prom
   } catch {
     res.json({ id: requestId, status: 'awaiting_review' });
   }
+});
+
+// ── POST /api/requests/:id/close ─────────────────────────────────────────
+// Beneficiary side of the mutual-consent close handshake (req 25). The
+// beneficiary may propose/approve/decline a close on their own request.
+// applyCloseConsent re-checks ownership defensively. On both sides approving
+// (result.closed) we record a status_changed event + audit log. We do NOT
+// notify the beneficiary here — they initiated this action.
+const closeSchema = z.object({
+  action: z.enum(['propose', 'approve', 'decline']),
+});
+
+const CLOSE_HTTP: Record<string, number> = {
+  ok: 200,
+  not_found: 404,
+  forbidden: 403,
+  invalid_state: 409,
+};
+
+router.post('/:id/close', authenticate, async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: 'not_authenticated' });
+    return;
+  }
+
+  const parsed = closeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'validation', fieldErrors: parsed.error.flatten().fieldErrors });
+    return;
+  }
+
+  const requestId = req.params.id;
+  const actorId = req.user.uid;
+  const { action } = parsed.data;
+
+  let result;
+  try {
+    result = await applyCloseConsent(requestId, 'beneficiary', actorId, action);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[requests.close] failed:', err);
+    res.status(500).json({ error: 'internal' });
+    return;
+  }
+
+  if (result.status !== 'ok') {
+    res.status(CLOSE_HTTP[result.status] ?? 500).json({ error: result.status });
+    return;
+  }
+
+  if (result.closed) {
+    try {
+      await writeRequestEvent({
+        requestId,
+        type: 'status_changed',
+        actorId,
+        visibility: 'all',
+        details: { to: 'closed', via: 'consent' },
+      });
+      await writeAuditLog({
+        actorId,
+        action: 'request.close',
+        entityType: 'requests',
+        entityId: requestId,
+        details: { to: 'closed', via: 'consent', role: 'beneficiary' },
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[requests.close] side-effects:', err);
+    }
+  }
+
+  res.json({ ok: true, closed: result.closed, closeRequest: result.closeRequest });
 });
 
 // ── GET /api/requests/:id/attachments/:name ──────────────────────────────

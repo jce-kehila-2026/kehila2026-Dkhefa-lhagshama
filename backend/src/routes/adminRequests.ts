@@ -23,6 +23,7 @@ import { db } from '@/lib/firebaseAdmin';
 import { authenticate, requireRole } from '@/middleware/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { writeRequestEvent } from '@/lib/requestEvents';
+import { notifyBeneficiaryOfRequest } from '@/lib/notify';
 import { REQUEST_STATUSES, type RequestStatus } from '@/routes/requests';
 import { canTransition, canArchive } from '@/lib/requestTransitions';
 import { ensureChatForRequest } from '@/lib/chatOnAssign';
@@ -239,6 +240,12 @@ router.post('/:id/assign', async (req: Request, res: Response): Promise<void> =>
       });
     }
 
+    // Notify the beneficiary that a volunteer was put on their request (req 27).
+    // Fire-and-forget: never let a notification failure break the response.
+    void notifyBeneficiaryOfRequest(requestId, 'accepted').catch((err) => {
+      console.error('[adminRequests] notify accepted failed:', err);
+    });
+
     res.json({ ok: true });
   } catch (err) {
     console.error('[adminRequests] POST /:id/assign:', err);
@@ -358,6 +365,14 @@ router.post('/:id/status', async (req: Request, res: Response): Promise<void> =>
     // The status change itself succeeded; log the bookkeeping failure but still
     // report success so the admin UI reflects the committed state.
     console.error('[adminRequests] POST /:id/status side-effects:', err);
+  }
+
+  // Notify the beneficiary when their request is closed (req 27).
+  // Fire-and-forget: never let a notification failure break the response.
+  if (to === 'closed') {
+    void notifyBeneficiaryOfRequest(requestId, 'closed').catch((err) => {
+      console.error('[adminRequests] notify closed failed:', err);
+    });
   }
 
   res.json({ ok: true, status: to });
