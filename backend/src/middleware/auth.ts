@@ -76,3 +76,28 @@ export function requireRole(role: Role) {
     next();
   };
 }
+
+/**
+ * Gate for endpoints that any of the given roles may use. `admin` is always
+ * treated as a superset and is allowed through every `requireAnyRole` gate, so
+ * callers only need to list the non-admin roles (e.g. `requireAnyRole('volunteer')`
+ * lets volunteers AND admins in — matching the frontend `hasRole` superset rule).
+ */
+export function requireAnyRole(...roles: Role[]) {
+  const allowed = new Set<Role>([...roles, 'admin']);
+  return function anyRoleGuard(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): void {
+    if (!req.user) {
+      res.status(401).json({ error: 'not_authenticated' });
+      return;
+    }
+    if (!req.user.role || !allowed.has(req.user.role)) {
+      res.status(403).json({ error: 'forbidden', required: roles });
+      return;
+    }
+    next();
+  };
+}

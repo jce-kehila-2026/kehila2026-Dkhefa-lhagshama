@@ -142,6 +142,12 @@ export interface Volunteer {
   status?: VolunteerStatus;
   joinedDate?: string;
   assignedTo?: string | null;
+  /** Self-set availability (req 14e): free / working / unavailable. */
+  workStatus?: 'free' | 'working' | 'unavailable';
+  /** Categories the admin approved the volunteer for (informational, req 15). */
+  approvedCategories?: string[];
+  /** Pending/decided category permission requests (req 15). */
+  requestedCategories?: CategoryRequest[];
 }
 
 /**
@@ -181,6 +187,38 @@ export interface Attachment {
   size: number;
   /** Uid of the uploader. */
   uploadedBy?: string;
+  /**
+   * Whether this attachment is visible to volunteers (req 21). Beneficiary
+   * uploads default to visible; on admin task requests the admin chooses per
+   * file. Private files are never exposed through the volunteer view.
+   */
+  volunteerVisible?: boolean;
+}
+
+/** A volunteer's claim on an available request (req 16 / req 22). */
+export interface RequestClaim {
+  /** Uid of the volunteer requesting the request. */
+  volunteerId: string;
+  /** Volunteer's display name (snapshotted for the admin list). */
+  volunteerName?: string;
+  /** Free-text note: why they want this request (req 22). */
+  note?: string;
+  /** ISO timestamp the claim was made. */
+  claimedAt?: string;
+}
+
+/** A volunteer's hand-off report when self-dropping a stuck request (req 18). */
+export interface DropReport {
+  volunteerId: string;
+  volunteerName?: string;
+  /** What the volunteer did. */
+  done?: string;
+  /** Where they got to. */
+  reached?: string;
+  /** Where they got stuck. */
+  stuck?: string;
+  /** ISO timestamp of the drop. */
+  droppedAt?: string;
 }
 
 /** A beneficiary assistance request (UC-01). */
@@ -221,6 +259,37 @@ export interface Request {
   submittedBy?: string;
   /** Role of the submitting account (e.g. `volunteer`) at submit time. */
   submittedByRole?: string;
+  /** ISO deadline date (optional). */
+  deadline?: string | null;
+  /** Beneficiary age captured at submit time (feeds age insights, req 24). */
+  age?: number | null;
+  // ── Pool / claim / task fields (reqs 16, 18, 20, 22) ──────────────────────
+  /** Who created the request. `admin` task requests show a "from admin" badge. */
+  origin?: 'beneficiary' | 'admin';
+  /** `task` = an admin-authored job for volunteers (req 20). */
+  requestType?: 'assistance' | 'task';
+  /** Short title (admin task requests). */
+  title?: string;
+  /** `available` = claimable by volunteers in the pool (req 16). */
+  poolStatus?: 'none' | 'available';
+  /** True when one or more volunteers have claimed it (req 22). */
+  hasClaims?: boolean;
+  /** Volunteers who requested this request (req 22). */
+  claims?: RequestClaim[];
+  /** True if a volunteer took then dropped this request before (reqs 18, 19). */
+  wasPreviouslyTaken?: boolean;
+  /** Hand-off reports from volunteers who dropped the request (req 18). */
+  dropReports?: DropReport[];
+  /** Uid of the assigned volunteer (mirrors `handler` in many flows). */
+  assignedVolunteerId?: string | null;
+}
+
+/** A pending request from a volunteer to take a category of work (req 15). */
+export interface CategoryRequest {
+  category: string;
+  note?: string;
+  requestedAt?: string;
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 /**

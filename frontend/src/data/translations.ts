@@ -2,7 +2,13 @@
 //  TRANSLATIONS  –  Hebrew (he) | English (en)
 // ─────────────────────────────────────────────────────────────
 
-export const translations = {
+import { deepMerge } from './i18n/deepMerge'
+import { overhaulPublic } from './i18n/overhaul.public'
+import { overhaulRequestsChat } from './i18n/overhaul.requestsChat'
+import { overhaulAdmin } from './i18n/overhaul.admin'
+import { overhaulVolunteerApp } from './i18n/overhaul.volunteerApp'
+
+const base = {
   he: {
     home: {
       impactEyebrow: 'השפעה קהילתית',
@@ -1985,9 +1991,36 @@ export const translations = {
 
 /**
  * Canonical shape of the active-language translation table, derived from the
- * Hebrew branch (the source-of-truth locale). Consumers receive
- * `translations[lang]`, which is structurally this shape.
+ * Hebrew branch (the source-of-truth locale) PLUS the per-workstream add-on
+ * modules. Consumers receive `translations[lang]`, which is structurally this
+ * intersection.
  */
-export type Translations = typeof translations.he
+export type Translations = typeof base.he &
+  typeof overhaulPublic.he &
+  typeof overhaulRequestsChat.he &
+  typeof overhaulAdmin.he &
+  typeof overhaulVolunteerApp.he
+
+/**
+ * Active translation table: the base literal deep-merged with every add-on
+ * module, per locale. Add new feature strings to the matching module under
+ * `src/data/i18n/` (not here) to avoid edit conflicts.
+ */
+export const translations: { he: Translations; en: Translations } = {
+  he: deepMerge(
+    base.he as Record<string, unknown>,
+    overhaulPublic.he,
+    overhaulRequestsChat.he,
+    overhaulAdmin.he,
+    overhaulVolunteerApp.he,
+  ) as unknown as Translations,
+  en: deepMerge(
+    base.en as Record<string, unknown>,
+    overhaulPublic.en,
+    overhaulRequestsChat.en,
+    overhaulAdmin.en,
+    overhaulVolunteerApp.en,
+  ) as unknown as Translations,
+}
 
 export default translations

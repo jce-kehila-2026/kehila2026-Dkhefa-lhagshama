@@ -29,6 +29,7 @@ import suggestionsRouter from '@/routes/suggestions';
 import uploadsRouter from '@/routes/uploads';
 import usersRouter from '@/routes/users';
 import volunteersRouter from '@/routes/volunteers';
+import volunteerAppRouter from '@/routes/volunteerApp';
 import { authenticate } from '@/middleware/auth';
 import { authWriteLimiter, globalLimiter } from '@/middleware/rateLimit'; // #82
 
@@ -124,6 +125,8 @@ app.use('/api/admin/stats',      adminStatsRouter);
 app.use('/api/admin/insights',   adminInsightsRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/volunteers', authWriteLimiter, volunteersRouter);
+// Volunteer operational app (reqs 14–19): own dashboard, pool, claims, drops.
+app.use('/api/volunteer', volunteerAppRouter);
 
 // Catch-all 404
 app.use((_req: Request, res: Response) => {
