@@ -136,6 +136,11 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
     // file belongs to the request. Embed metadata on requests.attachments so
     // the admin/volunteer doc viewer can list + re-mint signed URLs by name.
     // arrayUnion keeps this idempotent if the same file is re-uploaded.
+    // Per-file volunteer visibility (req 21): admins uploading to an admin task
+    // request can mark a file private (`?volunteerVisible=false`). Defaults to
+    // true so beneficiary uploads keep their existing "assigned volunteer sees
+    // it" behavior. The volunteer-facing projection honors this flag.
+    const volunteerVisible = req.query.volunteerVisible !== 'false';
     try {
       await db().collection('requests').doc(requestId).update({
         attachments: FieldValue.arrayUnion({
@@ -144,6 +149,7 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
           type: contentType,
           size: req.body.length,
           uploadedBy: req.user.uid,
+          volunteerVisible,
         }),
         updatedAt: FieldValue.serverTimestamp(),
       });

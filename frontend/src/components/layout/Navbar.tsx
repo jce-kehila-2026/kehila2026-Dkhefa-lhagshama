@@ -72,6 +72,9 @@ export default function Navbar() {
             ]
           : []),
         { key: "chats", to: "/chats", label: t.nav.chats },
+        ...(role === "volunteer" || isAdmin
+          ? [{ key: "volunteerHub", to: "/volunteer-hub", label: t.volunteerApp.navHub }]
+          : []),
         ...(isAdmin ? [{ key: "admin", to: "/admin" }] : []),
       ]
     : [

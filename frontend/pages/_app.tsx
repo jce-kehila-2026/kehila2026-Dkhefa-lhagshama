@@ -28,28 +28,32 @@ import '@/styles/screens/login.css'
 import '@/styles/screens/my-requests.css'
 import '@/styles/screens/requests.css'
 import '@/styles/screens/volunteer.css'
+import '@/styles/screens/volunteer-app.css'
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
-  // Admin routes render their own shell (sidebar) — hide the public chrome.
-  const isAdmin = router.pathname.startsWith('/admin')
+  // Admin and volunteer-hub routes render their own shell (sidebar) — hide the
+  // public chrome (skip link, Navbar, Footer) for both.
+  const hideChrome =
+    router.pathname.startsWith('/admin') ||
+    router.pathname.startsWith('/volunteer-hub')
 
   return (
     <LanguageProvider>
       <AuthProvider>
         <AppProvider>
           <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            {!isAdmin && (
+            {!hideChrome && (
               <a href="#main-content" className="skip-link">
                 Skip to content
               </a>
             )}
-            {!isAdmin && <Navbar />}
+            {!hideChrome && <Navbar />}
             {/* key on route → a single calm page-enter on each navigation. */}
             <div id="main-content" className="page-enter" key={router.pathname} style={{ flex: 1 }}>
               <Component {...pageProps} />
             </div>
-            {!isAdmin && <Footer />}
+            {!hideChrome && <Footer />}
             <ToastContainer />
             <Modal />
           </div>

@@ -1,0 +1,311 @@
+/* ═════════════════════════════════════════════════════════════
+   VOLUNTEER HUB (Workstream D) — operational app for volunteers.
+   Reuses the admin shell (.admin-shell / .admin-sidebar / .admin-*)
+   and shared tokens (--ink, --ember, --cream, --hair, --radius-*).
+   Only .volapp-* additions live here. RTL via logical properties.
+═════════════════════════════════════════════════════════════ */
+
+/* Dashboard: two-up panel row that stacks on narrow screens. */
+.volapp-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-block-end: 1.5rem;
+}
+
+/* Generic panel built on .card. */
+.volapp-panel {
+  padding: clamp(16px, 2.4vw, 24px);
+  margin-block-end: 1.5rem;
+}
+
+.volapp-panel-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0 0 0.35rem;
+}
+
+.volapp-panel-sub {
+  margin: 0 0 1rem;
+  color: var(--gray-500);
+  font-size: 0.9rem;
+}
+
+.volapp-subhead {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gray-600);
+  margin: 0 0 0.6rem;
+}
+
+.volapp-muted { color: var(--gray-500); font-size: 0.9rem; margin: 0; }
+
+.volapp-inline-msg {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #2E6E45;
+}
+
+.volapp-inline-msg.is-error { color: var(--ember); }
+
+/* ── Work-status segmented control ── */
+.volapp-segmented {
+  display: inline-flex;
+  gap: 0.25rem;
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.volapp-segment {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 1rem;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.volapp-segment:hover:not(:disabled) { color: var(--ink); }
+.volapp-segment:disabled { cursor: default; opacity: 0.7; }
+
+.volapp-segment.is-active {
+  background: var(--ember);
+  color: var(--cream);
+}
+
+.volapp-segment:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* ── Chats link ── */
+.volapp-chats-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Category blocks / chips ── */
+.volapp-cat-block { margin-block-end: 1.25rem; }
+
+.volapp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.volapp-count-chip,
+.volapp-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--hair);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.volapp-count-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  padding: 0 0.35rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: var(--sky-2);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.volapp-filter-chip {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.volapp-filter-chip:hover { border-color: var(--ember); }
+
+.volapp-filter-chip.is-active {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+
+.volapp-filter-chip.is-active .volapp-count-num {
+  background: rgba(244, 238, 224, 0.22);
+  color: var(--cream);
+}
+
+.volapp-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: 1.25rem;
+}
+
+/* ── Category request form ── */
+.volapp-cat-form { margin-block-start: 0.5rem; }
+
+.volapp-cat-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.volapp-cat-fields .form-input { flex: 1 1 12rem; min-width: 0; }
+
+/* ── Jump link ── */
+.volapp-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-block-start: 1rem;
+  font-weight: 600;
+  color: var(--ember);
+  text-decoration: none;
+}
+
+.volapp-jump:hover { text-decoration: underline; }
+
+/* ── Request card grid (pool + assigned) ── */
+.volapp-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.volapp-req-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: clamp(16px, 2vw, 22px);
+}
+
+.volapp-req-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.volapp-req-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.volapp-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.volapp-badges .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.volapp-req-desc {
+  margin: 0;
+  color: var(--gray-700);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.volapp-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.volapp-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.volapp-meta-row dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--gray-500);
+  font-weight: 600;
+  margin: 0;
+}
+
+.volapp-meta-row dd {
+  margin: 0;
+  color: var(--ink);
+  text-align: end;
+}
+
+.volapp-claim-btn {
+  margin-block-start: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* ── Card actions row ── */
+.volapp-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+}
+
+.volapp-card-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── Inline edit / drop forms ── */
+.volapp-edit-form {
+  border-block-start: 1px solid var(--hair);
+  padding-block-start: 0.85rem;
+  margin-block-start: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.volapp-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.volapp-check input { accent-color: var(--ember); }
+
+/* ── Responsive: lean on the admin shell's mobile collapse ── */
+@media (max-width: 640px) {
+  .volapp-card-grid { grid-template-columns: 1fr; }
+  .volapp-cat-fields .form-input { flex-basis: 100%; }
+}

@@ -39,6 +39,79 @@
   font-size: var(--fs-sm);
 }
 
+/* ── req 9 — chat-window header actions (open request + all chats) ──── */
+.chat-window-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ── req 13b — active / past chat tab toggle ──────────────────────────
+   Segmented control above the chat list. Logical properties keep the
+   active-tab counter on the correct side in RTL. */
+.chat-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-block-end: 18px;
+  padding: 4px;
+  background: var(--sky-3);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+}
+
+.chat-tab {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gray-600);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+
+.chat-tab--active {
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: var(--shadow-xs);
+}
+
+.chat-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding-inline: 6px;
+  border-radius: 999px;
+  background: var(--ember-soft);
+  color: var(--ember-700);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* "Closed" tag on past-chat rows. */
+.chat-past-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  background: var(--sky-2);
+  color: var(--gray-600);
+}
+
 /* ── Note 11 — participant identity (photo + name) ────────────────────
    Avatar shown for the other participant in the panel header and on
    incoming message rows. Photo variant is a cover-cropped circle; the

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Users, ShieldCheck, UserCheck, UserX } from 'lucide-react'
+import { Users, ShieldCheck, UserCheck, UserX, Lock } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiJson, apiFetch } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
@@ -165,6 +165,11 @@ export default function AdminUsersPage() {
                     const name = u.displayName || u.email || u.uid
                     const sub = u.displayName && u.email ? u.email : null
                     const busy = busyId === u.uid
+                    // req 23 — admin accounts are protected: the demote (role
+                    // select) and disable controls are removed in favor of a
+                    // lock indicator. The backend enforces this too (403
+                    // cannot_modify_admin); this is the matching UI guard.
+                    const isProtected = role === 'admin'
                     return (
                       <tr key={u.uid} style={busy ? { opacity: 0.55, transition: 'opacity var(--dur-2) var(--ease-out)' } : undefined}>
                         <td data-label={a.userMgmt.colName}>
@@ -236,33 +241,43 @@ export default function AdminUsersPage() {
                           </span>
                         </td>
                         <td data-label={a.ui.actions}>
-                          <div className="admin-row-actions">
-                            <select
-                              className="form-select admin-inline-select"
-                              value={role}
-                              disabled={busy}
-                              onChange={(e) => changeRole(u.uid, e.target.value)}
-                              aria-label={a.userMgmt.colRole}
+                          {isProtected ? (
+                            <span
+                              className="admin-protected"
+                              title={a.protectedRow.tooltip}
                             >
-                              {ROLES.map((r) => (
-                                <option key={r} value={r}>
-                                  {(a.roleLabels as Record<string, string>)[r]}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              disabled={busy}
-                              onClick={() => toggleDisabled(u.uid, u.disabled)}
-                              aria-label={`${u.disabled ? a.userMgmt.enable : a.userMgmt.disable} — ${name}`}
-                            >
-                              {u.disabled
-                                ? <UserCheck size={14} aria-hidden="true" />
-                                : <UserX size={14} aria-hidden="true" />}
-                              {u.disabled ? a.userMgmt.enable : a.userMgmt.disable}
-                            </button>
-                          </div>
+                              <Lock size={14} aria-hidden="true" />
+                              {a.protectedRow.label}
+                            </span>
+                          ) : (
+                            <div className="admin-row-actions">
+                              <select
+                                className="form-select admin-inline-select"
+                                value={role}
+                                disabled={busy}
+                                onChange={(e) => changeRole(u.uid, e.target.value)}
+                                aria-label={a.userMgmt.colRole}
+                              >
+                                {ROLES.map((r) => (
+                                  <option key={r} value={r}>
+                                    {(a.roleLabels as Record<string, string>)[r]}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                disabled={busy}
+                                onClick={() => toggleDisabled(u.uid, u.disabled)}
+                                aria-label={`${u.disabled ? a.userMgmt.enable : a.userMgmt.disable} — ${name}`}
+                              >
+                                {u.disabled
+                                  ? <UserCheck size={14} aria-hidden="true" />
+                                  : <UserX size={14} aria-hidden="true" />}
+                                {u.disabled ? a.userMgmt.enable : a.userMgmt.disable}
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )

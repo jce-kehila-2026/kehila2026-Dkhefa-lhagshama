@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { Search, Star, Phone, MapPin, SlidersHorizontal, ChevronDown, Store, HeartHandshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle, Globe } from 'lucide-react'
+import { Search, Star, Phone, MapPin, Store, HeartHandshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle, Globe, LayoutGrid, Utensils, Wrench, HeartPulse, GraduationCap, Sparkles, Laptop, Briefcase, Scale, Users, Home } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useRouter } from 'next/router'
 import Pagination from '@/components/data-display/Pagination'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog'
@@ -11,6 +12,27 @@ import { apiJson } from '../lib/apiClient'
 import type { CaughtError, TNode, Lang } from '@/types'
 
 const PER_PAGE = 6
+
+// Lucide icon per business category / NGO area. `all` uses a neutral grid.
+// Shared by the filter chips and the business-card banners.
+const BIZ_CAT_ICONS: Record<string, LucideIcon> = {
+  all: LayoutGrid,
+  food: Utensils,
+  services: Wrench,
+  health: HeartPulse,
+  education: GraduationCap,
+  beauty: Sparkles,
+  tech: Laptop,
+}
+
+const NGO_AREA_ICONS: Record<string, LucideIcon> = {
+  all: LayoutGrid,
+  education: GraduationCap,
+  employment: Briefcase,
+  legal: Scale,
+  social: Users,
+  housing: Home,
+}
 
 // The language context is exported with a precise per-key shape, but this page
 // indexes the table dynamically (and reads HE-only keys), so consume it through
@@ -128,7 +150,6 @@ export default function DirectoryPage() {
   }, [L, d, openModal, closeModal, router, ArrowIcon])
 
   const [activeTab, setActiveTab] = useState('business')
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [bizSearch, setBizSearch] = useState('')
   const [bizCat, setBizCat] = useState('all')
   const [bizPage, setBizPage] = useState(1)
@@ -370,7 +391,7 @@ export default function DirectoryPage() {
     <main>
       {/* ── EDITORIAL HEADER — eyebrow → serif display → lede ──────── */}
       <section style={{ background: 'var(--cream)', borderBlockEnd: '1px solid var(--hair)' }}>
-        <div className="page-container" style={{ paddingBlock: 'clamp(40px, 6vw, 64px) clamp(28px, 4vw, 40px)' }}>
+        <div className="page-container" style={{ paddingBlock: 'clamp(40px, 6vw, 64px) clamp(16px, 2vw, 22px)' }}>
           <Reveal>
             <div style={{
               display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
@@ -380,10 +401,9 @@ export default function DirectoryPage() {
                 <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '14px' }}>
                   {lang === 'he' ? 'מדריך קהילתי' : 'Community directory'}
                 </span>
-                <h1 className="section-display-bold" style={{ margin: '0 0 12px' }}>
+                <h1 className="section-display-bold" style={{ margin: 0 }}>
                   {d.pageTitle}
                 </h1>
-                <p className="section-lede" style={{ margin: 0 }}>{d.pageSubtitle}</p>
               </div>
               <button
                 className="btn btn-ember"
@@ -411,7 +431,7 @@ export default function DirectoryPage() {
               aria-selected={activeTab === 'business'}
               className="dir-tab"
               style={tabStyle(activeTab === 'business')}
-              onClick={() => { setActiveTab('business'); setFiltersOpen(false) }}
+              onClick={() => setActiveTab('business')}
             >
               <Store size={15} aria-hidden="true" />
               {d.tabBusiness}
@@ -421,7 +441,7 @@ export default function DirectoryPage() {
               aria-selected={activeTab === 'ngo'}
               className="dir-tab"
               style={tabStyle(activeTab === 'ngo')}
-              onClick={() => { setActiveTab('ngo'); setFiltersOpen(false) }}
+              onClick={() => setActiveTab('ngo')}
             >
               <HeartHandshake size={15} aria-hidden="true" />
               {d.tabNGO}
@@ -431,119 +451,86 @@ export default function DirectoryPage() {
       </section>
 
       <div className="page-container" style={{ paddingBlock: 'clamp(40px, 5vw, 56px) 72px' }}>
-        {/* ── SEARCH + COLLAPSIBLE FILTER TOGGLE (always visible, above fold) ── */}
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBlockEnd: '20px' }}>
-          <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>
-            <Search size={17} aria-hidden="true" style={{
-              position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-              insetInlineStart: '16px', color: 'var(--gray-400)', pointerEvents: 'none',
-            }} />
-            <input
-              type="search"
-              value={activeTab === 'business' ? bizSearch : answerSearch}
-              onChange={e => {
-                if (activeTab === 'business') { setBizSearch(e.target.value); setBizPage(1) }
-                else { setAnswerSearch(e.target.value); setAnswerPage(1) }
-              }}
-              placeholder={activeTab === 'business' ? d.searchPH : d.searchNGO}
-              className="form-input"
-              style={{ paddingInlineStart: '44px', height: '48px', borderRadius: 'var(--radius)', textAlign: 'start' }}
-              aria-label={activeTab === 'business' ? d.searchPH : d.searchNGO}
-            />
-          </div>
-          <button
-            className="btn btn-outline"
-            aria-expanded={filtersOpen}
-            onClick={() => setFiltersOpen(o => !o)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '48px' }}
-          >
-            <SlidersHorizontal size={16} aria-hidden="true" />
-            {d.filters}
-            <ChevronDown
-              size={15}
-              aria-hidden="true"
-              style={{ transition: 'transform var(--dur-2) var(--ease-out)', transform: filtersOpen ? 'rotate(180deg)' : 'none' }}
-            />
-          </button>
+        {/* ── SEARCH (always visible, above fold) ────────────────────── */}
+        <div style={{ position: 'relative', marginBlockEnd: '16px' }}>
+          <Search size={17} aria-hidden="true" style={{
+            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+            insetInlineStart: '16px', color: 'var(--gray-400)', pointerEvents: 'none',
+          }} />
+          <input
+            type="search"
+            value={activeTab === 'business' ? bizSearch : answerSearch}
+            onChange={e => {
+              if (activeTab === 'business') { setBizSearch(e.target.value); setBizPage(1) }
+              else { setAnswerSearch(e.target.value); setAnswerPage(1) }
+            }}
+            placeholder={activeTab === 'business' ? d.searchPH : d.searchNGO}
+            className="form-input"
+            style={{ paddingInlineStart: '44px', height: '48px', borderRadius: 'var(--radius)', textAlign: 'start', width: '100%' }}
+            aria-label={activeTab === 'business' ? d.searchPH : d.searchNGO}
+          />
         </div>
 
-        {/* ── COLLAPSIBLE FILTER PANEL ──────────────────────────────── */}
-        {filtersOpen && (
-          <div style={{
-            background: 'var(--white)', borderRadius: 'var(--radius-lg)',
-            border: '1px solid var(--hair)', padding: 'clamp(18px, 3vw, 24px)',
-            boxShadow: 'var(--shadow-sm)', marginBlockEnd: '24px',
-            display: 'flex', flexDirection: 'column', gap: '20px',
-          }}>
-            {activeTab === 'business' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <span style={{
-                  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                  fontSize: '11px', fontWeight: 500, letterSpacing: '0.08em',
-                  textTransform: 'uppercase', color: 'var(--gray-500)',
-                }}>
-                  {d.filters}
-                </span>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {BIZ_CATS.map(cat => (
-                    <button
-                      key={cat}
-                      className={`filter-chip${bizCat === cat ? ' active' : ''}`}
-                      aria-pressed={bizCat === cat}
-                      onClick={() => { setBizCat(cat); setBizPage(1) }}
-                    >
-                      {cat === 'all' ? d.filterAll : d.categories[cat]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <span style={{
-                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                    fontSize: '11px', fontWeight: 500, letterSpacing: '0.08em',
-                    textTransform: 'uppercase', color: 'var(--gray-500)',
-                  }}>
-                    {d.filters}
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {NGO_AREAS.map(area => (
-                      <button
-                        key={area}
-                        className={`filter-chip${answerCategory === area ? ' active' : ''}`}
-                        aria-pressed={answerCategory === area}
-                        onClick={() => { setAnswerCategory(area); setAnswerPage(1) }}
-                      >
-                        {area === 'all' ? d.filterAll : d.ngoAreas[area]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', paddingBlockStart: '16px', borderBlockStart: '1px solid var(--hair)', marginBlockStart: '4px' }}>
-                  <input
-                    type="text"
-                    value={answerRegion}
-                    onChange={e => { setAnswerRegion(e.target.value); setAnswerPage(1) }}
-                    placeholder={d.regionPH}
-                    aria-label={d.regionPH}
-                    className="form-input"
-                    style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
-                  />
-                  <input
-                    type="text"
-                    value={answerAudience}
-                    onChange={e => { setAnswerAudience(e.target.value); setAnswerPage(1) }}
-                    placeholder={d.audiencePH}
-                    aria-label={d.audiencePH}
-                    className="form-input"
-                    style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
-                  />
-                </div>
-              </>
-            )}
+        {/* ── CATEGORY CHIPS (always visible, each with a lucide icon) ── */}
+        {activeTab === 'business' ? (
+          <div className="dir-chip-row" role="group" aria-label={d.filters}>
+            {BIZ_CATS.map(cat => {
+              const Icon = BIZ_CAT_ICONS[cat] || LayoutGrid
+              return (
+                <button
+                  key={cat}
+                  className={`filter-chip dir-chip${bizCat === cat ? ' active' : ''}`}
+                  aria-pressed={bizCat === cat}
+                  onClick={() => { setBizCat(cat); setBizPage(1) }}
+                >
+                  <Icon size={15} aria-hidden="true" />
+                  {cat === 'all' ? d.filterAll : d.categories[cat]}
+                </button>
+              )
+            })}
           </div>
+        ) : (
+          <>
+            <div className="dir-chip-row" role="group" aria-label={d.filters}>
+              {NGO_AREAS.map(area => {
+                const Icon = NGO_AREA_ICONS[area] || LayoutGrid
+                return (
+                  <button
+                    key={area}
+                    className={`filter-chip dir-chip${answerCategory === area ? ' active' : ''}`}
+                    aria-pressed={answerCategory === area}
+                    onClick={() => { setAnswerCategory(area); setAnswerPage(1) }}
+                  >
+                    <Icon size={15} aria-hidden="true" />
+                    {area === 'all' ? d.filterAll : d.ngoAreas[area]}
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBlockStart: '16px' }}>
+              <input
+                type="text"
+                value={answerRegion}
+                onChange={e => { setAnswerRegion(e.target.value); setAnswerPage(1) }}
+                placeholder={d.regionPH}
+                aria-label={d.regionPH}
+                className="form-input"
+                style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
+              />
+              <input
+                type="text"
+                value={answerAudience}
+                onChange={e => { setAnswerAudience(e.target.value); setAnswerPage(1) }}
+                placeholder={d.audiencePH}
+                aria-label={d.audiencePH}
+                className="form-input"
+                style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
+              />
+            </div>
+          </>
         )}
+
+        <div style={{ marginBlockEnd: '24px' }} aria-hidden="true" />
 
         {/* ── RESULTS COUNT ─────────────────────────────────────────── */}
         {!error && (
@@ -602,66 +589,63 @@ export default function DirectoryPage() {
           <>
             {bizPageData.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-                {bizPageData.map((biz, i) => (
-                  <Reveal key={biz.id} delay={Math.min(i, 5) * 0.06} className="card card-interactive" style={{ padding: '26px', display: 'flex', flexDirection: 'column' }}>
-                    {biz.featured && (
+                {bizPageData.map((biz, i) => {
+                  const BannerIcon = BIZ_CAT_ICONS[biz.category as string] || Store
+                  const photo = biz.photo ? String(biz.photo) : ''
+                  const base = (biz.logoColor as string) || 'var(--ink)'
+                  return (
+                  <Reveal key={biz.id} delay={Math.min(i, 5) * 0.06} className="card card-interactive dir-biz-card">
+                    {/* Banner — photo if available, else a gradient + category icon. */}
+                    <div
+                      className="dir-biz-banner"
+                      style={photo
+                        ? { backgroundImage: `url("${photo}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                        : { background: `linear-gradient(135deg, ${base} 0%, color-mix(in srgb, ${base} 70%, #0F1E2D) 100%)` }
+                      }
+                      aria-hidden="true"
+                    >
+                      {!photo && <BannerIcon size={52} color="var(--cream)" strokeWidth={1.5} />}
+                      {biz.featured && (
+                        <span className="dir-biz-featured">
+                          <Star size={10} fill="var(--ember)" color="var(--ember)" aria-hidden="true" /> {d.featured}
+                        </span>
+                      )}
+                    </div>
+                    <div className="dir-biz-body">
+                      <div style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '17px', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25 }}>{L(biz.name)}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', color: 'var(--gray-500)', marginBlockStart: '4px', marginBlockEnd: '12px' }}>
+                        <MapPin size={12} aria-hidden="true" />
+                        {d.categories[biz.category] || biz.category} • {L(biz.city)}
+                      </div>
+                      <p style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: 1.65, marginBlockEnd: '16px', flex: 1 }}>
+                        {L(biz.description)}
+                      </p>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBlockEnd: '16px' }}>
+                        {L_arr(biz.tags).map(tag => (
+                          <span key={tag} style={{
+                            background: 'var(--sky-3)', color: 'var(--ink-2)',
+                            paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500,
+                          }}>{tag}</span>
+                        ))}
+                      </div>
                       <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        alignSelf: 'flex-start',
-                        background: 'var(--ember-soft)', color: 'var(--ember-700)',
-                        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                        fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-                        paddingBlock: '4px', paddingInline: '11px',
-                        borderRadius: '999px', marginBlockEnd: '14px',
+                        display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start',
+                        marginBlockEnd: '18px', paddingBlockStart: '14px', borderBlockStart: '1px solid var(--hair)', width: '100%',
                       }}>
-                        <Star size={10} fill="var(--ember)" color="var(--ember)" aria-hidden="true" /> {d.featured}
+                        <Star size={15} fill="var(--ember)" color="var(--ember)" aria-hidden="true" />
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>{biz.rating}</span>
+                        <span style={{ fontSize: '12.5px', color: 'var(--gray-500)' }}>({biz.reviews})</span>
                       </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBlockEnd: '16px' }}>
-                      <div style={{
-                        width: '54px', height: '54px', borderRadius: 'var(--radius)',
-                        background: biz.logoColor || 'var(--ink)', color: 'var(--white)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontWeight: 700, fontSize: '22px', flexShrink: 0,
-                        boxShadow: 'var(--shadow-xs)',
-                      }} aria-hidden="true">
-                        {biz.logo || L(biz.name).charAt(0)}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" aria-label={`${L(biz.name)} — ${biz.phone}`} style={{ flex: '1 1 140px', minWidth: 0, textDecoration: 'none', display: 'flex', justifyContent: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <Phone size={14} aria-hidden="true" /> {biz.phone}
+                        </a>
+                        <button className="btn btn-ember btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }} onClick={() => openBusinessModal(biz)}>{d.moreBtn}</button>
                       </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '17px', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25 }}>{L(biz.name)}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', color: 'var(--gray-500)', marginBlockStart: '3px' }}>
-                          <MapPin size={12} aria-hidden="true" />
-                          {d.categories[biz.category] || biz.category} • {L(biz.city)}
-                        </div>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: 1.65, marginBlockEnd: '16px', flex: 1 }}>
-                      {L(biz.description)}
-                    </p>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBlockEnd: '16px' }}>
-                      {L_arr(biz.tags).map(tag => (
-                        <span key={tag} style={{
-                          background: 'var(--sky-3)', color: 'var(--ink-2)',
-                          paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500,
-                        }}>{tag}</span>
-                      ))}
-                    </div>
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start',
-                      marginBlockEnd: '18px', paddingBlockStart: '14px', borderBlockStart: '1px solid var(--hair)', width: '100%',
-                    }}>
-                      <Star size={15} fill="var(--ember)" color="var(--ember)" aria-hidden="true" />
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>{biz.rating}</span>
-                      <span style={{ fontSize: '12.5px', color: 'var(--gray-500)' }}>({biz.reviews})</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" aria-label={`${L(biz.name)} — ${biz.phone}`} style={{ flex: '1 1 140px', minWidth: 0, textDecoration: 'none', display: 'flex', justifyContent: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        <Phone size={14} aria-hidden="true" /> {biz.phone}
-                      </a>
-                      <button className="btn btn-ember btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }} onClick={() => openBusinessModal(biz)}>{d.moreBtn}</button>
                     </div>
                   </Reveal>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="dir-empty" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px', padding: 'clamp(48px, 8vw, 80px) 24px', background: 'var(--white)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>

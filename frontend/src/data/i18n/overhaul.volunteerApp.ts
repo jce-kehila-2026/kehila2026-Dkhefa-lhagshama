@@ -1,8 +1,289 @@
 /**
  * Workstream D (volunteer operational system) translation add-ons.
- * Add keys under `he` and `en` mirrors. Merged into `t.*` by `translations.ts`.
+ * All strings live under a `volunteerApp` namespace → access via
+ * `t.volunteerApp.*`. Merged into `t.*` by `translations.ts`.
+ *
+ * Keep `as const`. Mirror every key across `he` and `en`.
  */
 export const overhaulVolunteerApp = {
-  he: {},
-  en: {},
+  he: {
+    volunteerApp: {
+      // ── Nav / shell ──────────────────────────────────────────
+      navHub: 'מרחב המתנדב',
+      brand: 'מרחב המתנדב',
+      backToSite: 'חזרה לאתר',
+      nav: {
+        dashboard: 'לוח בקרה',
+        pool: 'בקשות זמינות',
+        assigned: 'הבקשות שלי',
+        insights: 'תובנות',
+        chats: 'צ׳אטים',
+      },
+
+      // ── Shared UI ────────────────────────────────────────────
+      ui: {
+        loading: 'טוען…',
+        retry: 'נסה/י שוב',
+        loadError: 'טעינת הנתונים נכשלה. נסה/י שוב.',
+        accessDeniedTitle: 'גישה נדחתה',
+        accessDeniedBody: 'דף זה זמין למתנדבים ולמנהלים בלבד.',
+        backToSite: 'חזרה לאתר',
+        save: 'שמירה',
+        cancel: 'ביטול',
+        submit: 'שליחה',
+        empty: 'אין נתונים להצגה כרגע.',
+        noDeadline: 'ללא תאריך יעד',
+      },
+
+      // ── Dashboard (req 14a, 14d–14f, 15) ─────────────────────
+      dash: {
+        title: 'לוח הבקרה של המתנדב',
+        subtitle: 'מבט מהיר על העומס שלך, הזמינות והקטגוריות.',
+        kpis: {
+          assigned: 'בקשות משויכות',
+          inProgress: 'בטיפול',
+          done: 'הושלמו',
+          poolAvailable: 'זמינות במאגר',
+        },
+        workStatus: {
+          title: 'הסטטוס שלי',
+          subtitle: 'עדכן/י את זמינותך לטיפול בבקשות.',
+          free: 'פנוי/ה',
+          working: 'בעבודה',
+          unavailable: 'לא זמין/ה',
+          saved: 'הסטטוס עודכן.',
+          error: 'עדכון הסטטוס נכשל.',
+        },
+        categories: {
+          title: 'הקטגוריות שלי',
+          approved: 'קטגוריות מאושרות',
+          none: 'אין עדיין קטגוריות מאושרות.',
+          requestTitle: 'בקשת קטגוריה חדשה',
+          requestPlaceholder: 'הזן/י שם קטגוריה…',
+          notePlaceholder: 'הערה (לא חובה)…',
+          requestBtn: 'שליחת בקשה',
+          requested: 'בקשות קטגוריה ממתינות',
+          requestSaved: 'בקשת הקטגוריה נשלחה.',
+          requestError: 'שליחת בקשת הקטגוריה נכשלה.',
+          statusPending: 'ממתין לאישור',
+          statusApproved: 'אושר',
+          statusRejected: 'נדחה',
+        },
+        perCategory: {
+          title: 'בקשות לפי קטגוריה',
+          subtitle: 'מספר הבקשות הזמינות במאגר בכל קטגוריה.',
+        },
+        myChats: {
+          title: 'הצ׳אטים שלי',
+          body: 'מעבר לכל השיחות שלך עם מבקשי הסיוע.',
+          link: 'פתיחת הצ׳אטים',
+        },
+      },
+
+      // ── Pool (req 16, 19) ────────────────────────────────────
+      pool: {
+        title: 'בקשות זמינות',
+        subtitle: 'בקשות פתוחות שניתן לקחת, ממוינות לפי דחיפות.',
+        summaryTitle: 'לפי קטגוריה',
+        all: 'הכול',
+        claim: 'בקשת טיפול',
+        claimed: 'כבר נלקח על ידך',
+        claimNotePrompt: 'הוסף/י הערה לבקשה (לא חובה):',
+        claimSuccess: 'הבקשה נלקחה בהצלחה.',
+        claimConflict: 'הבקשה כבר נלקחה על ידי מתנדב אחר.',
+        claimError: 'לקיחת הבקשה נכשלה.',
+        fromAdmin: 'הופנה ע״י מנהל',
+        previouslyTaken: 'נלקח בעבר',
+        claimsCount: (n: number) => `${n} בקשות טיפול`,
+        empty: 'אין כרגע בקשות זמינות.',
+        city: 'עיר',
+        requester: 'מבקש/ת',
+      },
+
+      // ── Assigned (req 14c, 17, 18) ───────────────────────────
+      assigned: {
+        title: 'הבקשות שלי',
+        subtitle: 'הבקשות שאת/ה מטפל/ת בהן כעת.',
+        empty: 'אין לך בקשות משויכות כרגע.',
+        editTitle: 'עריכת דחיפות ותאריך יעד',
+        urgency: 'דחיפות',
+        deadline: 'תאריך יעד',
+        urgencyLow: 'נמוכה',
+        urgencyMedium: 'בינונית',
+        urgencyHigh: 'גבוהה',
+        save: 'שמירת שינויים',
+        saved: 'השינויים נשמרו.',
+        saveError: 'שמירת השינויים נכשלה.',
+        markDone: 'סימון כהושלם',
+        doneSuccess: 'הבקשה סומנה כהושלמה.',
+        doneError: 'סימון הבקשה נכשל.',
+        drop: 'שחרור הבקשה',
+        dropTitle: 'שחרור הבקשה למאגר',
+        dropSubtitle: 'מלא/י דוח קצר לפני שחרור הבקשה.',
+        dropDone: 'הטיפול הושלם',
+        dropReached: 'יצרתי קשר עם המבקש/ת',
+        dropStuck: 'נתקעתי / צריך/ה עזרה',
+        dropSubmit: 'שחרור הבקשה',
+        dropSuccess: 'הבקשה הוחזרה למאגר.',
+        dropError: 'שחרור הבקשה נכשל.',
+        previouslyTaken: 'נלקח בעבר',
+      },
+
+      // ── Insights (req 14b) ───────────────────────────────────
+      insights: {
+        title: 'התובנות שלי',
+        subtitle: 'סקירה של פעילות הבקשות שלך לאורך זמן.',
+        empty: 'אין עדיין מספיק נתונים להצגת תובנות.',
+        loadError: 'טעינת התובנות נכשלה.',
+        overTime: 'בקשות לאורך זמן',
+        byCategory: 'בקשות לפי קטגוריה',
+        byStatus: 'בקשות לפי סטטוס',
+        avgResolution: 'זמן טיפול ממוצע',
+        currentLoad: 'עומס נוכחי',
+        days: (n: number) => (n === 1 ? 'יום' : 'ימים'),
+        requestsUnit: 'בקשות',
+        noData: 'אין נתונים',
+      },
+    },
+  },
+  en: {
+    volunteerApp: {
+      // ── Nav / shell ──────────────────────────────────────────
+      navHub: 'Volunteer hub',
+      brand: 'Volunteer hub',
+      backToSite: 'Back to site',
+      nav: {
+        dashboard: 'Dashboard',
+        pool: 'Available pool',
+        assigned: 'My requests',
+        insights: 'Insights',
+        chats: 'Chats',
+      },
+
+      // ── Shared UI ────────────────────────────────────────────
+      ui: {
+        loading: 'Loading…',
+        retry: 'Try again',
+        loadError: 'Failed to load data. Please try again.',
+        accessDeniedTitle: 'Access denied',
+        accessDeniedBody: 'This page is available to volunteers and admins only.',
+        backToSite: 'Back to site',
+        save: 'Save',
+        cancel: 'Cancel',
+        submit: 'Submit',
+        empty: 'Nothing to show right now.',
+        noDeadline: 'No deadline',
+      },
+
+      // ── Dashboard (req 14a, 14d–14f, 15) ─────────────────────
+      dash: {
+        title: 'Volunteer dashboard',
+        subtitle: 'A quick view of your load, availability and categories.',
+        kpis: {
+          assigned: 'Assigned requests',
+          inProgress: 'In progress',
+          done: 'Completed',
+          poolAvailable: 'Available in pool',
+        },
+        workStatus: {
+          title: 'My status',
+          subtitle: 'Update your availability to take on requests.',
+          free: 'Free',
+          working: 'Working',
+          unavailable: 'Unavailable',
+          saved: 'Status updated.',
+          error: 'Failed to update status.',
+        },
+        categories: {
+          title: 'My categories',
+          approved: 'Approved categories',
+          none: 'No approved categories yet.',
+          requestTitle: 'Request a new category',
+          requestPlaceholder: 'Enter a category name…',
+          notePlaceholder: 'Note (optional)…',
+          requestBtn: 'Send request',
+          requested: 'Pending category requests',
+          requestSaved: 'Category request sent.',
+          requestError: 'Failed to send the category request.',
+          statusPending: 'Pending',
+          statusApproved: 'Approved',
+          statusRejected: 'Rejected',
+        },
+        perCategory: {
+          title: 'Requests by category',
+          subtitle: 'How many pool requests are open per category.',
+        },
+        myChats: {
+          title: 'My chats',
+          body: 'Jump to all your conversations with beneficiaries.',
+          link: 'Open chats',
+        },
+      },
+
+      // ── Pool (req 16, 19) ────────────────────────────────────
+      pool: {
+        title: 'Available pool',
+        subtitle: 'Open requests you can take, sorted by urgency.',
+        summaryTitle: 'By category',
+        all: 'All',
+        claim: 'Request this',
+        claimed: 'Already taken by you',
+        claimNotePrompt: 'Add a note to your claim (optional):',
+        claimSuccess: 'Request claimed successfully.',
+        claimConflict: 'This request was already taken by another volunteer.',
+        claimError: 'Failed to claim the request.',
+        fromAdmin: 'From admin',
+        previouslyTaken: 'Previously taken',
+        claimsCount: (n: number) => `${n} claims`,
+        empty: 'No available requests right now.',
+        city: 'City',
+        requester: 'Requester',
+      },
+
+      // ── Assigned (req 14c, 17, 18) ───────────────────────────
+      assigned: {
+        title: 'My requests',
+        subtitle: 'The requests you are currently handling.',
+        empty: 'You have no assigned requests right now.',
+        editTitle: 'Edit urgency & deadline',
+        urgency: 'Urgency',
+        deadline: 'Deadline',
+        urgencyLow: 'Low',
+        urgencyMedium: 'Medium',
+        urgencyHigh: 'High',
+        save: 'Save changes',
+        saved: 'Changes saved.',
+        saveError: 'Failed to save changes.',
+        markDone: 'Mark as done',
+        doneSuccess: 'Request marked as done.',
+        doneError: 'Failed to mark the request done.',
+        drop: 'Drop request',
+        dropTitle: 'Return request to the pool',
+        dropSubtitle: 'Fill a short report before dropping the request.',
+        dropDone: 'The work is done',
+        dropReached: 'I reached the beneficiary',
+        dropStuck: "I'm stuck / need help",
+        dropSubmit: 'Drop request',
+        dropSuccess: 'Request returned to the pool.',
+        dropError: 'Failed to drop the request.',
+        previouslyTaken: 'Previously taken',
+      },
+
+      // ── Insights (req 14b) ───────────────────────────────────
+      insights: {
+        title: 'My insights',
+        subtitle: 'An overview of your request activity over time.',
+        empty: 'Not enough data to show insights yet.',
+        loadError: 'Failed to load insights.',
+        overTime: 'Requests over time',
+        byCategory: 'Requests by category',
+        byStatus: 'Requests by status',
+        avgResolution: 'Average resolution time',
+        currentLoad: 'Current load',
+        days: (n: number) => (n === 1 ? 'day' : 'days'),
+        requestsUnit: 'requests',
+        noData: 'No data',
+      },
+    },
+  },
 } as const;

@@ -9,7 +9,7 @@
 }
 
 .vol-header-container {
-  padding-block: clamp(40px, 6vw, 64px) clamp(28px, 4vw, 40px);
+  padding-block: clamp(40px, 6vw, 64px) clamp(16px, 2vw, 22px);
 }
 
 .vol-header-inner {

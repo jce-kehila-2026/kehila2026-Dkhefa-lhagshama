@@ -44,6 +44,128 @@
   flex-shrink: 0;
 }
 
+/* ── req 10 — kanban-style status columns for active requests ───
+   3 equal columns on wide screens; collapses to stacked single-column
+   sections on narrow screens. */
+.myreq-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+  align-items: start;
+}
+
+.myreq-col {
+  min-width: 0;
+  background: var(--sky-3);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.myreq-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-block-end: 14px;
+}
+
+.myreq-col-title {
+  margin: 0;
+}
+
+.myreq-col-count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding-inline: 7px;
+  border-radius: 999px;
+  background: var(--white);
+  border: 1px solid var(--hair);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+}
+
+.myreq-col-body {
+  display: grid;
+  gap: 14px;
+}
+
+.myreq-col-empty {
+  margin: 0;
+  padding: 18px 4px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--gray-400);
+}
+
+/* Stack the board into single-column sections on narrow screens. */
+@media (max-width: 860px) {
+  .myreq-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── req 12 — card footer: attachments indicator + chat shortcut ── */
+.myreq-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  border-block-start: 1px solid var(--hair);
+  background: var(--white);
+}
+
+.myreq-card-files {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+
+/* Chat shortcut sits at the logical end (right in LTR / left in RTL). */
+.myreq-card-chat {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+/* ── req 9 — focused card highlight (?focus=<id>) ──────────────── */
+.myreq-card-focused {
+  box-shadow: 0 0 0 2px var(--ember), var(--shadow);
+}
+
+.myreq-focused-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: var(--ember-soft);
+  color: var(--ember-700);
+}
+
+/* ── req 11 — raw id + urgency moved into the expanded detail panel ── */
+.myreq-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 16px 20px;
+  margin-block-end: 22px;
+  padding-block-end: 18px;
+  border-block-end: 1px solid var(--hair);
+}
+
 .timeline-item { display: flex; gap: var(--sp-3); position: relative; padding-block-end: var(--sp-4); }
 
 .timeline-item:last-child { padding-block-end: 0; }

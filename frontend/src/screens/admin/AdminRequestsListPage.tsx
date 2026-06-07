@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Inbox, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Inbox, ChevronLeft, ChevronRight, Plus, HandHeart } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiJson } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
+import CreateTaskDialog from '@/components/admin/CreateTaskDialog'
 import Reveal from '../../components/motion/Reveal'
 import {
   StatusBadge,
@@ -34,11 +35,15 @@ interface RequestRow {
   id: string
   firstName?: string
   lastName?: string
+  title?: string
   description?: string
   category?: string
   city?: string
   status?: string
   archived?: boolean
+  origin?: string
+  requestType?: string
+  hasClaims?: boolean
   [key: string]: unknown
 }
 
@@ -49,8 +54,24 @@ export default function AdminRequestsListPage() {
   const [items, setItems] = useState<RequestRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [taskOpen, setTaskOpen] = useState(false)
+  // When linked from the dashboard with ?claims=true, narrow the list to
+  // requests that have interested volunteers (req 22 surfacing).
+  const [claimsOnly, setClaimsOnly] = useState(false)
 
   const ManageArrow = isRTL ? ChevronLeft : ChevronRight
+
+  // Read ?claims=true from the URL once on mount so the dashboard's
+  // "requests with claimants" card lands on a pre-filtered view.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    setClaimsOnly(params.get('claims') === 'true')
+    const status = params.get('status')
+    if (status && (STATUS_FILTERS as readonly string[]).includes(status)) {
+      setFilter(status as FilterKey)
+    }
+  }, [])
 
   // Resolve the human label for a filter tab. Active statuses use the canonical
   // admin status labels; the archived tab + "all" use their dedicated keys.
@@ -86,16 +107,42 @@ export default function AdminRequestsListPage() {
     load()
   }, [load])
 
+  // When the claims-only view is active, narrow to requests that carry at
+  // least one interested-volunteer claim (req 22).
+  const visibleItems = claimsOnly ? items.filter((r) => r.hasClaims) : items
+
   // Live result summary: "N results" reusing the column/empty vocabulary the
   // page already ships — no new translation keys introduced.
   const resultSummary = (() => {
-    const n = items.length
+    const n = visibleItems.length
     if (lang === 'he') return `${n} ${n === 1 ? 'בקשה' : 'בקשות'}`
     return `${n} ${n === 1 ? 'request' : 'requests'}`
   })()
 
   return (
-    <AdminLayout title={a.reqList.title} subtitle={a.reqList.subtitle}>
+    <AdminLayout
+      title={a.reqList.title}
+      subtitle={a.reqList.subtitle}
+      actions={
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={() => setTaskOpen(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Plus size={16} aria-hidden="true" />
+          {a.taskForm.create}
+        </button>
+      }
+    >
+      <CreateTaskDialog
+        open={taskOpen}
+        onClose={() => setTaskOpen(false)}
+        onCreated={() => {
+          setTaskOpen(false)
+          load()
+        }}
+      />
       <Reveal>
         {/* ── Filter bar — a segmented control that reads as one cohesive unit ── */}
         <div
@@ -175,7 +222,7 @@ export default function AdminRequestsListPage() {
 
       {loading ? (
         <TableSkeleton rows={6} cols={5} />
-      ) : items.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <Reveal>
           <EmptyState icon={Inbox} title={a.reqList.empty} message={a.reqList.emptyHint} />
         </Reveal>
@@ -258,13 +305,33 @@ export default function AdminRequestsListPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((r) => {
+                  {visibleItems.map((r) => {
                     const name = [r.firstName, r.lastName].filter(Boolean).join(' ')
-                    const primary = name || (r.description ? r.description.slice(0, 40) : r.id)
+                    // Admin task requests carry a `title` and no beneficiary
+                    // name; fall back to the description, then the id.
+                    const primary =
+                      r.title || name || (r.description ? r.description.slice(0, 40) : r.id)
+                    const isAdminTask =
+                      r.origin === 'admin' || r.requestType === 'task' || r.requestType === 'admin_task'
                     return (
                       <tr key={r.id}>
                         <td data-label={a.reqList.colTitle}>
-                          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{primary}</span>
+                          <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{primary}</span>
+                            {isAdminTask && (
+                              <StatusBadge status="admin" label={a.taskForm.badge} />
+                            )}
+                            {r.hasClaims && (
+                              <span
+                                className="badge badge-ember"
+                                title={a.claims.badge}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <HandHeart size={12} aria-hidden="true" />
+                                {a.claims.badge}
+                              </span>
+                            )}
+                          </span>
                         </td>
                         <td data-label={a.reqList.colCategory}>
                           <span style={{ color: r.category ? 'var(--gray-600)' : 'var(--gray-400)' }}>

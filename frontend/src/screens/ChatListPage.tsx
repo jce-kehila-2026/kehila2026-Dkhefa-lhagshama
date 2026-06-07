@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {
   collection,
@@ -24,6 +25,7 @@ import Reveal from "../components/motion/Reveal";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { firebaseDb } from "../lib/firebase";
+import { apiJson } from "../lib/apiClient";
 import { formatDate } from "../utils/helpers";
 
 // A chat row as projected from the Firestore `chats` collection for this list.
@@ -34,14 +36,31 @@ interface ChatListItem {
   lastMessageAt: string | null;
 }
 
+// req 13b — a chat counts as "past" when its linked request is closed/rejected
+// or archived; everything else (incl. unknown status) stays "active".
+const PAST_STATUSES = new Set(["closed", "rejected"]);
+
 export default function ChatListPage() {
   const { t, lang } = useLanguage();
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const c = t.chat;
 
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // req 13b — linked-request status per requestId, fetched lazily through
+  // Express. `null` while in flight; absence ⇒ treated as active (fail-open
+  // toward visibility). Drives the active/past split + tab.
+  const [reqStatus, setReqStatus] = useState<Record<string, string | null>>({});
+  const [tab, setTab] = useState<"active" | "past">("active");
+
+  // req 13b / req 3 — ?requestId=<id> arrives from a my-requests card's chat
+  // shortcut; we highlight (and, if it's the only match, auto-open) that chat.
+  const focusRequestId =
+    typeof router.query.requestId === "string" ? router.query.requestId : null;
+  const autoOpenedRef = useRef(false);
 
   const isRtl = lang === "he";
   const ChevronIcon = isRtl ? ChevronLeft : ChevronRight;
@@ -85,6 +104,61 @@ export default function ChatListPage() {
 
     return unsub;
   }, [authLoading, user]);
+
+  // req 13b — for every chat we don't yet have a status for, fetch the linked
+  // request's status once. Lightweight + idempotent; failures fail-open to
+  // "active" so a chat is never wrongly hidden.
+  useEffect(() => {
+    if (!user) return;
+    const missing = chats
+      .map((ch) => ch.requestId)
+      .filter((rid): rid is string => !!rid && !(rid in reqStatus));
+    if (missing.length === 0) return;
+
+    let alive = true;
+    // Mark as in-flight so we don't refetch on the next render.
+    setReqStatus((prev) => {
+      const next = { ...prev };
+      for (const rid of missing) next[rid] = next[rid] ?? null;
+      return next;
+    });
+
+    missing.forEach((rid) => {
+      apiJson<{ status?: string }>(`/api/requests/${rid}`)
+        .then((data) => {
+          if (alive) setReqStatus((prev) => ({ ...prev, [rid]: data?.status ?? "" }));
+        })
+        .catch(() => {
+          // Permission/network error — leave as null (treated as active).
+        });
+    });
+
+    return () => { alive = false; };
+  }, [chats, user, reqStatus]);
+
+  // req 13b — split active vs. past from the resolved request statuses.
+  const isPastChat = (chat: ChatListItem) => {
+    const s = chat.requestId ? reqStatus[chat.requestId] : null;
+    return typeof s === "string" && PAST_STATUSES.has(s);
+  };
+  const activeChats = chats.filter((ch) => !isPastChat(ch));
+  const pastChats = chats.filter((ch) => isPastChat(ch));
+  const visibleChats = tab === "active" ? activeChats : pastChats;
+
+  // req 3 / req 13b — when arriving with ?requestId=, switch to the tab that
+  // contains the match and (if it's the only one) open it directly.
+  useEffect(() => {
+    if (!focusRequestId || loading || autoOpenedRef.current) return;
+    const matches = chats.filter((ch) => ch.requestId === focusRequestId);
+    if (matches.length === 0) return;
+    autoOpenedRef.current = true;
+    if (matches.length === 1) {
+      router.replace(`/chats/${matches[0].id}`);
+      return;
+    }
+    // Multiple matches — reveal the tab holding them and let highlight guide.
+    setTab(isPastChat(matches[0]) ? "past" : "active");
+  }, [focusRequestId, loading, chats, reqStatus, router]);
 
   // Conversation count is only meaningful once the list has resolved.
   const showCount = !authLoading && !!user && !loading && !error;
@@ -268,6 +342,41 @@ export default function ChatListPage() {
     }
 
     return (
+      <>
+        {/* req 13b — active / past tab toggle */}
+        <div className="chat-tabs" role="tablist" aria-label={c.inlineHeader.title}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "active"}
+            className={`chat-tab${tab === "active" ? " chat-tab--active" : ""}`}
+            onClick={() => setTab("active")}
+          >
+            {c.activeTab}
+            <span className="chat-tab__count">{activeChats.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "past"}
+            className={`chat-tab${tab === "past" ? " chat-tab--active" : ""}`}
+            onClick={() => setTab("past")}
+          >
+            {c.pastTab}
+            <span className="chat-tab__count">{pastChats.length}</span>
+          </button>
+        </div>
+
+        {visibleChats.length === 0 ? (
+          <div style={stateCardStyle}>
+            <span style={stateIconWrap("var(--sky-3)", "var(--ink-2)")}>
+              <MessagesSquare size={26} strokeWidth={1.75} />
+            </span>
+            <p style={stateBodyStyle}>
+              {tab === "active" ? c.activeEmpty : c.pastEmpty}
+            </p>
+          </div>
+        ) : (
       <div
         className="card"
         style={{
@@ -279,7 +388,9 @@ export default function ChatListPage() {
         }}
       >
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-          {chats.map((chat, index) => (
+          {visibleChats.map((chat, index) => {
+            const highlighted = !!focusRequestId && chat.requestId === focusRequestId;
+            return (
             <li key={chat.id}>
               <Link
                 href={`/chats/${chat.id}`}
@@ -292,19 +403,20 @@ export default function ChatListPage() {
                   padding: "18px 22px",
                   textDecoration: "none",
                   borderBlockStart: index > 0 ? "1px solid var(--hair)" : "none",
-                  background: "transparent",
+                  background: highlighted ? "var(--ember-soft)" : "transparent",
+                  boxShadow: highlighted ? "inset 3px 0 0 var(--ember)" : "none",
                   transition: "background var(--dur-2) var(--ease-out)",
                   outline: "none",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--sky-3)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = highlighted ? "var(--ember-soft)" : "transparent")}
                 onFocus={(e) => {
                   e.currentTarget.style.background = "var(--sky-3)";
                   e.currentTarget.style.boxShadow = "inset 0 0 0 2px var(--ember)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.background = highlighted ? "var(--ember-soft)" : "transparent";
+                  e.currentTarget.style.boxShadow = highlighted ? "inset 3px 0 0 var(--ember)" : "none";
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "16px", minWidth: 0 }}>
@@ -357,6 +469,9 @@ export default function ChatListPage() {
                     >
                       <Users size={14} strokeWidth={1.9} aria-hidden="true" />
                       {chat.participants.length} {c.participants}
+                      {isPastChat(chat) && (
+                        <span className="chat-past-badge">{c.pastBadge}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -391,9 +506,12 @@ export default function ChatListPage() {
                 </div>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
+        )}
+      </>
     );
   };
 

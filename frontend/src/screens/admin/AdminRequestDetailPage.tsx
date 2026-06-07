@@ -63,12 +63,21 @@ interface RequestEvent {
   details?: { volunteerId?: string; to?: string; note?: string; [key: string]: unknown }
 }
 
+// A volunteer who has expressed interest in (claimed) a pooled request (req 22).
+interface RequestClaim {
+  volunteerId: string
+  volunteerName?: string
+  note?: string
+  claimedAt?: string | number | Date
+}
+
 // A request as returned by GET /api/admin/requests/:id. Loose by design — only
 // the fields this screen reads are declared.
 interface RequestDetail {
   id: string
   firstName?: string
   lastName?: string
+  title?: string
   description?: string
   category?: string
   city?: string
@@ -83,6 +92,10 @@ interface RequestDetail {
   onBehalf?: boolean
   submittedBy?: string
   submittedByRole?: string
+  claims?: RequestClaim[]
+  hasClaims?: boolean
+  origin?: string
+  requestType?: string
   [key: string]: unknown
 }
 
@@ -299,6 +312,18 @@ export default function AdminRequestDetailPage() {
 
   const handleAssign = () => {
     if (assignTo) post('assign', { volunteerId: assignTo })
+  }
+
+  // req 22 — assign the request to a specific claimant. The backend assign
+  // endpoint also clears the remaining claims, so a successful load() refresh
+  // makes the "volunteers requesting this" section collapse on its own.
+  const [assigningClaim, setAssigningClaim] = useState<string | null>(null)
+  const handleAssignClaim = async (volunteerId: string) => {
+    setAssigningClaim(volunteerId)
+    const ok = await post('assign', { volunteerId })
+    setAssigningClaim(null)
+    if (ok) toast(a.claims.assignSuccess, 'success')
+    else toast(a.claims.assignError, 'error')
   }
   const handleNote = async () => {
     const trimmed = note.trim()
@@ -693,6 +718,54 @@ export default function AdminRequestDetailPage() {
                       {request.referral.note}
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* ── Volunteers requesting this (req 22) — multi-claimant review.
+                  Each claimant shows their name, note + when they claimed, with
+                  an Assign action. Assigning clears the other claims server-side. ── */}
+              {request.claims && request.claims.length > 0 && (
+                <div
+                  style={{
+                    margin: 'var(--sp-6) 0 0',
+                    paddingBlockStart: 'var(--sp-5)',
+                    borderBlockStart: '1px solid var(--hair)',
+                  }}
+                >
+                  <span style={{ ...EYEBROW, color: 'var(--ember)' }}>
+                    <UserPlus size={14} aria-hidden="true" />
+                    {a.claims.heading}
+                  </span>
+                  <ul className="admin-claim-list">
+                    {request.claims.map((claim) => {
+                      const busyClaim = assigningClaim === claim.volunteerId
+                      return (
+                        <li key={claim.volunteerId} className="admin-claim-item">
+                          <div className="admin-claim-body">
+                            <span className="admin-claim-name">
+                              {claim.volunteerName || claim.volunteerId}
+                            </span>
+                            <p className="admin-claim-note">
+                              {claim.note?.trim() || a.claims.noNote}
+                            </p>
+                            {claim.claimedAt && (
+                              <p className="admin-claim-meta">
+                                {a.claims.claimedAt}: {fmt(claim.claimedAt)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm admin-claim-assign"
+                            disabled={saving || busyClaim}
+                            onClick={() => handleAssignClaim(claim.volunteerId)}
+                          >
+                            {busyClaim ? a.claims.assigning : a.claims.assign}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 </div>
               )}
 

@@ -744,3 +744,198 @@
 }
 
 .admin-doc-view svg { flex: 0 0 auto; }
+
+/* ── Operational dashboard — "needs attention" actionable queue cards
+   (req 8). Each card is a link to the working area for that queue. ── */
+
+.admin-attention-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.admin-attention-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper);
+  text-decoration: none;
+  transition: border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out);
+}
+
+.admin-attention-card:hover {
+  border-color: var(--ember);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.admin-attention-card:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-ink);
+}
+
+.admin-attention-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-attention-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--ember-soft, var(--sky-3));
+  color: var(--ember-700, var(--ember));
+  flex: 0 0 auto;
+}
+
+.admin-attention-arrow {
+  color: var(--gray-400);
+  transition: color var(--dur-2) var(--ease-out);
+}
+
+.admin-attention-card:hover .admin-attention-arrow { color: var(--ember); }
+
+.admin-attention-count {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.admin-attention-label {
+  font-weight: 600;
+  color: var(--ink-2);
+  line-height: 1.3;
+  text-align: start;
+}
+
+.admin-attention-cta {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ember);
+}
+
+/* ── Admin task-request form (req 20/21) — file rows with per-file
+   "visible to volunteers" toggle. ── */
+
+.admin-task-files {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-task-file {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+}
+
+.admin-task-file-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+}
+
+.admin-task-file-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-task-dialog {
+  text-align: start;
+  max-width: 36rem;
+  width: min(36rem, 92vw);
+}
+
+.admin-task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sp-3);
+}
+
+/* ── Multi-claimant review (req 22) — list of volunteers who requested
+   a request, each with their note + an assign action. ── */
+
+.admin-claim-list {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-claim-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.admin-claim-body { flex: 1; min-width: 0; text-align: start; }
+
+.admin-claim-name { font-weight: 600; color: var(--ink); }
+
+.admin-claim-note {
+  margin: 0.25rem 0 0;
+  color: var(--gray-700);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-claim-meta {
+  margin: 0.25rem 0 0;
+  font-size: var(--fs-xs);
+  color: var(--gray-500);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+.admin-claim-assign { flex: 0 0 auto; }
+
+/* ── Protected admin row indicator (req 23) ── */
+
+.admin-protected {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--fs-sm);
+  color: var(--gray-500);
+  font-weight: 500;
+  cursor: help;
+}
+
+.admin-protected svg { flex: 0 0 auto; }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState, useCallback } from "react";
-import { CheckCircle, ChevronDown, ChevronUp, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, Sparkles, ExternalLink, X } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { CheckCircle, ChevronDown, ChevronUp, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, Sparkles, ExternalLink, X, MessageCircle } from "lucide-react";
 
 import RatingForm from "@/components/forms/RatingForm";
 import Reveal from "../components/motion/Reveal";
@@ -299,17 +299,24 @@ function MetaField({ icon, label, children }: { icon?: ReactNode; label: ReactNo
 }
 
 // ── Request card with expandable timeline ─────────────────────
-function RequestCard({ item, t, lang, expandedId, onToggle }: {
+// req 11 — the collapsed card headlines the CATEGORY (the raw id moves into
+// the expanded detail panel) and shows 4 facts: category, status, created,
+// deadline. req 12 — the footer carries the attachments indicator + a chat
+// shortcut. req 9 — `?focus=<id>` highlights + scrolls to the card.
+function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef }: {
   item: RequestRecord;
   t: Translations;
   lang: string;
   expandedId: string | null;
   onToggle: (id: string) => void;
+  isFocused?: boolean;
+  focusRef?: (el: HTMLDivElement | null) => void;
 }) {
   const isExpanded = expandedId === item.id;
   const categoryLabel = (cat: string) => t.myRequests.categories[cat] || cat;
   const urgencyLabel  = (urg: string) => t.myRequests.urgencies[urg]  || urg;
   const tbl = t.myRequests.table;
+  const mr = t.myRequests;
   const attachments = Array.isArray(item.attachments)
     ? item.attachments.length
     : Array.isArray(item.attachmentPaths)
@@ -320,10 +327,14 @@ function RequestCard({ item, t, lang, expandedId, onToggle }: {
 
   return (
     <div
-      className={isArchived ? "myreq-card myreq-card-archived" : "myreq-card"}
+      ref={focusRef}
+      className={
+        (isArchived ? "myreq-card myreq-card-archived" : "myreq-card") +
+        (isFocused ? " myreq-card-focused" : "")
+      }
       style={{
         background: "var(--white)",
-        border: `1px solid ${isExpanded ? "var(--ember-soft)" : "var(--hair)"}`,
+        border: `1px solid ${isFocused ? "var(--ember)" : isExpanded ? "var(--ember-soft)" : "var(--hair)"}`,
         borderRadius: "var(--radius-lg)",
         boxShadow: isExpanded ? "var(--shadow)" : "var(--shadow-xs)",
         overflow: "hidden",
@@ -356,24 +367,27 @@ function RequestCard({ item, t, lang, expandedId, onToggle }: {
           textAlign: "start",
         }}
       >
-        {/* Top line: id + status + chevron */}
+        {/* Top line: category (req 11) + status + chevron */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flexWrap: "wrap" }}>
             <span style={{
-              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize: "12.5px",
-              fontWeight: 600,
-              color: "var(--ember)",
-              letterSpacing: "0.04em",
-              background: "var(--ember-soft)",
-              padding: "3px 9px",
-              borderRadius: "var(--radius-sm)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              fontFamily: "Frank Ruhl Libre, Georgia, serif",
+              fontSize: "1.05rem",
+              fontWeight: 500,
+              color: "var(--ink)",
             }}>
-              {item.id}
+              <Tag size={15} aria-hidden="true" style={{ color: "var(--ember)" }} />
+              {categoryLabel(item.category)}
             </span>
             <LifecycleStatusPill status={item.status} t={t} />
             {isArchived && (
               <span className="myreq-archived-badge">{t.lifecycle.archivedBadge}</span>
+            )}
+            {isFocused && (
+              <span className="myreq-focused-badge">{mr.focusedBadge}</span>
             )}
           </div>
           <span
@@ -405,7 +419,7 @@ function RequestCard({ item, t, lang, expandedId, onToggle }: {
           {truncate(item.description || "", 140) || "—"}
         </p>
 
-        {/* Meta grid */}
+        {/* Meta grid — 4 collapsed facts (req 11): category, status, created, deadline */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
@@ -417,8 +431,8 @@ function RequestCard({ item, t, lang, expandedId, onToggle }: {
           <MetaField icon={<Tag size={12} aria-hidden="true" />} label={tbl.category}>
             {categoryLabel(item.category)}
           </MetaField>
-          <MetaField label={tbl.urgency}>
-            {urgencyLabel(item.urgency)}
+          <MetaField label={tbl.status}>
+            <LifecycleStatusPill status={item.status} t={t} />
           </MetaField>
           <MetaField icon={<Calendar size={12} aria-hidden="true" />} label={tbl.date}>
             {formatDate(item.createdAt, lang) || "—"}
@@ -426,11 +440,30 @@ function RequestCard({ item, t, lang, expandedId, onToggle }: {
           <MetaField label={tbl.deadline}>
             <DeadlinePill deadline={item.deadline} t={t} />
           </MetaField>
-          <MetaField icon={<Paperclip size={12} aria-hidden="true" />} label={tbl.attachments}>
-            {attachments}
-          </MetaField>
         </div>
       </button>
+
+      {/* Card footer — attachments indicator + chat shortcut (req 12).
+          Kept outside the toggle button so the chat link isn't nested in
+          another interactive element. */}
+      <div className="myreq-card-footer">
+        <span className="myreq-card-files" title={tbl.attachments}>
+          <Paperclip size={14} aria-hidden="true" />
+          {attachments} {tbl.attachments}
+        </span>
+        {/* req 12 — chat link sits at the logical end (right in LTR) of the
+            files indicator. Resolves the chat via ?requestId= (handled by
+            ChatListPage). */}
+        <Link
+          href={`/chats?requestId=${encodeURIComponent(item.id)}`}
+          className="btn btn-ghost btn-sm myreq-card-chat"
+          aria-label={mr.openChat}
+          title={mr.openChat}
+        >
+          <MessageCircle size={15} aria-hidden="true" />
+          <span className="myreq-card-chat-label">{mr.openChat}</span>
+        </Link>
+      </div>
 
       {/* Expanded panel */}
       {isExpanded && (
@@ -443,6 +476,23 @@ function RequestCard({ item, t, lang, expandedId, onToggle }: {
           }}
         >
           <div style={{ paddingBlockStart: "20px" }}>
+            {/* req 11 — raw id + urgency live in the detail panel now */}
+            <div className="myreq-detail-meta">
+              <MetaField label={mr.requestId}>
+                <span style={{
+                  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  color: "var(--ember-700)",
+                  letterSpacing: "0.04em",
+                }}>
+                  {item.id}
+                </span>
+              </MetaField>
+              <MetaField label={tbl.urgency}>
+                {urgencyLabel(item.urgency)}
+              </MetaField>
+            </div>
             <RequestTimeline requestId={item.id} t={t} />
             {item.status === "referred" && item.referral && (
               <ReferralPanel referral={item.referral} t={t} />
@@ -594,6 +644,11 @@ export default function MyRequestsPage() {
   // #94 — detect ?new=<id> and show success banner
   const newId = (typeof router.query.new === "string" ? router.query.new : null) || null;
 
+  // req 9 — ?focus=<id> arrives from the chat window's "open request" link;
+  // scroll to + highlight the matching card.
+  const focusId = (typeof router.query.focus === "string" ? router.query.focus : null) || null;
+  const focusCardRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace(`/login?next=${encodeURIComponent("/my-requests")}`);
@@ -649,10 +704,37 @@ export default function MyRequestsPage() {
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
+  // req 9 — once the focused request is present, expand + scroll to it.
+  useEffect(() => {
+    if (!focusId || loading) return;
+    if (!items.some((it) => it.id === focusId)) return;
+    setExpandedId(focusId);
+    const el = focusCardRef.current;
+    if (el) {
+      // Defer so the expand has laid out before we scroll.
+      const id = window.setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
+      return () => window.clearTimeout(id);
+    }
+  }, [focusId, loading, items]);
+
   // Active vs. archived split — archived requests stay visible to their owner
   // but are grouped/de-emphasized as "past" rather than hidden (Note 6).
   const activeItems = items.filter((it) => it.archived !== true);
   const archivedItems = items.filter((it) => it.archived === true);
+
+  // req 10 — group active requests into 3 kanban-style status columns.
+  const COLUMN_DEFS: { key: "open" | "inProgress" | "done"; statuses: string[] }[] = [
+    { key: "open",       statuses: ["pending", "referred"] },
+    { key: "inProgress", statuses: ["in_progress", "awaiting_review"] },
+    { key: "done",       statuses: ["closed", "rejected"] },
+  ];
+  const columns = COLUMN_DEFS.map((def) => ({
+    key: def.key,
+    title: t.myRequests.columns[def.key],
+    items: activeItems.filter((it) => def.statuses.includes(it.status)),
+  }));
 
   return (
     <>
@@ -675,7 +757,7 @@ export default function MyRequestsPage() {
         </div>
       </section>
 
-      <div className="page-container" style={{ maxWidth: "960px", padding: "clamp(32px, 5vw, 56px) 1.5rem 80px" }}>
+      <div className="page-container" style={{ maxWidth: "1180px", padding: "clamp(32px, 5vw, 56px) 1.5rem 80px" }}>
 
         {/* UC-01 A1 — suggest-alternatives card (dismissible, top of page) */}
         {!suggestDismissed && suggestions.length > 0 && (
@@ -765,17 +847,35 @@ export default function MyRequestsPage() {
               {activeItems.length} · {t.myRequests.title}
             </div>
 
-            <div style={{ display: "grid", gap: "16px" }}>
-              {activeItems.map((item, i) => (
-                <Reveal key={item.id} delay={Math.min(i * 0.05, 0.3)}>
-                  <RequestCard
-                    item={item}
-                    t={t}
-                    lang={lang}
-                    expandedId={expandedId}
-                    onToggle={handleToggle}
-                  />
-                </Reveal>
+            {/* req 10 — kanban-style status columns. CSS collapses the grid to
+                a single column (stacked sections) on narrow screens. */}
+            <div className="myreq-board">
+              {columns.map((col) => (
+                <section key={col.key} className="myreq-col" aria-label={col.title}>
+                  <div className="myreq-col-head">
+                    <h2 className="myreq-col-title" style={labelStyle}>{col.title}</h2>
+                    <span className="myreq-col-count">{col.items.length}</span>
+                  </div>
+                  <div className="myreq-col-body">
+                    {col.items.length === 0 ? (
+                      <p className="myreq-col-empty">{t.myRequests.columns.empty}</p>
+                    ) : (
+                      col.items.map((item, i) => (
+                        <Reveal key={item.id} delay={Math.min(i * 0.05, 0.3)}>
+                          <RequestCard
+                            item={item}
+                            t={t}
+                            lang={lang}
+                            expandedId={expandedId}
+                            onToggle={handleToggle}
+                            isFocused={focusId === item.id}
+                            focusRef={focusId === item.id ? (el) => { focusCardRef.current = el; } : undefined}
+                          />
+                        </Reveal>
+                      ))
+                    )}
+                  </div>
+                </section>
               ))}
             </div>
 
@@ -794,6 +894,8 @@ export default function MyRequestsPage() {
                         lang={lang}
                         expandedId={expandedId}
                         onToggle={handleToggle}
+                        isFocused={focusId === item.id}
+                        focusRef={focusId === item.id ? (el) => { focusCardRef.current = el; } : undefined}
                       />
                     </Reveal>
                   ))}

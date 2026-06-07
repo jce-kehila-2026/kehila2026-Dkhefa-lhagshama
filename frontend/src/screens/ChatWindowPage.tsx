@@ -14,6 +14,7 @@ import {
   Send,
   CheckCircle2,
   Loader2,
+  FileText,
 } from "lucide-react";
 
 import { useApp } from "../contexts/AppContext";
@@ -428,14 +429,30 @@ export default function ChatWindowPage() {
               {otherParticipant ? otherName : c.titleFallback}
             </h1>
           </div>
-          <Link
-            href="/chats"
-            className="btn btn-outline btn-sm"
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexShrink: 0 }}
-          >
-            <BackArrow size={16} />
-            {c.allChats.replace(/^[←→]\s*/, "")}
-          </Link>
+          <div className="chat-window-header-actions">
+            {/* req 9 — bidirectional link back to the request in my-requests.
+                Shown once we've resolved the chat's linked requestId. */}
+            {linkedRequest && (
+              <Link
+                href={`/my-requests?focus=${encodeURIComponent(linkedRequest.id)}`}
+                className="btn btn-ghost btn-sm"
+                style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexShrink: 0 }}
+                aria-label={c.openRequest}
+                title={c.openRequest}
+              >
+                <FileText size={16} aria-hidden="true" />
+                {c.openRequest}
+              </Link>
+            )}
+            <Link
+              href="/chats"
+              className="btn btn-outline btn-sm"
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexShrink: 0 }}
+            >
+              <BackArrow size={16} />
+              {c.allActiveChats}
+            </Link>
+          </div>
         </header>
       </div>
 

@@ -63,6 +63,7 @@ export default function AdminInsights() {
   const { t, lang, isRTL } = useLanguage()
   const ins = t.insights
   const lifecycle = t.lifecycle
+  const age = t.admin.ageInsights
 
   const [data, setData] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -130,17 +131,26 @@ export default function AdminInsights() {
       data.byCategory.length > 0 ||
       data.byStatus.length > 0 ||
       data.perVolunteer.length > 0 ||
-      data.avgResolutionDays != null
+      data.avgResolutionDays != null ||
+      data.ageStats?.averageAge != null ||
+      (data.ageStats?.buckets?.length ?? 0) > 0
     )
   }, [data])
+
+  // req 24 — age distribution buckets. Guarded so an absent ageStats payload
+  // (older backend) renders nothing rather than crashing.
+  const ageBuckets = data?.ageStats?.buckets ?? []
+  const averageAge = data?.ageStats?.averageAge ?? null
 
   // Charts read most naturally LTR even in RTL UIs (time flows left→right),
   // but axis ticks and the y-axis side flip so Hebrew labels sit on the start.
   const yAxisOrientation = isRTL ? 'right' : 'left'
   const axisTick = { fill: COLOR_INK_2, fontSize: 12 }
 
-  // All charts count requests, so a single "Requests" unit tooltip is reused.
+  // All request charts count requests, so a single "Requests" unit tooltip is
+  // reused; the age chart counts beneficiaries, so it gets its own unit.
   const CountTooltip = useMemo(() => makeTooltip(ins.axis.count), [ins.axis.count])
+  const PeopleTooltip = useMemo(() => makeTooltip(age.peopleUnit), [age.peopleUnit])
 
   const renderBody = () => {
     if (error) {
@@ -317,6 +327,49 @@ export default function AdminInsights() {
             </div>
           ) : (
             <p className="insights-nodata">{ins.axis.noData}</p>
+          )}
+        </section>
+
+        {/* ── AVERAGE BENEFICIARY AGE (stat) — req 24 ───────────── */}
+        <section className="insights-card insights-card--stat" aria-label={age.avgLabel}>
+          <h2 className="insights-card-title">{age.avgLabel}</h2>
+          {averageAge != null ? (
+            <p className="insights-stat">
+              <span className="insights-stat-value">{averageAge}</span>
+              <span className="insights-stat-unit">{age.avgUnit}</span>
+            </p>
+          ) : (
+            <p className="insights-nodata">{age.noAge}</p>
+          )}
+        </section>
+
+        {/* ── AGE DISTRIBUTION (bar) — req 24 ───────────────────── */}
+        <section className="insights-card" aria-label={age.distribution}>
+          <h2 className="insights-card-title">{age.distribution}</h2>
+          {ageBuckets.length > 0 ? (
+            <div className="insights-chart" dir="ltr">
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={ageBuckets} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+                  <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
+                  <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} interval={0} />
+                  <YAxis
+                    orientation={yAxisOrientation}
+                    allowDecimals={false}
+                    tick={axisTick}
+                    tickLine={false}
+                    axisLine={false}
+                    width={36}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(15,30,45,0.04)' }}
+                    content={PeopleTooltip}
+                  />
+                  <Bar dataKey="count" fill={COLOR_EMBER} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="insights-nodata">{age.noAge}</p>
           )}
         </section>
       </div>

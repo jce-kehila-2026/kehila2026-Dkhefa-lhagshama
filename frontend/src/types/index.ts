@@ -412,6 +412,27 @@ export interface InsightsData {
   avgResolutionDays: number | null;
   /** Per-volunteer handled-request counts. */
   perVolunteer: { uid: string; name: string; count: number }[];
+  /** Beneficiary age stats (req 24): mean + bucketed distribution. */
+  ageStats?: {
+    averageAge: number | null;
+    buckets: { label: string; count: number }[];
+  };
+}
+
+/** A volunteer's own analytics (req 14b — GET /api/volunteer/insights). */
+export interface VolunteerInsights {
+  overTime: { date: string; count: number }[];
+  byCategory: { category: string; count: number }[];
+  byStatus: { status: string; count: number }[];
+  avgResolutionDays: number | null;
+  currentLoad: number;
+}
+
+/** A volunteer's self profile bits (GET /api/volunteer/me). */
+export interface VolunteerMe {
+  workStatus: 'free' | 'working' | 'unavailable';
+  approvedCategories: string[];
+  requestedCategories: CategoryRequest[];
 }
 
 /** A chat conversation thread (UC-04). */

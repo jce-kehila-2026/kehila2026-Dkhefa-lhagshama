@@ -417,7 +417,21 @@
   aspect-ratio: auto !important;
 }
 
-.hero-bg-image .asset-image-img { object-position: 50% 35%; }
+/* Force the inner <img> to cover the full container top-to-bottom so the
+   dark band is fully hidden behind the photo (no letterboxing). */
+.hero-bg-image .asset-image-img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 35%;
+}
+
+/* The loading skeleton should also fill the band, not a 16/9 letterbox. */
+.hero-bg-image .asset-image-skeleton { inset: 0; }
 
 /* Gradient scrim for legibility — mirrors .story-panel-scrim. Darkens the
    copy (inline-start) edge and the foot so cream text stays readable. */
@@ -450,6 +464,10 @@
 .hero-lede-onphoto { color: rgba(244,238,224,0.88); }
 
 .hero-stat-num-onphoto { color: var(--cream); }
+
+/* StatCard renders its number with an inline color: var(--ink) which is
+   invisible on the dark hero. Override it to cream so the figures read. */
+.hero-stat-num-onphoto span { color: var(--cream) !important; }
 
 @media (max-width: 720px) {
   .hero-bg { min-block-size: clamp(480px, 86vh, 640px); }
