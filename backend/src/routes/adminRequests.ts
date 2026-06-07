@@ -38,32 +38,31 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       req.query as Record<string, string | undefined>;
     const limit = Math.min(parseInt(limitStr ?? '50', 10) || 50, 200);
 
-    let query = db().collection('requests').orderBy('createdAt', 'desc').limit(limit) as
-      FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
-
-    if (status && REQUEST_STATUSES.includes(status as RequestStatus)) {
-      query = query.where('status', '==', status);
-    }
-    if (category) {
-      query = query.where('category', '==', category);
-    }
-    if (urgency) {
-      query = query.where('urgency', '==', urgency);
-    }
-
-    // Archived filter (Note 6). Default active view EXCLUDES archived requests;
-    // pass ?archived=true to see only the archive, or ?archived=all for both.
-    // Archived is filtered in-memory (post-fetch) so we never need a composite
-    // index combining archived with status/category/urgency + createdAt.
+    // Fetch the whole collection and filter + sort + limit IN MEMORY. This
+    // deliberately avoids every composite index (status/category/urgency +
+    // createdAt) so the admin list works on any environment without an index
+    // deploy. The request volume for this NGO is small enough that this is fine.
     const archivedMode = archived ?? 'false';
+    const wantStatus =
+      status && REQUEST_STATUSES.includes(status as RequestStatus) ? status : undefined;
 
-    const snap = await query.get();
+    const snap = await db().collection('requests').get();
     const items = snap.docs
       .filter((d) => {
+        const dd = d.data();
+        if (wantStatus && dd.status !== wantStatus) return false;
+        if (category && dd.category !== category) return false;
+        if (urgency && dd.urgency !== urgency) return false;
         if (archivedMode === 'all') return true;
-        const isArchived = d.data().archived === true;
+        const isArchived = dd.archived === true;
         return archivedMode === 'true' ? isArchived : !isArchived;
       })
+      .sort((a, b) => {
+        const ta = a.data().createdAt?.toDate?.()?.getTime?.() ?? 0;
+        const tb = b.data().createdAt?.toDate?.()?.getTime?.() ?? 0;
+        return tb - ta; // newest first
+      })
+      .slice(0, limit)
       .map((d) => {
       const data = d.data();
       return {
@@ -85,6 +84,13 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         notes:                data.notes ?? '',
         referral:             data.referral ?? null,
         attachments:          data.attachments ?? [],
+        // Pool / task / claim fields (reqs 20, 22) for list badges.
+        title:                data.title ?? null,
+        origin:              (data.origin as string | undefined) ?? 'beneficiary',
+        requestType:         (data.requestType as string | undefined) ?? 'assistance',
+        poolStatus:          (data.poolStatus as string | undefined) ?? 'none',
+        hasClaims:            data.hasClaims === true,
+        claimsCount:          Array.isArray(data.claims) ? data.claims.length : 0,
         createdAt:            data.createdAt?.toDate?.()?.toISOString?.() ?? null,
         updatedAt:            data.updatedAt?.toDate?.()?.toISOString?.() ?? null,
         assignedAt:           data.assignedAt?.toDate?.()?.toISOString?.() ?? null,
@@ -220,12 +226,18 @@ router.post('/:id/assign', async (req: Request, res: Response): Promise<void> =>
       details: { volunteerId, prevVolunteerId },
     });
 
-    // Create chat between beneficiary and volunteer (#71)
-    await ensureChatForRequest({
-      requestId,
-      beneficiaryId: data.beneficiaryId as string,
-      volunteerId,
-    });
+    // Create chat between beneficiary and volunteer (#71). Admin task requests
+    // (req 20) have no beneficiary, so there is no one to open a chat with —
+    // skip chat creation for them (otherwise participants would contain
+    // `undefined` and the write fails).
+    const beneficiaryId = data.beneficiaryId as string | undefined;
+    if (beneficiaryId) {
+      await ensureChatForRequest({
+        requestId,
+        beneficiaryId,
+        volunteerId,
+      });
+    }
 
     res.json({ ok: true });
   } catch (err) {
