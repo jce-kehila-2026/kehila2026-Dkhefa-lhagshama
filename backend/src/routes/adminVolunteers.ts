@@ -88,10 +88,29 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         availability: data.availability ?? null,
         active: data.active,
         approvedAt: data.approvedAt?.toDate?.()?.toISOString?.() ?? null,
+        // Volunteer ops fields (req 14e / 15).
+        workStatus: (data.workStatus as string | undefined) ?? 'free',
+        approvedCategories: (data.approvedCategories as string[] | undefined) ?? [],
+        requestedCategories:
+          (data.requestedCategories as Array<Record<string, unknown>> | undefined) ?? [],
       };
     });
 
-    res.json({ pending, active });
+    // Flatten all PENDING category-permission requests across volunteers (req 15)
+    // so the admin can approve/reject them from one list.
+    const categoryRequests = active.flatMap((v) =>
+      (v.requestedCategories as Array<{ category?: string; note?: string; requestedAt?: string; status?: string }>)
+        .filter((c) => (c.status ?? 'pending') === 'pending')
+        .map((c) => ({
+          uid: v.uid,
+          fullName: v.fullName,
+          category: c.category ?? '',
+          note: c.note ?? '',
+          requestedAt: c.requestedAt ?? null,
+        })),
+    );
+
+    res.json({ pending, active, categoryRequests });
   } catch (err) {
     console.error('[adminVolunteers] GET /:', err);
     res.status(500).json({ error: 'internal_error' });
@@ -237,6 +256,71 @@ router.post('/:uid/deactivate', async (req: Request, res: Response): Promise<voi
     res.json({ ok: true });
   } catch (err) {
     console.error('[adminVolunteers] POST /:uid/deactivate:', err);
+    res.status(500).json({ error: 'internal_error' });
+  }
+});
+
+// ── POST /api/admin/volunteers/:uid/categories ────────────────────────────
+// Approve or reject a volunteer's category-permission request (req 15).
+// Category permissions are INFORMATIONAL (they don't gate the pool) — approving
+// records the category on the volunteer's profile and resolves the pending entry.
+const categoryDecisionSchema = z.object({
+  category: z.string().trim().min(1).max(80),
+  action: z.enum(['approve', 'reject']),
+});
+
+router.post('/:uid/categories', async (req: Request, res: Response): Promise<void> => {
+  const parsed = categoryDecisionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
+    return;
+  }
+  const { category, action } = parsed.data;
+  const { uid } = req.params;
+  const ref = db().collection('volunteers').doc(uid);
+
+  try {
+    const snap = await ref.get();
+    if (!snap.exists) {
+      res.status(404).json({ error: 'not_found' });
+      return;
+    }
+    const data = snap.data() ?? {};
+    const requested = (data.requestedCategories as Array<Record<string, unknown>> | undefined) ?? [];
+    const nextStatus = action === 'approve' ? 'approved' : 'rejected';
+    let matched = false;
+    const updatedRequested = requested.map((c) => {
+      if (c.category === category && (c.status ?? 'pending') === 'pending') {
+        matched = true;
+        return { ...c, status: nextStatus, decidedAt: new Date().toISOString() };
+      }
+      return c;
+    });
+    if (!matched) {
+      res.status(404).json({ error: 'no_pending_request_for_category' });
+      return;
+    }
+
+    const update: Record<string, unknown> = {
+      requestedCategories: updatedRequested,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    if (action === 'approve') {
+      update.approvedCategories = FieldValue.arrayUnion(category);
+    }
+    await ref.set(update, { merge: true });
+
+    await writeAuditLog({
+      actorId: req.user!.uid,
+      action: action === 'approve' ? 'volunteer.category_approve' : 'volunteer.category_reject',
+      entityType: 'volunteers',
+      entityId: uid,
+      details: { category },
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[adminVolunteers] POST /:uid/categories:', err);
     res.status(500).json({ error: 'internal_error' });
   }
 });

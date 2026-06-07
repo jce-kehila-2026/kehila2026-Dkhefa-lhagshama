@@ -25,6 +25,15 @@ interface VolunteerRow {
 
 type VolunteerTab = 'pending' | 'active'
 
+// A pending category-permission request (req 15), flattened across volunteers.
+interface CatReqRow {
+  uid: string
+  fullName?: string | null
+  category: string
+  note?: string
+  requestedAt?: string | null
+}
+
 // A small two-letter monogram derived from a volunteer's display name —
 // purely presentational identity cue beside the name column.
 function initials(name: string | undefined | null): string {
@@ -40,23 +49,47 @@ export default function AdminVolunteersPage() {
   const { t, lang } = useLanguage()
   const a = t.admin
   const [tab, setTab] = useState<VolunteerTab>('pending') // 'pending' | 'active'
-  const [data, setData] = useState<{ pending: VolunteerRow[]; active: VolunteerRow[] }>({ pending: [], active: [] })
+  const [data, setData] = useState<{ pending: VolunteerRow[]; active: VolunteerRow[]; categoryRequests: CatReqRow[] }>({ pending: [], active: [], categoryRequests: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [busyCat, setBusyCat] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await apiJson('/api/admin/volunteers') as { pending?: VolunteerRow[]; active?: VolunteerRow[] }
-      setData({ pending: res.pending || [], active: res.active || [] })
+      const res = await apiJson('/api/admin/volunteers') as { pending?: VolunteerRow[]; active?: VolunteerRow[]; categoryRequests?: CatReqRow[] }
+      setData({ pending: res.pending || [], active: res.active || [], categoryRequests: res.categoryRequests || [] })
     } catch (err) {
       setError(adminErrorMessage(err as { status?: number } | null, lang))
     } finally {
       setLoading(false)
     }
   }, [lang])
+
+  // Approve / reject a volunteer's category-permission request (req 15).
+  const actCategory = async (uid: string, category: string, action: 'approve' | 'reject') => {
+    const key = `${uid}:${category}`
+    setBusyCat(key)
+    setError(null)
+    try {
+      const res = await apiFetch(`/api/admin/volunteers/${uid}/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, action }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw { status: res.status, error: body?.error, detail: body }
+      }
+      await load()
+    } catch (err) {
+      setError(adminErrorMessage(err as { status?: number } | null, lang))
+    } finally {
+      setBusyCat(null)
+    }
+  }
 
   useEffect(() => {
     load()
@@ -109,6 +142,74 @@ export default function AdminVolunteersPage() {
           />
         </div>
       </Reveal>
+
+      {/* ── Category permission requests (req 15) ───────────────────────────── */}
+      {data.categoryRequests.length > 0 && (
+        <Reveal>
+          <div
+            style={{
+              background: 'var(--white)',
+              border: '1px solid var(--hair)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-xs)',
+              padding: 'var(--sp-4)',
+              marginBlockEnd: 'var(--sp-5)',
+            }}
+          >
+            <h2 style={{ fontSize: 'var(--fs-h3)', color: 'var(--ink)', marginBlockEnd: 'var(--sp-1)' }}>
+              {a.catReq.heading}
+            </h2>
+            <p style={{ color: 'var(--gray-600)', fontSize: 'var(--fs-sm)', marginBlockEnd: 'var(--sp-3)' }}>
+              {a.catReq.subtitle}
+            </p>
+            <div style={{ display: 'grid', gap: 'var(--sp-2)' }}>
+              {data.categoryRequests.map((c) => {
+                const key = `${c.uid}:${c.category}`
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 'var(--sp-3)',
+                      padding: 'var(--sp-3)',
+                      border: '1px solid var(--hair)',
+                      borderRadius: 'var(--radius)',
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.fullName || c.uid}</span>
+                    <span className="badge badge-ember">{c.category}</span>
+                    {c.note && (
+                      <span style={{ color: 'var(--gray-600)', fontSize: 'var(--fs-sm)' }}>“{c.note}”</span>
+                    )}
+                    <div className="admin-row-actions" style={{ marginInlineStart: 'auto' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={busyCat === key}
+                        onClick={() => actCategory(c.uid, c.category, 'approve')}
+                      >
+                        <Check size={15} aria-hidden="true" />
+                        {a.vol.approve}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        disabled={busyCat === key}
+                        onClick={() => actCategory(c.uid, c.category, 'reject')}
+                      >
+                        <X size={15} aria-hidden="true" />
+                        {a.vol.reject}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </Reveal>
+      )}
 
       {/* ── Toolbar card holding the segmented queue tabs ────────────────────── */}
       <div

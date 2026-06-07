@@ -80,6 +80,12 @@ export const overhaulAdmin = {
         tooltip: 'לא ניתן לשנות או להשבית חשבון מנהל.',
       },
 
+      // ── Category permission requests (req 15) ─────────────────
+      catReq: {
+        heading:  'בקשות הרשאת תחום',
+        subtitle: 'מתנדבים שביקשו לקבל הרשאה לטפל בבקשות מתחום מסוים.',
+      },
+
       // ── Age insights (req 24) ─────────────────────────────────
       ageInsights: {
         heading:      'גיל הנעזרים',
@@ -156,6 +162,11 @@ export const overhaulAdmin = {
       protectedRow: {
         label:   'Protected',
         tooltip: 'Admin accounts cannot be modified or disabled.',
+      },
+
+      catReq: {
+        heading:  'Category permission requests',
+        subtitle: 'Volunteers asking to be approved for requests in a specific field.',
       },
       ageInsights: {
         heading:      'Beneficiary age',
