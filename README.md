@@ -11,6 +11,16 @@ A bilingual (HE / EN) digital platform for **עמותת דחיפה להגשמה*
 | Mhammad Siag | UC-04 Internal Chat | [@mhammadsiag](https://github.com/mhammadsiag) |
 | Hamza Karaky | UC-02 + UC-03 Directories | [@hamzakaraky](https://github.com/hamzakaraky) |
 
+## Features
+
+Beyond the five core use cases (UC-01..UC-05), the platform now includes a volunteer operational hub and expanded admin operations:
+
+- **Volunteer hub** (`/volunteer-hub`, role `volunteer`; admin is a superset) — dashboard, available request pool, my assigned requests, and personal insights. Volunteers set their work-status, request informational category permissions, claim requests from a priority-sorted pool, edit urgency/deadline on assigned requests, mark requests done, and self-drop stuck requests with a report (which returns them to the pool flagged "previously taken").
+- **Admin operations** — operational dashboard with KPIs and "needs attention" queues, admin-authored **task requests** shown to volunteers (with per-file "visible to volunteers" control), multi-claimant review (assign one volunteer, which clears the other claims), age insights, and guardrails preventing demotion/disabling of an admin or self.
+- **Public + UX polish** — refreshed home and business directory, status-grouped my-requests with request↔chat shortcuts, and an active/past chat split.
+
+See `PROJECT-CONTEXT.md` for the full breakdown and `docs/DATA-MODEL-DELTAS.md` for the data-model changes.
+
 ## Tech Stack
 
 - **Frontend:** React 18 + Next.js (Pages Router) + Tailwind CSS — `frontend/`

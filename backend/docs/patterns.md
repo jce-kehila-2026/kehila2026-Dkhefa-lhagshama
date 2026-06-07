@@ -215,3 +215,48 @@ Then check the Firestore console for `requests/<uuid>` with `status: pending`, `
 - Set `consent: false` → 400 `validation` with `fieldErrors.consent`.
 - Send a description shorter than 10 chars → 400 `validation`.
 - POST the same `requestId` twice → 409 `duplicate_request_id`.
+
+## Volunteer + admin operations endpoints
+
+The volunteer hub and the expanded admin operations follow the same route shape (zod schema at file top, `authenticate`, role gating, fire-and-forget audit log). A few patterns are specific to these features.
+
+### Role gating
+
+- Volunteer routes are gated to **volunteer OR admin** (admin is a superset). Do this with an inline check, not `requireRole('volunteer')`, so admins keep access.
+- Admin-only routes keep `requireRole('admin')`.
+
+### Volunteer routes (`/api/volunteer/*`) — volunteer + admin
+
+| Method + path | Purpose |
+|---|---|
+| `GET /api/volunteer/me` | Read the caller's `volunteers` doc (work-status, approved/requested categories). |
+| `PATCH /api/volunteer/me` | Update own `workStatus`; submit a category-permission request (appended to `requestedCategories`). |
+| `GET /api/volunteer/assigned` | Requests assigned to the caller. |
+| `GET /api/volunteer/pool` | Available pool (`poolStatus: 'available'`), priority-sorted. |
+| `POST /api/volunteer/pool/:id/claim` | Claim a request with a note — appends to `claims[]`, sets `hasClaims: true`. Sends the claim to the admin (does not self-assign). |
+| `PATCH /api/volunteer/requests/:id` | Edit `urgency` / `deadline` on a request assigned to the caller. Immediate + logged. |
+| `POST /api/volunteer/requests/:id/drop` | Self-drop with a report (`done` / `reached` / `stuck`); appends to `dropReports[]`, returns the request to the pool, sets `wasPreviouslyTaken: true`. |
+| `GET /api/volunteer/insights` | The caller's own insights. |
+
+### Admin routes (`/api/admin/*`) — admin only
+
+| Method + path | Purpose |
+|---|---|
+| `POST /api/admin/requests/task` | Create an admin-authored **task request** (`origin: 'admin'`, `requestType: 'task'`) shown to volunteers in the pool. |
+| `POST /api/admin/requests/:id/assign` | Assign a volunteer. **Now also clears `claims[]`** and resets `hasClaims` when assigning from a multi-claimant request. |
+| `GET /api/admin/insights` | Now includes `ageStats` (for the average-age KPI + histogram). |
+| `GET /api/admin/stats` | Now includes `requestsWithClaims` and `pendingCategoryRequests`. |
+| `POST /api/admin/users/:uid/demote` | Rejects the request if the target is an admin or the acting admin themselves. |
+| `POST /api/admin/users/:uid/disable` | Same admin/self guardrail as demote. |
+
+### Uploads with volunteer visibility
+
+- `POST /api/uploads/requests/:id?volunteerVisible=true|false` — each uploaded attachment stores `attachments[].volunteerVisible`. Use this to control which files a volunteer sees on a task request.
+
+### Prioritization (shared FE + BE)
+
+Request ordering is centralized in `lib/requestSort.ts`, which exists in **both** `backend/src/lib/` and `frontend/src/lib/` (keep them in sync). The order is: urgency → least deadline-time-left → previously-taken last/flagged. Apply it **in memory** after a single-field Firestore query.
+
+### No new composite indexes
+
+The pool, assigned, and admin requests lists deliberately use **single-field Firestore queries + in-memory sort/filter** (via `requestSort.ts`). This avoids new composite indexes — **no `firebase deploy --only firestore:indexes` is needed** for these features. Keep it that way when extending them: prefer a single `where` + in-memory work over a multi-field query that forces a composite index.

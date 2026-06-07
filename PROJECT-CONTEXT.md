@@ -14,6 +14,46 @@ The platform aggregates three things in one place:
 
 An admin backend governs approvals and impact reporting.
 
+A **volunteer operational hub** sits alongside the admin area: volunteers self-manage availability, claim assistance requests from a shared pool, and report on the work they take on.
+
+## Volunteer + admin operations (added after MVP)
+
+These features extend the original five use cases. They are implemented and verified working.
+
+### Volunteer hub (`/volunteer-hub`)
+
+Mirrors the admin area; gated to role `volunteer` (admin is a superset). Pages: dashboard, available pool, my assigned requests, insights. Volunteers can:
+
+- Set their own work-status (`free` / `working` / `unavailable`).
+- Request a category permission, which an admin approves. This is **informational only** — it does not gate access to anything.
+- Browse a pool of available requests, priority-sorted, and **claim** one (creates a claim sent to the admin) with a note.
+- Edit urgency & deadline on requests assigned to them (immediate, logged).
+- Mark an assigned request done.
+- Self-drop a stuck request with a report (`done` / `reached` / `stuck`); the request returns to the pool flagged "previously taken".
+- View their own insights.
+
+### Admin operations
+
+- Operational dashboard: a KPI row plus "needs attention" actionable queues.
+- Create **task requests** — admin-authored work shown to volunteers in the pool, badged "from admin", with per-file "visible to volunteers" control.
+- Multi-claimant review: see the list of volunteers who claimed a request plus their notes, and assign one (assigning clears the other claims).
+- Cannot demote or disable an admin account (or the acting admin's own account).
+- Age insights: an average-age KPI and an age-distribution histogram.
+
+### Public + my-requests polish
+
+- Home: removed the "Our Services" section; hero image fills its band; fixed previously-invisible stat numbers.
+- Directory: removed the "database of community" subtitle; shorter header band; each business card has a banner image with info below; category filter chips always visible under the search, with icons.
+- Volunteer public page: shortened header band.
+- My-requests: requests grouped into status columns (open / in-progress / done); category shown in place of the id (id moved into the expanded detail); chat shortcut icon on each card; bidirectional links between a request and its chat.
+- Chat: active / past split, with an "all active chats" label.
+
+### Architecture notes for these features
+
+- Volunteer pool / assigned lists and the admin requests list use **single-field Firestore queries + in-memory sort/filter**, so **no new composite indexes** are required (no index deploy needed for these features).
+- Request prioritization is centralized in `lib/requestSort.ts` (shared logic in both `frontend/` and `backend/`): urgency → least deadline-time-left → previously-taken.
+- New i18n strings live in split modules under `frontend/src/data/i18n/`, deep-merged into the translation tree.
+
 ## Course context
 
 University capstone project, **Semester 2 of 2**. The professor grades the entire semester and weighs **customer satisfaction** alongside code and documentation.
@@ -73,6 +113,8 @@ kehila2026-Dkhefa-lhagshama/
 - `users`, `requests`, `referrals`, `organizations`, `answers`, `businesses`, `chats`, `messages`, `attachments`, `auditLogs`, `categories`, `regions`.
 
 Smart-routing / AI features are intentionally **out of MVP scope** because of the documented scope-creep risk (wiki Risk #1).
+
+The volunteer + admin operations work added new Firestore fields on top of this model. See `docs/DATA-MODEL-DELTAS.md` for the exact field list per collection and the TODO for updating `db-design.drawio`.
 
 Architecture diagram + class diagram live on the wiki (Architecture & Design page). Source `.mdj` files are in `sem2/` (StarUML), regenerated from `sem2/generate_mdj.py`.
 
