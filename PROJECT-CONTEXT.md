@@ -54,6 +54,33 @@ Mirrors the admin area; gated to role `volunteer` (admin is a superset). Pages: 
 - Request prioritization is centralized in `lib/requestSort.ts` (shared logic in both `frontend/` and `backend/`): urgency → least deadline-time-left → previously-taken.
 - New i18n strings live in split modules under `frontend/src/data/i18n/`, deep-merged into the translation tree.
 
+## Closing, chat files, notifications (round 2)
+
+A second round of features (reqs 25–27) builds on the case-management and chat flows. All three are implemented and verified working end-to-end.
+
+### Mutual-consent close (req 25)
+
+Closing a request is now a two-sided handshake. Either the assigned volunteer **or** the beneficiary can **propose** a close; the other side **confirms**. Once both approve, the request moves to status `closed` and its chat is marked inactive (`active: false`). Either side can **decline**, which clears the pending proposal. Admins keep the existing force-close via the status endpoint.
+
+### Chat file attachments (req 26)
+
+Both the beneficiary and the assigned volunteer can upload files inside a chat and download them. Same constraints as request uploads: PDF / JPEG / PNG / DOCX, 10 MB max. Files are stored under `chats/{chatId}/{file}` and downloaded via **backend-minted signed URLs**, gated to chat participants. There is no client-side Storage access and **no storage-rules change**.
+
+### Email notifications (req 27)
+
+The beneficiary is emailed when:
+
+- a volunteer replies in the chat (throttled to once per ~15 min per chat),
+- a volunteer is assigned / accepts (admin assign),
+- the request is closed.
+
+Channel is the **SendGrid REST API via global `fetch`** (no new dependency), gated behind env vars `SENDGRID_API_KEY` + `NOTIFY_FROM_EMAIL` (optional `NOTIFY_REPLY_TO`). If those are unset, the notification is logged (`[notify:log] ...`) so the flow works locally without credentials. SMS is a documented future extension point.
+
+### Architecture notes for these features
+
+- New backend libs: `lib/notify.ts` (notification channel + throttle) and `lib/closeConsent.ts` (mutual-consent state machine).
+- New fields are additive — see `docs/DATA-MODEL-DELTAS.md` (Round 2) for the per-collection field list and the `db-design.drawio` TODO.
+
 ## Course context
 
 University capstone project, **Semester 2 of 2**. The professor grades the entire semester and weighs **customer satisfaction** alongside code and documentation.

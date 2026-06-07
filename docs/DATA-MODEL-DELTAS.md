@@ -53,6 +53,38 @@ Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
   - If added as a standalone entity, draw a `1 — 0..*` relation `volunteers → requests` (a volunteer is assigned to / claims many requests), and a `1 — 1` relation `users → volunteers`.
 - [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki Architecture & Design page, and confirm the entity count / legend text still matches.
 
+## Round 2 — closing, chat files, notifications (reqs 25–27)
+
+A second round of features (mutual-consent close, chat attachments, email notifications) adds a few more fields. Still **additive** — no existing field changed type or meaning.
+
+### New / changed fields by collection
+
+| Collection | Field | Type | Purpose |
+|---|---|---|---|
+| `requests` | `closeRequest` | `{ proposedBy, proposedRole, proposedAt, volunteerApproved, beneficiaryApproved }` \| `null` | Pending mutual-consent close. Set on `propose`; both `*Approved` true → request goes to `closed`; `decline` resets it to `null`. |
+| `chats` | `active` | boolean (default `true`) | Whether the chat is live. Set `false` when the request is closed. |
+| `chats` | `lastReplyNotifyAt` | string (ISO) | Throttle marker for the volunteer-reply email (≈once per 15 min per chat). |
+| `messages` | `attachment` | `{ name, path, type, size }` \| `null` | File attached to a message. Stored under `chats/{chatId}/{file}`; downloaded via a backend-minted signed URL. |
+
+### TODO — edit `db-design.drawio` then re-export
+
+Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
+
+- [ ] **`requests` entity** — add `+ closeRequest: {proposedBy,proposedRole,proposedAt,volunteerApproved,beneficiaryApproved} | null`.
+- [ ] **`chats` entity** — add `+ active: boolean` and `+ lastReplyNotifyAt: string`.
+- [ ] **`messages` entity** — add `+ attachment: {name,path,type,size} | null`.
+- [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki Architecture & Design page.
+
+### Env vars (email notifications)
+
+These are not Firestore fields, but they gate the notification channel (`lib/notify.ts`) and belong in the backend `.env` / deploy config:
+
+- `SENDGRID_API_KEY` — SendGrid API key (channel is the SendGrid REST API via global `fetch`).
+- `NOTIFY_FROM_EMAIL` — verified sender address.
+- `NOTIFY_REPLY_TO` — optional reply-to address.
+
+If `SENDGRID_API_KEY` / `NOTIFY_FROM_EMAIL` are unset, notifications are logged (`[notify:log] ...`) instead of sent, so the flow works without credentials.
+
 ## Notes
 
 - No schema change here requires a new Firestore composite index — the volunteer pool, assigned, and admin request lists use single-field queries plus in-memory sort/filter (`lib/requestSort.ts`).

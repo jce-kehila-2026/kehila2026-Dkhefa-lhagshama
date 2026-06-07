@@ -260,3 +260,47 @@ Request ordering is centralized in `lib/requestSort.ts`, which exists in **both*
 ### No new composite indexes
 
 The pool, assigned, and admin requests lists deliberately use **single-field Firestore queries + in-memory sort/filter** (via `requestSort.ts`). This avoids new composite indexes — **no `firebase deploy --only firestore:indexes` is needed** for these features. Keep it that way when extending them: prefer a single `where` + in-memory work over a multi-field query that forces a composite index.
+
+## Closing, chat files, notifications endpoints (round 2)
+
+The mutual-consent close, chat attachments, and email-notification features (reqs 25–27) follow the same route shape (zod schema at file top, `authenticate`, role/participant gating, fire-and-forget audit log). A few patterns are specific to them.
+
+### Mutual-consent close (req 25)
+
+Closing is a two-sided handshake driven by `lib/closeConsent.ts`. Each side calls its own endpoint with a `body { action: 'propose' | 'approve' | 'decline' }`. When both `volunteerApproved` and `beneficiaryApproved` are true the request goes to status `closed` and its chat is set `active: false`. `decline` clears the proposal.
+
+| Method + path | Gating | Purpose |
+|---|---|---|
+| `POST /api/requests/:id/close` | beneficiary (owner of the request) | Propose / approve / decline a close as the beneficiary. |
+| `POST /api/volunteer/requests/:id/close` | assigned volunteer (or admin) | Propose / approve / decline a close as the volunteer. |
+
+Admins keep force-close via the existing status endpoint (`POST /api/admin/requests/:id/status`) — that path is unchanged.
+
+### Chat attachments (req 26) — participant-gated
+
+Both the beneficiary and the assigned volunteer (chat participants) can upload and download files. Same constraints as request uploads: PDF / JPEG / PNG / DOCX, 10 MB. Files live under `chats/{chatId}/{file}`; download is via a **backend-minted signed URL** — no client Storage access, no storage-rules change.
+
+| Method + path | Purpose |
+|---|---|
+| `POST /api/chats/:id/attachments?filename=<name>` | Upload raw bytes (participant-gated). Validates type/size, stores under `chats/{chatId}/{file}`. Returns `{ ok, attachment }` where `attachment = { name, path, type, size }`. |
+| `GET /api/chats/:id/attachments/:name` | Mint a short-lived signed download URL (participant-gated). Returns `{ url, expiresAt }`. |
+
+Gate both with an inline participant check (beneficiary OR assigned volunteer OR admin), **not** `requireRole`.
+
+### Email notifications (req 27) — `lib/notify.ts`
+
+The beneficiary is emailed at three moments. Two existing endpoints now fire a notification in addition to their normal work:
+
+| Method + path | Notification |
+|---|---|
+| `POST /api/chats/:id/messages` | Fires a **throttled** volunteer-reply email — at most once per ~15 min per chat, tracked by `chats.lastReplyNotifyAt`. |
+| `POST /api/admin/requests/:id/assign` | Emails the beneficiary that a volunteer was assigned / accepted (`'accepted'`). |
+| `POST /api/admin/requests/:id/status` (→ `closed`) | Emails the beneficiary that the request was closed (`'closed'`). |
+
+`lib/notify.ts` sends via the **SendGrid REST API through global `fetch`** (no new dependency). It is gated behind env vars:
+
+- `SENDGRID_API_KEY` — SendGrid API key.
+- `NOTIFY_FROM_EMAIL` — verified sender address.
+- `NOTIFY_REPLY_TO` — optional reply-to.
+
+If `SENDGRID_API_KEY` / `NOTIFY_FROM_EMAIL` are unset, `notify.ts` **logs** the notification (`[notify:log] ...`) instead of sending, so the close/assign/reply flows work locally without credentials. SMS is a documented future extension point — add a second branch in `notify.ts` rather than calling a provider inline from a route. Keep notification sends **fire-and-forget** (like the audit log) so they never block the response.
