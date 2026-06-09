@@ -11,8 +11,8 @@
  *
  * Issue #69.
  */
-import { useState, useEffect } from 'react'
-import type { CSSProperties, FormEvent, ReactNode } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { Check, X as XIcon, AlertCircle, ArrowLeft, ArrowRight, HeartHandshake, ShieldCheck, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -62,58 +62,12 @@ type VolunteerSignup = TFull['volunteerSignup']
 // Account credentials carried between volunteer step 1 and step 2.
 type AccountData = { email: string; password: string }
 
-// ── Shared input style ────────────────────────────────────────────────────────
-const inputStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 7,
-  fontSize: 13.5,
-  color: 'var(--ink)',
-  fontWeight: 600,
-  textAlign: 'start',
-}
-
-// Eyebrow above a field group inside the form card.
-const fieldLabel: CSSProperties = {
-  fontSize: 13.5,
-  color: 'var(--ink)',
-  fontWeight: 600,
-  textAlign: 'start',
-}
-
-// Shared card shell so both tabs and every step feel like one continuous surface.
-const cardStyle: CSSProperties = {
-  padding: 'clamp(24px, 4vw, 34px)',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 18,
-  border: '1px solid var(--hair)',
-  borderRadius: 'var(--radius-lg)',
-  boxShadow: 'var(--shadow)',
-  background: 'var(--white)',
-}
-
-const loginRowStyle: CSSProperties = {
-  fontSize: 13.5,
-  textAlign: 'center',
-  color: 'var(--gray-600)',
-  marginBlockStart: 4,
-  paddingBlockStart: 16,
-  borderBlockStart: '1px solid var(--hair)',
-}
-
-const loginLinkStyle: CSSProperties = {
-  color: 'var(--ember)',
-  fontWeight: 600,
-  textDecoration: 'underline',
-  textUnderlineOffset: '3px',
-}
-
 // ── Small checkbox component ──────────────────────────────────────────────────
-function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: ReactNode }) {
+function Checkbox({ checked, onChange, label, id }: { checked: boolean; onChange: (checked: boolean) => void; label: ReactNode; id?: string }) {
   return (
     <label className="consent-row">
       <input
+        id={id}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
@@ -127,7 +81,7 @@ function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: (c
 function PwCheck({ ok, label }: { ok: boolean; label: ReactNode }) {
   return (
     <div className={`pw-check${ok ? ' is-ok' : ''}`}>
-      {ok ? <Check size={13} strokeWidth={3} /> : <XIcon size={13} strokeWidth={3} />}
+      {ok ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : <XIcon size={13} strokeWidth={3} aria-hidden="true" />}
       <span>{label}</span>
     </div>
   )
@@ -154,67 +108,36 @@ function TabToggle({ active, labels, onChange }: { active: string; labels: Recor
 }
 
 // ── Two-step progress indicator (volunteer flow) ─────────────────────────────
-function StepIndicator({ current, labels, progressLabel }: { current: number; labels: ReactNode[]; progressLabel: ReactNode }) {
+function StepIndicator({ current, labels, progressLabel }: { current: number; labels: ReactNode[]; progressLabel: string }) {
   return (
-    <ol
-      aria-label={`${progressLabel} (${current} / ${labels.length})`}
-      style={{
-        listStyle: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        margin: '0 0 18px',
-        padding: 0,
-      }}
-    >
+    <ol className="reg-steps" aria-label={`${progressLabel} (${current} / ${labels.length})`}>
       {[1, 2].map((n, i) => {
         const done = current > n
         const on = current === n
+        const state = done ? ' is-done' : on ? ' is-active' : ''
         return (
-          <li key={n} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: i === 0 ? '0 0 auto' : '1 1 auto' }}>
-            <span
-              aria-current={on ? 'step' : undefined}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: on || done ? 'var(--ink)' : 'var(--gray-500)',
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: '50%',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  flex: '0 0 auto',
-                  background: done ? 'var(--success)' : on ? 'var(--ember)' : 'var(--gray-100)',
-                  color: done || on ? 'var(--white)' : 'var(--gray-500)',
-                  border: on || done ? 'none' : '1px solid var(--hair)',
-                  transition: 'background var(--dur-2) var(--ease-out)',
-                }}
-              >
+          <li key={n} className={`reg-step ${i === 0 ? 'reg-step--first' : 'reg-step--rest'}`}>
+            <span className={`reg-step-label${state}`} aria-current={on ? 'step' : undefined}>
+              <span className={`reg-step-dot${state}`} aria-hidden="true">
                 {done ? <Check size={13} strokeWidth={3} /> : n}
               </span>
               {labels[i]}
             </span>
-            {i === 0 && (
-              <span
-                aria-hidden="true"
-                style={{ flex: 1, height: 2, borderRadius: 2, background: current > 1 ? 'var(--success)' : 'var(--hair)' }}
-              />
-            )}
+            {i === 0 && <span aria-hidden="true" className={`reg-step-bar${current > 1 ? ' is-done' : ''}`} />}
           </li>
         )
       })}
     </ol>
+  )
+}
+
+// Inline field-level error, tied to its input via aria-describedby.
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null
+  return (
+    <div id={id} className="form-error" role="alert" style={{ marginBlockStart: 6 }}>
+      <AlertCircle size={12} aria-hidden="true" /><span>{message}</span>
+    </div>
   )
 }
 
@@ -230,14 +153,22 @@ function BeneficiaryForm({ t }: { t: Translations }) {
   const [confirm, setConfirm] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  // Per-field error keys so we can show the message next to the offending input
+  // and move focus to it on submit (WCAG 3.3.1 / 3.3.3).
+  const [fieldErrors, setFieldErrors] = useState<{ password?: string; confirm?: string }>({})
+
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const confirmRef = useRef<HTMLInputElement>(null)
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
+    setFieldErrors({})
     // #85 — password policy: min 8 chars + ≥1 digit
-    if (password.length < 8) { setError(a.passwordTooShort); return }
-    if (!/\d/.test(password)) { setError(a.passwordNoDigit); return }
-    if (password !== confirm) { setError(a.passwordMismatch); return }
+    if (password.length < 8) { setFieldErrors({ password: a.passwordTooShort }); passwordRef.current?.focus(); return }
+    if (!/\d/.test(password)) { setFieldErrors({ password: a.passwordNoDigit }); passwordRef.current?.focus(); return }
+    if (password !== confirm) { setFieldErrors({ confirm: a.passwordMismatch }); confirmRef.current?.focus(); return }
 
     setSubmitting(true)
     try {
@@ -250,42 +181,51 @@ function BeneficiaryForm({ t }: { t: Translations }) {
     } catch (err) {
       const e = err as CaughtError
       const msg = e && e.message ? String(e.message) : ''
-      if (msg.includes('email-already-in-use')) setError(a.emailInUse)
+      if (msg.includes('email-already-in-use')) { setError(a.emailInUse); emailRef.current?.focus() }
       else setError(a.error)
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="card" style={cardStyle}>
-      <label style={inputStyle}>
+    <form onSubmit={onSubmit} className="reg-card" noValidate>
+      <label className="reg-field" htmlFor="ben-email">
         {a.email}
-        <input type="email" autoComplete="email" required value={email}
+        <input id="ben-email" ref={emailRef} type="email" name="email" autoComplete="email"
+          inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required value={email}
           onChange={(e) => setEmail(e.target.value)} className="form-input" />
       </label>
-      <div style={inputStyle}>
+      <div className="reg-field">
         <label htmlFor="ben-password">{a.password}</label>
-        <input id="ben-password" type="password" autoComplete="new-password" required minLength={6}
-          value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" />
+        <input id="ben-password" ref={passwordRef} type="password" name="new-password"
+          autoComplete="new-password" spellCheck={false} required minLength={8}
+          aria-invalid={fieldErrors.password ? true : undefined}
+          aria-describedby={`ben-pw-checks${fieldErrors.password ? ' ben-pw-err' : ''}`}
+          value={password} onChange={(e) => setPassword(e.target.value)} className={`form-input${fieldErrors.password ? ' error' : ''}`} />
         {password.length > 0 && (
-          <div className="pw-checks" style={{ marginBlockStart: 8 }}>
+          <div id="ben-pw-checks" className="pw-checks" role="status" aria-live="polite" style={{ marginBlockStart: 8 }}>
             <PwCheck ok={password.length >= 8} label={a.pwRuleLength} />
             <PwCheck ok={/\d/.test(password)} label={a.pwRuleDigit} />
           </div>
         )}
+        <FieldError id="ben-pw-err" message={fieldErrors.password} />
       </div>
-      <label style={inputStyle}>
+      <label className="reg-field" htmlFor="ben-confirm">
         {a.confirmPassword}
-        <input type="password" autoComplete="new-password" required minLength={6}
-          value={confirm} onChange={(e) => setConfirm(e.target.value)} className="form-input" />
+        <input id="ben-confirm" ref={confirmRef} type="password" name="confirm-password"
+          autoComplete="new-password" spellCheck={false} required minLength={8}
+          aria-invalid={fieldErrors.confirm ? true : undefined}
+          aria-describedby={fieldErrors.confirm ? 'ben-confirm-err' : undefined}
+          value={confirm} onChange={(e) => setConfirm(e.target.value)} className={`form-input${fieldErrors.confirm ? ' error' : ''}`} />
+        <FieldError id="ben-confirm-err" message={fieldErrors.confirm} />
       </label>
-      {error && <div className="form-error" role="alert"><AlertCircle size={12} /><span>{error}</span></div>}
+      {error && <div className="form-error" role="alert"><AlertCircle size={12} aria-hidden="true" /><span>{error}</span></div>}
       <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ marginBlockStart: 4, justifyContent: 'center' }}>
         {submitting ? a.submitting : a.submit}
       </button>
-      <div style={loginRowStyle}>
+      <div className="reg-alt">
         {a.haveAccount}{' '}
-        <Link href="/login" style={loginLinkStyle}>
+        <Link href="/login" className="reg-alt-link">
           {a.loginLink}
         </Link>
       </div>
@@ -298,45 +238,56 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{ password?: string; confirm?: string }>({})
+
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const confirmRef = useRef<HTMLInputElement>(null)
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError('')
-    if (password.length < 6) { setError(a.passwordTooShort); return }
-    if (password !== confirm) { setError(a.passwordMismatch); return }
+    setFieldErrors({})
+    if (password.length < 6) { setFieldErrors({ password: a.passwordTooShort }); passwordRef.current?.focus(); return }
+    if (password !== confirm) { setFieldErrors({ confirm: a.passwordMismatch }); confirmRef.current?.focus(); return }
     onNext({ email, password })
   }
 
   return (
-    <form onSubmit={submit} className="card" style={cardStyle}>
+    <form onSubmit={submit} className="reg-card" noValidate>
       <StepIndicator
         current={1}
         labels={[v.step1Title, v.step2Title]}
         progressLabel={lang === 'he' ? 'התקדמות הרשמת מתנדב' : 'Volunteer registration progress'}
       />
-      <label style={inputStyle}>
+      <label className="reg-field" htmlFor="vol-email">
         {a.email}
-        <input type="email" autoComplete="email" required value={email}
+        <input id="vol-email" type="email" name="email" autoComplete="email"
+          inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required value={email}
           onChange={(e) => setEmail(e.target.value)} className="form-input" />
       </label>
-      <label style={inputStyle}>
-        {a.password}
-        <input type="password" autoComplete="new-password" required minLength={6}
-          value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" />
-      </label>
-      <label style={inputStyle}>
+      <div className="reg-field">
+        <label htmlFor="vol-password">{a.password}</label>
+        <input id="vol-password" ref={passwordRef} type="password" name="new-password"
+          autoComplete="new-password" spellCheck={false} required minLength={6}
+          aria-invalid={fieldErrors.password ? true : undefined}
+          aria-describedby={fieldErrors.password ? 'vol-pw-err' : undefined}
+          value={password} onChange={(e) => setPassword(e.target.value)} className={`form-input${fieldErrors.password ? ' error' : ''}`} />
+        <FieldError id="vol-pw-err" message={fieldErrors.password} />
+      </div>
+      <label className="reg-field" htmlFor="vol-confirm">
         {a.confirmPassword}
-        <input type="password" autoComplete="new-password" required minLength={6}
-          value={confirm} onChange={(e) => setConfirm(e.target.value)} className="form-input" />
+        <input id="vol-confirm" ref={confirmRef} type="password" name="confirm-password"
+          autoComplete="new-password" spellCheck={false} required minLength={6}
+          aria-invalid={fieldErrors.confirm ? true : undefined}
+          aria-describedby={fieldErrors.confirm ? 'vol-confirm-err' : undefined}
+          value={confirm} onChange={(e) => setConfirm(e.target.value)} className={`form-input${fieldErrors.confirm ? ' error' : ''}`} />
+        <FieldError id="vol-confirm-err" message={fieldErrors.confirm} />
       </label>
-      {error && <div className="form-error" role="alert"><AlertCircle size={12} /><span>{error}</span></div>}
       <button type="submit" className="btn btn-ember btn-lg" style={{ marginBlockStart: 4, justifyContent: 'center' }}>
         {v.nextStep}
       </button>
-      <div style={loginRowStyle}>
+      <div className="reg-alt">
         {a.haveAccount}{' '}
-        <Link href="/login" style={loginLinkStyle}>
+        <Link href="/login" className="reg-alt-link">
           {a.loginLink}
         </Link>
       </div>
@@ -368,6 +319,10 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
   const [photoError, setPhotoError] = useState('')
   const [photoNotice, setPhotoNotice] = useState('')
 
+  const areasRef = useRef<HTMLDivElement>(null)
+  const langRef = useRef<HTMLInputElement>(null)
+  const consentRef = useRef<HTMLInputElement>(null)
+
   const toggleArea = (area: string) => {
     setSelectedAreas((prev) =>
       prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area]
@@ -392,10 +347,10 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
     e.preventDefault()
     setError('')
 
-    if (selectedAreas.length === 0) { setError(v.minOneArea); return }
+    if (selectedAreas.length === 0) { setError(v.minOneArea); areasRef.current?.querySelector<HTMLButtonElement>('button')?.focus(); return }
     const langs = languagesRaw.split(',').map((s) => s.trim()).filter(Boolean)
-    if (langs.length === 0) { setError(v.minOneLang); return }
-    if (!consent) { setError(v.consentRequired); return }
+    if (langs.length === 0) { setError(v.minOneLang); langRef.current?.focus(); return }
+    if (!consent) { setError(v.consentRequired); consentRef.current?.focus(); return }
 
     setSubmitting(true)
     setPhotoNotice('')
@@ -463,47 +418,52 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
   ]
 
   return (
-    <form onSubmit={submit} className="card" style={cardStyle}>
+    <form onSubmit={submit} className="reg-card" noValidate>
       <StepIndicator
         current={2}
         labels={[v.step1Title, v.step2Title]}
         progressLabel={lang === 'he' ? 'התקדמות הרשמת מתנדב' : 'Volunteer registration progress'}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <label style={inputStyle}>
+      <div className="reg-grid-2">
+        <label className="reg-field" htmlFor="vol-first">
           {v.firstName}
-          <input type="text" required value={firstName}
+          <input id="vol-first" type="text" name="given-name" autoComplete="given-name"
+            required value={firstName}
             onChange={(e) => setFirstName(e.target.value)} className="form-input" />
         </label>
-        <label style={inputStyle}>
+        <label className="reg-field" htmlFor="vol-last">
           {v.lastName}
-          <input type="text" required value={lastName}
+          <input id="vol-last" type="text" name="family-name" autoComplete="family-name"
+            required value={lastName}
             onChange={(e) => setLastName(e.target.value)} className="form-input" />
         </label>
       </div>
 
-      <label style={inputStyle}>
+      <label className="reg-field" htmlFor="vol-phone">
         {v.phone}
-        <input type="tel" required value={phone}
+        <input id="vol-phone" type="tel" name="tel" autoComplete="tel" inputMode="tel"
+          required value={phone}
           onChange={(e) => setPhone(e.target.value)} className="form-input" />
       </label>
 
-      <label style={inputStyle}>
+      <label className="reg-field" htmlFor="vol-city">
         {v.city}
-        <input type="text" required value={city}
+        <input id="vol-city" type="text" name="address-level2" autoComplete="address-level2"
+          required value={city}
           onChange={(e) => setCity(e.target.value)} className="form-input" />
       </label>
 
-      <label style={inputStyle}>
+      <label className="reg-field" htmlFor="vol-profession">
         {v.profession}
-        <input type="text" placeholder={v.professionPH} value={profession}
+        <input id="vol-profession" type="text" name="organization-title"
+          placeholder={v.professionPH} value={profession}
           onChange={(e) => setProfession(e.target.value)} className="form-input" />
       </label>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={fieldLabel}>{v.areasOfHelp}</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} role="group" aria-labelledby="vol-areas-label" ref={areasRef}>
+        <div id="vol-areas-label" className="reg-field-label">{v.areasOfHelp}</div>
+        <div className="reg-pillset">
           {v.areasList.map((area: string) => {
             const on = selectedAreas.includes(area)
             return (
@@ -515,7 +475,7 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
                 className={`opt-pill${on ? ' is-on' : ''}`}
                 style={{ borderRadius: 999 }}
               >
-                {on && <Check size={13} strokeWidth={3} />}
+                {on && <Check size={13} strokeWidth={3} aria-hidden="true" />}
                 {area}
               </button>
             )
@@ -523,14 +483,15 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
         </div>
       </div>
 
-      <label style={inputStyle}>
+      <label className="reg-field" htmlFor="vol-languages">
         {v.languages}
-        <input type="text" placeholder={v.languagesPH} value={languagesRaw}
+        <input id="vol-languages" ref={langRef} type="text" placeholder={v.languagesPH}
+          value={languagesRaw}
           onChange={(e) => setLanguagesRaw(e.target.value)} className="form-input" />
       </label>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={fieldLabel}>{v.availability}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} role="radiogroup" aria-labelledby="vol-avail-label">
+        <div id="vol-avail-label" className="reg-field-label">{v.availability}</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {availOptions.map((opt) => (
             <label key={opt.value} className={`opt-pill${availability === opt.value ? ' is-on' : ''}`}>
@@ -543,9 +504,9 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
         </div>
       </div>
 
-      <label style={inputStyle}>
+      <label className="reg-field" htmlFor="vol-motivation">
         {v.motivation}
-        <textarea rows={3} placeholder={v.motivationPH} value={motivation}
+        <textarea id="vol-motivation" rows={3} placeholder={v.motivationPH} value={motivation}
           onChange={(e) => setMotivation(e.target.value)} className="form-input"
           style={{ resize: 'vertical', minHeight: 72 }} />
       </label>
@@ -564,19 +525,19 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
         />
       </div>
 
-      <Checkbox checked={consent} onChange={setConsent} label={v.consent} />
+      <Checkbox id="vol-consent" checked={consent} onChange={setConsent} label={v.consent} />
 
-      {error && <div className="form-error" role="alert"><AlertCircle size={12} /><span>{error}</span></div>}
+      {error && <div className="form-error" role="alert"><AlertCircle size={12} aria-hidden="true" /><span>{error}</span></div>}
 
       {photoNotice && (
         <div className="form-error" role="status" style={{ color: 'var(--gray-600)' }}>
-          <AlertCircle size={12} /><span>{photoNotice}</span>
+          <AlertCircle size={12} aria-hidden="true" /><span>{photoNotice}</span>
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 10, marginBlockStart: 4 }}>
+      <div className="reg-actions">
         <button type="button" onClick={onBack} className="btn btn-outline btn-lg" style={{ flex: '0 0 auto', gap: 6 }}>
-          <BackArrow size={16} />
+          <BackArrow size={16} aria-hidden="true" />
           {v.backStep}
         </button>
         <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ flex: 1, justifyContent: 'center' }}>
@@ -631,113 +592,43 @@ export default function RegisterPage() {
         { Icon: ShieldCheck, text: 'Your details are kept secure and confidential' },
       ]
 
-  return (
-    <div
-      className="auth-grid"
-      style={{
-        minHeight: 'calc(100vh - var(--nav-h))',
-      }}
-    >
-      {/* ── BRAND ASIDE — editorial, ink-toned, sets the tone.
-           `auth-aside` (globals.css) hides this under 900px so the form
-           stacks to a single, full-width column on phones/tablets. ── */}
-      <aside
-        className="auth-aside"
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          background: 'var(--ink)',
-          color: 'var(--cream)',
-          padding: 'clamp(48px, 6vw, 80px) clamp(32px, 4vw, 56px)',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          justifyContent: 'center',
-          gap: 28,
-        }}
-      >
-        {/* Soft ember glow, decorative */}
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            insetBlockStart: '-12%',
-            insetInlineEnd: '-10%',
-            width: 320,
-            height: 320,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(185,105,78,0.32), transparent 70%)',
-            filter: 'blur(8px)',
-            pointerEvents: 'none',
-          }}
-        />
+  const joinEyebrow = lang === 'he' ? 'הצטרפות לקהילה' : 'Join the community'
 
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 22, maxWidth: '30rem' }}>
+  return (
+    <div className="auth-grid" style={{ minHeight: 'calc(100vh - var(--nav-h))' }}>
+      {/* ── BRAND ASIDE — editorial, ink-toned, sets the tone.
+           `auth-aside` (login.css) hides this under 900px so the form
+           stacks to a single, full-width column on phones/tablets.
+           `reg-aside` carries the register-specific surface styling. ── */}
+      <aside className="auth-aside reg-aside">
+        {/* Flat ember-tinted corner wash — decorative, no gradient/blur. */}
+        <span aria-hidden="true" className="reg-aside-wash" />
+
+        <div className="reg-aside-inner">
           <img
             src="/logo.jpg"
             alt={lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
             width={72}
             height={72}
-            style={{
-              borderRadius: '50%',
-              objectFit: 'cover',
-              boxShadow: 'var(--shadow-lg)',
-              border: '2px solid rgba(244,238,224,0.18)',
-            }}
+            decoding="async"
+            className="reg-aside-avatar"
           />
 
-          <span
-            className="eyebrow"
-            style={{ color: 'var(--ember)' }}
-          >
-            {lang === 'he' ? 'הצטרפות לקהילה' : 'Join the community'}
-          </span>
+          <span className="eyebrow" style={{ color: 'var(--ember)' }}>{joinEyebrow}</span>
 
           {/* Decorative brand display — presentational only (aria-hidden);
               the canonical page <h1> lives in the form <main> region. */}
-          <div
-            aria-hidden="true"
-            style={{
-              fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-              fontWeight: 400,
-              fontSize: 'var(--fs-display)',
-              lineHeight: 1.14,
-              letterSpacing: '-0.01em',
-              color: 'var(--cream)',
-              margin: 0,
-              textWrap: 'balance',
-            }}
-          >
-            {a.title}
-          </div>
+          <div aria-hidden="true" className="reg-aside-title">{a.title}</div>
 
-          {a.subtitle && (
-            <p style={{ color: 'rgba(244,238,224,0.8)', fontSize: 'var(--fs-lede)', lineHeight: 1.6, margin: 0 }}>
-              {a.subtitle}
-            </p>
-          )}
+          {a.subtitle && <p className="reg-aside-lede">{a.subtitle}</p>}
 
-          <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <ul className="reg-trust">
             {asidePoints.map(({ Icon, text }, i) => (
-              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    flex: '0 0 auto',
-                    width: 34,
-                    height: 34,
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(185,105,78,0.18)',
-                    color: 'var(--ember-soft)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
+              <li key={i} className="reg-trust-item">
+                <span aria-hidden="true" className="reg-trust-icon">
                   <Icon size={17} />
                 </span>
-                <span style={{ fontSize: 14.5, lineHeight: 1.5, color: 'rgba(244,238,224,0.92)' }}>
-                  {text}
-                </span>
+                <span className="reg-trust-text">{text}</span>
               </li>
             ))}
           </ul>
@@ -745,42 +636,16 @@ export default function RegisterPage() {
       </aside>
 
       {/* ── FORM COLUMN ── */}
-      <main
-        style={{
-          padding: 'clamp(40px, 6vw, 72px) clamp(24px, 4vw, 48px)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-        }}
-      >
+      <main className="reg-main">
         <Reveal>
-          <div style={{ maxWidth: '480px', width: '100%', marginInline: 'auto' }}>
+          <div className="reg-shell">
             {/* Form-region heading — gives the primary content area its own
                 eyebrow → serif heading → lede rhythm and an accessible <h1>
                 (the aside h1 is decorative + hidden under 900px). */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBlockEnd: 22, textAlign: 'start' }}>
-              <span className="eyebrow" style={{ color: 'var(--ember)' }}>
-                {lang === 'he' ? 'הצטרפות לקהילה' : 'Join the community'}
-              </span>
-              <h1
-                style={{
-                  fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-                  fontWeight: 400,
-                  fontSize: 'var(--fs-h2)',
-                  lineHeight: 1.18,
-                  letterSpacing: '-0.01em',
-                  color: 'var(--ink)',
-                  margin: 0,
-                  textWrap: 'balance',
-                }}
-              >
-                {a.title}
-              </h1>
-              {a.subtitle && (
-                <p style={{ color: 'var(--gray-600)', fontSize: 'var(--fs-body)', lineHeight: 1.6, margin: 0 }}>
-                  {a.subtitle}
-                </p>
-              )}
+            <div className="reg-head">
+              <span className="eyebrow" style={{ color: 'var(--ember)' }}>{joinEyebrow}</span>
+              <h1 className="reg-head-title">{a.title}</h1>
+              {a.subtitle && <p className="reg-head-sub">{a.subtitle}</p>}
             </div>
 
             <TabToggle active={tab} labels={tabLabels} onChange={switchTab} />

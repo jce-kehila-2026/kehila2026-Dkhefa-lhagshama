@@ -218,3 +218,296 @@
 @media (prefers-reduced-motion: reduce) {
   .login-alt-link { transition: none; }
 }
+
+/* ── Register page (.reg-*) ─────────────────────────────────────────
+   Register-specific selectors only. These DO NOT touch .login-* or the
+   shared .auth-* layout the Login page relies on. Brand tokens only:
+   no gradients, no glassmorphism. RTL-safe via logical properties. */
+
+/* Aside brand panel. The flat tinted corner washes (no gradient, no blur)
+   replace the previous decorative radial-gradient glow. Mirrors the depth
+   technique already used by .login-aside-wash. */
+.reg-aside {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--cream);
+  padding: clamp(48px, 6vw, 80px) clamp(32px, 4vw, 56px);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 28px;
+}
+
+.reg-aside-wash {
+  position: absolute;
+  inline-size: 22rem;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  inset-block-start: -12%;
+  inset-inline-end: -10%;
+  background: rgba(185, 105, 78, 0.16);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.reg-aside-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-inline-size: 30rem;
+}
+
+.reg-aside-avatar {
+  inline-size: 72px;
+  block-size: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid rgba(244, 238, 224, 0.18);
+}
+
+.reg-aside-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 400;
+  font-size: var(--fs-display);
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.reg-aside-lede {
+  color: rgba(244, 238, 224, 0.8);
+  font-size: var(--fs-lede);
+  line-height: 1.6;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.reg-trust {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reg-trust-item { display: flex; align-items: center; gap: 12px; }
+
+.reg-trust-icon {
+  flex: 0 0 auto;
+  inline-size: 34px;
+  block-size: 34px;
+  border-radius: var(--radius-sm);
+  background: rgba(185, 105, 78, 0.18);
+  color: var(--ember-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reg-trust-text {
+  font-size: 0.90625rem;
+  line-height: 1.5;
+  color: rgba(244, 238, 224, 0.92);
+}
+
+/* Form column */
+.reg-main {
+  padding: clamp(40px, 6vw, 72px) clamp(24px, 4vw, 48px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.reg-shell { inline-size: 100%; max-inline-size: 480px; margin-inline: auto; }
+
+.reg-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-block-end: 22px;
+  text-align: start;
+}
+
+.reg-head-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 400;
+  font-size: var(--fs-h2);
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.reg-head-sub {
+  color: var(--gray-600);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* Card shell shared by both tabs and every step */
+.reg-card {
+  padding: clamp(24px, 4vw, 34px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  background: var(--white);
+}
+
+/* Field block: label stacked above its control (.form-input from forms.css) */
+.reg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 0.84375rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-align: start;
+}
+
+.reg-field-label {
+  font-size: 0.84375rem;
+  color: var(--ink);
+  font-weight: 600;
+  text-align: start;
+}
+
+.reg-field .form-input,
+.reg-card .form-input,
+.reg-card .btn { touch-action: manipulation; }
+
+.reg-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+@media (max-width: 460px) {
+  .reg-grid-2 { grid-template-columns: 1fr; }
+}
+
+.reg-pillset { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Footer row: "already have an account?" */
+.reg-alt {
+  font-size: 0.84375rem;
+  text-align: center;
+  color: var(--gray-600);
+  margin-block-start: 4px;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--hair);
+}
+
+.reg-alt-link {
+  color: var(--ember);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.reg-alt-link:hover { color: var(--ember-700); }
+
+/* Step indicator (volunteer two-step flow) */
+.reg-steps {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.reg-step { display: flex; align-items: center; gap: 10px; }
+.reg-step--first { flex: 0 0 auto; }
+.reg-step--rest { flex: 1 1 auto; }
+
+.reg-step-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: var(--gray-500);
+}
+
+.reg-step-label.is-active,
+.reg-step-label.is-done { color: var(--ink); }
+
+.reg-step-dot {
+  inline-size: 24px;
+  block-size: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex: 0 0 auto;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  border: 1px solid var(--hair);
+  transition: background var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out);
+}
+
+.reg-step-dot.is-active { background: var(--ember); color: var(--white); border-color: transparent; }
+.reg-step-dot.is-done { background: var(--success); color: var(--white); border-color: transparent; }
+
+.reg-step-bar {
+  flex: 1;
+  block-size: 2px;
+  border-radius: 2px;
+  background: var(--hair);
+  transition: background var(--dur-3) var(--ease-out);
+}
+
+.reg-step-bar.is-done { background: var(--success); }
+
+.reg-actions { display: flex; gap: 10px; margin-block-start: 4px; }
+
+/* Card enter — prevents the jarring instant swap when toggling tab/step.
+   transform + opacity only; collapses to a plain fade under reduced motion.
+   @starting-style keeps it CSS-only (no JS mount flag). */
+.reg-card {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
+}
+
+@starting-style {
+  .reg-card { opacity: 0; transform: translateY(4px); }
+}
+
+/* Password checklist enter — gentle lift on first keystroke. */
+.reg-card .pw-checks {
+  transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
+}
+
+@starting-style {
+  .reg-card .pw-checks { opacity: 0; transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-alt-link,
+  .reg-step-dot,
+  .reg-step-bar { transition: none; }
+
+  /* Keep an opacity fade (aids comprehension), drop movement. */
+  .reg-card,
+  .reg-card .pw-checks { transition: opacity var(--dur-2) var(--ease-out); }
+  @starting-style {
+    .reg-card,
+    .reg-card .pw-checks { transform: none; }
+  }
+}
