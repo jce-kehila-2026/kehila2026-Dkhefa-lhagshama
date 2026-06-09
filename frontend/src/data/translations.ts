@@ -13,7 +13,7 @@ const base = {
     home: {
       impactEyebrow: 'השפעה קהילתית',
       impactTitle: 'יחד בונים עתיד טוב יותר',
-      impactBody: 'אנחנו מחברים בין חברי הקהילה האתיופית-ישראלית לבין הסיוע, ההזדמנויות והאנשים שיכולים לעזור — הכול במקום אחד.',
+      impactBody: 'אנחנו מחברים בין חברי הקהילה האתיופית-ישראלית לבין הסיוע, ההזדמנויות והאנשים שיכולים לעזור, הכול במקום אחד.',
       volunteers: {
         eyebrow: 'המתנדבים שלנו',
         title: 'מתנדבים שנמצאים כאן, ונשארים',
@@ -178,9 +178,9 @@ const base = {
         description: 'תיאור הבקשה',
         descPH:      'פרט את הצורך שלך בכמה מילים...',
         urgency:     'רמת דחיפות',
-        urgencyLow:  'רגיל — תוך שבועיים',
-        urgencyMed:  'בינוני — תוך שבוע',
-        urgencyHigh: 'דחוף — תוך 48 שעות',
+        urgencyLow:  'רגיל, תוך שבועיים',
+        urgencyMed:  'בינוני, תוך שבוע',
+        urgencyHigh: 'דחוף, תוך 48 שעות',
         cats: {
           education: { label: 'חינוך ולמידה', hint: 'מלגות, בגרויות, לימודים גבוהים' },
           employment:{ label: 'תעסוקה וקריירה', hint: 'קורות חיים, ראיונות, הכשרות' },
@@ -197,7 +197,7 @@ const base = {
         supportLabel:  'מסמכים תומכים (אופציונלי)',
         supportHint:   'תעודות לימוד, חוזה עבודה, מסמכים משפטיים',
         supportFormats:'JPG, PNG, PDF • עד 10MB לכל קובץ',
-        security:      '🔒 כל המסמכים מועברים בצפנה מלאה ונשמרים בשרתים מאובטחים בלבד',
+        security:      'כל המסמכים מועברים בצפנה מלאה ונשמרים בשרתים מאובטחים בלבד',
         uploaded:      'הועלה בהצלחה',
         uploading:     'מעלה...',
         remove:        'הסר',
@@ -504,7 +504,7 @@ const base = {
       charts: {
         byCategory:  'בקשות לפי קטגוריה (החודש)',
         byCity:      'בקשות לפי עיר',
-        trend:       'מגמת בקשות — 6 חודשים אחרונים',
+        trend:       'מגמת בקשות, 6 חודשים אחרונים',
       },
     },
 
@@ -744,7 +744,7 @@ const base = {
     // ── ACCOUNT DISABLED (#87) ────────────────────────────────
     accountDisabled: {
       title:        'החשבון שלך הושבת',
-      body:         'הגישה לחשבון זה הושבתה. אם לדעתך מדובר בטעות, נשמח לעמוד לרשותך — אנא צרו קשר עם צוות העמותה ונסייע בהקדם.',
+      body:         'הגישה לחשבון זה הושבתה. אם לדעתך מדובר בטעות, נשמח לעמוד לרשותך, אנא צרו קשר עם צוות העמותה ונסייע בהקדם.',
       contactEmail: 'support@push4f.org',
       backHome:     'חזרה לדף הבית',
     },
@@ -1000,7 +1000,7 @@ const base = {
       // #93 — draft restored
       draftRestored:  'הטיוטה שלך שוחזרה לאחר הפסקת הפגישה',
       draftCleared:   'הטיוטה נמחקה',
-      reloginPrompt:  'הפגישה פגה תוקף. אנא התחבר שוב — הטיוטה תישמר.',
+      reloginPrompt:  'הפגישה פגה תוקף. אנא התחבר שוב, הטיוטה תישמר.',
       // #94 — success after submit redirect
       newRequestBadge: 'בקשה חדשה',
     },
@@ -1013,7 +1013,7 @@ const base = {
     home: {
       impactEyebrow: 'Community impact',
       impactTitle: 'Building a better future together',
-      impactBody: 'We connect members of the Ethiopian-Israeli community with the support, opportunities, and people who can help — all in one place.',
+      impactBody: 'We connect members of the Ethiopian-Israeli community with the support, opportunities, and people who can help, all in one place.',
       volunteers: {
         eyebrow: 'Our volunteers',
         title: 'Volunteers who show up, and stay',
@@ -1171,9 +1171,9 @@ const base = {
         description: 'Request Description',
         descPH:      'Describe your need in a few words...',
         urgency:     'Urgency Level',
-        urgencyLow:  'Normal — within 2 weeks',
-        urgencyMed:  'Medium — within 1 week',
-        urgencyHigh: 'Urgent — within 48 hours',
+        urgencyLow:  'Normal, within 2 weeks',
+        urgencyMed:  'Medium, within 1 week',
+        urgencyHigh: 'Urgent, within 48 hours',
         cats: {
           education: { label: 'Education & Learning', hint: 'Scholarships, exams, higher education' },
           employment:{ label: 'Employment & Career',  hint: 'CV, interviews, training' },
@@ -1190,7 +1190,7 @@ const base = {
         supportLabel:  'Supporting Documents (Optional)',
         supportHint:   'Study certificates, employment contract, legal documents',
         supportFormats:'JPG, PNG, PDF • Up to 10MB per file',
-        security:      '🔒 All documents are transferred with full encryption and stored on secure servers only',
+        security:      'All documents are transferred with full encryption and stored on secure servers only',
         uploaded:      'Uploaded successfully',
         uploading:     'Uploading...',
         remove:        'Remove',
@@ -1494,7 +1494,7 @@ const base = {
       charts: {
         byCategory:  'Requests by Category (This Month)',
         byCity:      'Requests by City',
-        trend:       'Request Trend — Last 6 Months',
+        trend:       'Request Trend, Last 6 Months',
       },
     },
 
@@ -1713,7 +1713,7 @@ const base = {
       privacy:    'Privacy Policy',
       terms:      'Terms of Use',
       accessibility: 'Accessibility Statement',
-      rights:     'All rights reserved – Push for Fulfillment NGO',
+      rights:     'All rights reserved. Push for Fulfillment NGO',
       reg:        'Registered NGO in Israel • Reg. No. 58-1234567',
     },
 
@@ -1726,7 +1726,7 @@ const base = {
     // ── ACCOUNT DISABLED (#87) ────────────────────────────────
     accountDisabled: {
       title:        'Your account has been disabled',
-      body:         'Access to this account has been disabled. If you believe this is a mistake, we are happy to help — please contact the team and we will sort it out as soon as we can.',
+      body:         'Access to this account has been disabled. If you believe this is a mistake, we are happy to help, please contact the team and we will sort it out as soon as we can.',
       contactEmail: 'support@push4f.org',
       backHome:     'Back to Home',
     },
@@ -1982,7 +1982,7 @@ const base = {
       // #93 — draft restored
       draftRestored: 'Your draft was restored after your session expired',
       draftCleared:  'Draft cleared',
-      reloginPrompt: 'Your session expired. Please sign in again — your draft is saved.',
+      reloginPrompt: 'Your session expired. Please sign in again, your draft is saved.',
       // #94 — success after submit redirect
       newRequestBadge: 'New request',
     },
