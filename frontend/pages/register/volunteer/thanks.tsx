@@ -7,84 +7,144 @@
  * Bilingual: reads `volunteerSignup.thanks*` keys from translations.js.
  * Issue #69.
  */
+import { useState } from 'react'
 import Link from 'next/link'
+import { Check, ArrowLeft, ArrowRight } from 'lucide-react'
 
 import { useLanguage } from '@/contexts/LanguageContext'
+import Reveal from '@/components/motion/Reveal'
 
 export default function VolunteerThanksPage() {
-  const { t, lang } = useLanguage()
+  const { t, lang, isRTL } = useLanguage()
   const v = t.volunteerSignup
-  const isRtl = lang === 'he'
+  const HomeArrow = isRTL ? ArrowRight : ArrowLeft
+
+  // Subtle directional nudge on the primary action, RTL-aware.
+  const [homeHover, setHomeHover] = useState(false)
 
   return (
     <main
-      dir={isRtl ? 'rtl' : 'ltr'}
       style={{
-        minHeight: 'calc(100vh - 64px)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '48px 24px',
+        minHeight: 'calc(100vh - var(--nav-h))',
+        display: 'grid',
+        placeItems: 'center',
         background: 'var(--paper)',
-        textAlign: 'center',
+        paddingBlock: 'clamp(48px, 9vw, 96px)',
+        paddingInline: 'clamp(20px, 5vw, 40px)',
       }}
     >
-      {/* Success icon */}
-      <div
-        aria-hidden="true"
-        style={{
-          width: 80,
-          height: 80,
-          borderRadius: '50%',
-          background: 'var(--ember)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 28,
-          flexShrink: 0,
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width={40}
-          height={40}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#fff"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      <Reveal>
+        <section
+          role="status"
+          aria-live="polite"
+          className="card"
+          style={{
+            width: '100%',
+            maxWidth: '34rem',
+            textAlign: 'center',
+            paddingBlock: 'clamp(40px, 6vw, 56px)',
+            paddingInline: 'clamp(24px, 5vw, 48px)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--hair)',
+            background: 'var(--white)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
         >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
+          {/* Success medallion — tinted ember disc, ember check, soft sky halo.
+              Reveals a beat after the card so the check reads as confirmation. */}
+          <Reveal delay={0.12} y={8}>
+            <span
+              aria-hidden="true"
+              style={{
+                display: 'inline-grid',
+                placeItems: 'center',
+                width: '76px',
+                height: '76px',
+                borderRadius: '50%',
+                marginBlockEnd: 'var(--sp-5)',
+                color: 'var(--ember)',
+                background: 'var(--ember-soft)',
+                boxShadow: '0 0 0 8px var(--sky-3)',
+              }}
+            >
+              <Check size={34} strokeWidth={2.25} />
+            </span>
+          </Reveal>
 
-      <h1
-        className="section-display"
-        style={{
-          fontSize: 'clamp(1.6rem, 4vw, 2.25rem)',
-          marginBottom: 16,
-          maxWidth: '28rem',
-        }}
-      >
-        {v.thanksTitle}
-      </h1>
+          {/* Eyebrow label — monospace, uppercase, ember */}
+          <span
+            className="eyebrow"
+            style={{
+              display: 'block',
+              color: 'var(--ember)',
+              marginBlockEnd: 'var(--sp-3)',
+            }}
+          >
+            {lang === 'he' ? 'הבקשה נשלחה' : 'Application received'}
+          </span>
 
-      <p
-        className="section-lede"
-        style={{
-          maxWidth: '32rem',
-          marginBottom: 36,
-          color: 'var(--ink-2)',
-        }}
-      >
-        {v.thanksSubtitle}
-      </p>
+          <h1
+            style={{
+              fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+              fontSize: 'var(--fs-display)',
+              fontWeight: 400,
+              lineHeight: 1.14,
+              letterSpacing: '-0.01em',
+              color: 'var(--ink)',
+              margin: '0 0 var(--sp-4)',
+              textWrap: 'balance',
+            }}
+          >
+            {v.thanksTitle}
+          </h1>
 
-      <Link href="/" className="btn btn-primary" style={{ minWidth: 180 }}>
-        {v.thanksBackHome}
-      </Link>
+          <p
+            className="section-lede"
+            style={{
+              margin: '0 auto',
+              maxWidth: '30rem',
+              color: 'var(--ink-2)',
+              textWrap: 'pretty',
+            }}
+          >
+            {v.thanksSubtitle}
+          </p>
+
+          {/* Divider before the primary action */}
+          <span
+            aria-hidden="true"
+            style={{
+              display: 'block',
+              height: '1px',
+              background: 'var(--hair)',
+              margin: 'var(--sp-6) auto',
+              maxWidth: '12rem',
+            }}
+          />
+
+          <Link
+            href="/"
+            onMouseEnter={() => setHomeHover(true)}
+            onMouseLeave={() => setHomeHover(false)}
+            onFocus={() => setHomeHover(true)}
+            onBlur={() => setHomeHover(false)}
+            className="btn btn-primary btn-lg"
+            style={{ textDecoration: 'none' }}
+          >
+            <HomeArrow
+              size={16}
+              aria-hidden="true"
+              style={{
+                transition: 'transform var(--dur-2) var(--ease-out)',
+                transform: homeHover
+                  ? `translateX(${isRTL ? '3px' : '-3px'})`
+                  : 'translateX(0)',
+              }}
+            />
+            {v.thanksBackHome}
+          </Link>
+        </section>
+      </Reveal>
     </main>
   )
 }
