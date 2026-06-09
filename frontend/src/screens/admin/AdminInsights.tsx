@@ -13,30 +13,41 @@ import {
   Cell,
 } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
+import { useReducedMotion } from 'motion/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiFetch } from '@/lib/apiClient'
 import type { InsightsData } from '@/types'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { ErrorState, EmptyState, adminErrorMessage } from '@/components/admin/AdminUI'
+import Reveal from '@/components/motion/Reveal'
 
 // Editorial palette pulled from the design tokens — recharts needs literal
 // color strings (it cannot read CSS custom properties through SVG fills), so
-// these mirror tokens.css. No new colors are introduced.
-const COLOR_INK = '#0F1E2D'
-const COLOR_INK_2 = '#2C3D52'
-const COLOR_EMBER = '#B9694E'
-const COLOR_SKY = '#BFD3E6'
-const COLOR_HAIR = 'rgba(15,30,45,0.10)'
+// these mirror tokens.css. No colors outside the brand palette are introduced.
+const COLOR_INK = '#0F1E2D' // --ink
+const COLOR_INK_2 = '#2C3D52' // --ink-2
+const COLOR_EMBER = '#B9694E' // --ember
+const COLOR_EMBER_700 = '#9C5440' // --ember-700
+const COLOR_SKY = '#BFD3E6' // --sky
+const COLOR_SKY_2 = '#DCE7F0' // --sky-2
+const COLOR_HAIR = 'rgba(15,30,45,0.10)' // --hair
+const COLOR_CURSOR = 'rgba(15,30,45,0.04)' // hairline-tint hover cursor
+// Light brand fills (sky/sky-2) sit below the 3:1 non-text contrast floor on
+// white (WCAG 1.4.11), so bars that use them carry a thin ink-hairline outline
+// to make their boundary perceivable. Negligible on the darker ink/ember bars.
+const COLOR_BAR_STROKE = 'rgba(15,30,45,0.32)'
 
-// One color per status so the by-status chart reads consistently. Falls back
+// One color per status so the by-status chart reads consistently. Every value
+// is a brand token from the ember/ink/sky ramps (no rainbow defaults), and each
+// stays clearly visible as a filled bar on the white card surface. Falls back
 // to ink-2 for any status not in the map.
 const STATUS_COLORS: Record<string, string> = {
-  pending: '#C9923E',
-  in_progress: '#5B7FA6',
+  pending: COLOR_SKY,
+  in_progress: COLOR_INK_2,
   awaiting_review: COLOR_EMBER,
-  closed: COLOR_INK_2,
-  rejected: '#A24B3B',
-  referred: '#6E8C5A',
+  closed: COLOR_INK,
+  rejected: COLOR_EMBER_700,
+  referred: COLOR_SKY_2,
 }
 
 // A localized recharts tooltip styled to match the editorial surface. recharts
@@ -64,6 +75,12 @@ export default function AdminInsights() {
   const ins = t.insights
   const lifecycle = t.lifecycle
   const age = t.admin.ageInsights
+
+  // Honor prefers-reduced-motion: recharts animates bars/areas on mount by
+  // default, so we disable that growth tween when the user opts out. Charts
+  // still render instantly at their final values.
+  const reduceMotion = useReducedMotion()
+  const animateCharts = !reduceMotion
 
   const [data, setData] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -173,12 +190,16 @@ export default function AdminInsights() {
     }
 
     return (
-      <div className="insights-grid">
+      // One motivated entrance: the dashboard fades + rises once after data
+      // loads. Reveal renders static (no transform) under prefers-reduced-motion
+      // and reuses the shared --ease-out curve. No per-card or looping motion;
+      // a dashboard should settle, not perform.
+      <Reveal className="insights-grid" y={16}>
         {/* ── REQUESTS OVER TIME (area) ─────────────────────────── */}
         <section className="insights-card insights-card--wide" aria-label={ins.charts.overTime}>
           <h2 className="insights-card-title">{ins.charts.overTime}</h2>
           {data!.overTime.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.overTime}>
               <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={data!.overTime} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <defs>
@@ -207,6 +228,7 @@ export default function AdminInsights() {
                     stroke={COLOR_EMBER}
                     strokeWidth={2}
                     fill="url(#insightsOverTime)"
+                    isAnimationActive={animateCharts}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -235,7 +257,7 @@ export default function AdminInsights() {
         <section className="insights-card" aria-label={ins.charts.byCategory}>
           <h2 className="insights-card-title">{ins.charts.byCategory}</h2>
           {data!.byCategory.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.byCategory}>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={data!.byCategory} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
@@ -249,10 +271,10 @@ export default function AdminInsights() {
                     width={36}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(15,30,45,0.04)' }}
+                    cursor={{ fill: COLOR_CURSOR }}
                     content={CountTooltip}
                   />
-                  <Bar dataKey="count" fill={COLOR_SKY} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                  <Bar dataKey="count" fill={COLOR_SKY} stroke={COLOR_BAR_STROKE} strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -265,7 +287,7 @@ export default function AdminInsights() {
         <section className="insights-card" aria-label={ins.charts.byStatus}>
           <h2 className="insights-card-title">{ins.charts.byStatus}</h2>
           {byStatusData.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.byStatus}>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={byStatusData} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
@@ -279,10 +301,10 @@ export default function AdminInsights() {
                     width={36}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(15,30,45,0.04)' }}
+                    cursor={{ fill: COLOR_CURSOR }}
                     content={CountTooltip}
                   />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48}>
+                  <Bar dataKey="count" stroke={COLOR_BAR_STROKE} strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts}>
                     {byStatusData.map((entry) => (
                       <Cell key={entry.status} fill={entry.fill} />
                     ))}
@@ -299,7 +321,7 @@ export default function AdminInsights() {
         <section className="insights-card insights-card--wide" aria-label={ins.charts.volunteerWorkload}>
           <h2 className="insights-card-title">{ins.charts.volunteerWorkload}</h2>
           {data!.perVolunteer.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.volunteerWorkload}>
               <ResponsiveContainer width="100%" height={Math.max(160, data!.perVolunteer.length * 44)}>
                 <BarChart
                   data={data!.perVolunteer}
@@ -318,10 +340,10 @@ export default function AdminInsights() {
                     width={120}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(15,30,45,0.04)' }}
+                    cursor={{ fill: COLOR_CURSOR }}
                     content={CountTooltip}
                   />
-                  <Bar dataKey="count" fill={COLOR_INK} radius={[0, 4, 4, 0]} maxBarSize={28} />
+                  <Bar dataKey="count" fill={COLOR_INK} radius={[0, 4, 4, 0]} maxBarSize={28} isAnimationActive={animateCharts} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -347,7 +369,7 @@ export default function AdminInsights() {
         <section className="insights-card" aria-label={age.distribution}>
           <h2 className="insights-card-title">{age.distribution}</h2>
           {ageBuckets.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={age.distribution}>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={ageBuckets} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
@@ -361,10 +383,10 @@ export default function AdminInsights() {
                     width={36}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(15,30,45,0.04)' }}
+                    cursor={{ fill: COLOR_CURSOR }}
                     content={PeopleTooltip}
                   />
-                  <Bar dataKey="count" fill={COLOR_EMBER} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                  <Bar dataKey="count" fill={COLOR_EMBER} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -372,7 +394,7 @@ export default function AdminInsights() {
             <p className="insights-nodata">{age.noAge}</p>
           )}
         </section>
-      </div>
+      </Reveal>
     )
   }
 

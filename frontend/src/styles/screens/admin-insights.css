@@ -69,6 +69,7 @@
   font-size: clamp(2.4rem, 1.8rem + 3vw, 3.6rem);
   line-height: 1;
   color: var(--ember);
+  font-variant-numeric: tabular-nums;
 }
 
 .insights-stat-unit {
@@ -104,6 +105,7 @@
 
 .insights-tooltip-value {
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .insights-tooltip-unit {
