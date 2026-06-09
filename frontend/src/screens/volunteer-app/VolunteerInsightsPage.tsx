@@ -13,10 +13,12 @@ import {
   Cell,
 } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
+import { useReducedMotion } from 'motion/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiJson } from '@/lib/apiClient'
 import type { VolunteerInsights } from '@/types'
 import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
+import Reveal from '@/components/motion/Reveal'
 import { ErrorState, EmptyState } from '@/components/admin/AdminUI'
 
 // Editorial palette pulled from tokens.css — recharts needs literal color
@@ -57,6 +59,13 @@ export default function VolunteerInsightsPage() {
   const v = t.volunteerApp
   const ins = v.insights
   const lifecycle = t.lifecycle
+
+  // Honor prefers-reduced-motion: recharts animates bars/areas on mount by
+  // default, so we disable that growth tween when the user opts out. Charts
+  // still render instantly at their final values. The Reveal wrapper below
+  // self-gates the same way.
+  const reduceMotion = useReducedMotion()
+  const animateCharts = !reduceMotion
 
   const [data, setData] = useState<VolunteerInsights | null>(null)
   const [loading, setLoading] = useState(true)
@@ -137,12 +146,18 @@ export default function VolunteerInsightsPage() {
     }
 
     return (
-      <div className="insights-grid">
+      // One motivated entrance: the dashboard fades + rises once after data
+      // loads. Reveal renders static (no transform) under prefers-reduced-motion
+      // and reuses the shared --ease-out curve. No per-card or looping motion;
+      // a dashboard should settle, not perform. The .volapp-insights class scopes
+      // volunteer-only CSS refinements without touching the shared admin-insights
+      // base classes.
+      <Reveal className="insights-grid volapp-insights" y={16}>
         {/* ── OVER TIME (area) ──────────────────────────────── */}
         <section className="insights-card insights-card--wide" aria-label={ins.overTime}>
           <h2 className="insights-card-title">{ins.overTime}</h2>
           {data!.overTime.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.overTime}>
               <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={data!.overTime} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <defs>
@@ -168,6 +183,7 @@ export default function VolunteerInsightsPage() {
                     stroke={COLOR_EMBER}
                     strokeWidth={2}
                     fill="url(#volInsOverTime)"
+                    isAnimationActive={animateCharts}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -202,7 +218,7 @@ export default function VolunteerInsightsPage() {
         <section className="insights-card" aria-label={ins.byCategory}>
           <h2 className="insights-card-title">{ins.byCategory}</h2>
           {data!.byCategory.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.byCategory}>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={data!.byCategory} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
@@ -216,7 +232,7 @@ export default function VolunteerInsightsPage() {
                     width={36}
                   />
                   <Tooltip cursor={{ fill: 'rgba(15,30,45,0.04)' }} content={CountTooltip} />
-                  <Bar dataKey="count" fill={COLOR_SKY} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                  <Bar dataKey="count" fill={COLOR_SKY} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -229,7 +245,7 @@ export default function VolunteerInsightsPage() {
         <section className="insights-card" aria-label={ins.byStatus}>
           <h2 className="insights-card-title">{ins.byStatus}</h2>
           {byStatusData.length > 0 ? (
-            <div className="insights-chart" dir="ltr">
+            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.byStatus}>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={byStatusData} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
@@ -243,7 +259,7 @@ export default function VolunteerInsightsPage() {
                     width={36}
                   />
                   <Tooltip cursor={{ fill: 'rgba(15,30,45,0.04)' }} content={CountTooltip} />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48}>
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts}>
                     {byStatusData.map((entry) => (
                       <Cell key={entry.status} fill={entry.fill} />
                     ))}
@@ -255,7 +271,7 @@ export default function VolunteerInsightsPage() {
             <p className="insights-nodata">{ins.noData}</p>
           )}
         </section>
-      </div>
+      </Reveal>
     )
   }
 

@@ -144,11 +144,23 @@
 }
 
 .volapp-filter-chip {
+  min-height: 44px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    background var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
 }
 
-.volapp-filter-chip:hover { border-color: var(--ember); }
+.volapp-filter-chip:hover:not(.is-active) { border-color: var(--ember); }
+.volapp-filter-chip:active { transform: scale(0.97); }
+
+.volapp-filter-chip:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
 
 .volapp-filter-chip.is-active {
   background: var(--ink);
@@ -159,6 +171,11 @@
 .volapp-filter-chip.is-active .volapp-count-num {
   background: rgba(244, 238, 224, 0.22);
   color: var(--cream);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volapp-filter-chip { transition: none; }
+  .volapp-filter-chip:active { transform: none; }
 }
 
 .volapp-filter-row {
@@ -278,6 +295,11 @@
   text-align: end;
 }
 
+/* Pool: tabular numerals on the claims-count value (additive, pool-only). */
+.volapp-num { font-variant-numeric: tabular-nums; }
+
+/* Layout only: press/focus/disabled/reduced-motion all inherited from
+   the shared .btn / .btn-primary system. Don't duplicate them here. */
 .volapp-claim-btn {
   margin-block-start: auto;
   display: inline-flex;
@@ -300,7 +322,7 @@
   gap: 0.35rem;
 }
 
-/* ── Inline edit / drop forms ── */
+/* ── Inline edit / drop forms (assigned page only) ── */
 .volapp-edit-form {
   border-block-start: 1px solid var(--hair);
   padding-block-start: 0.85rem;
@@ -308,21 +330,96 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* Toggling a panel open should not snap in. Transform + opacity only,
+     CSS-only via @starting-style (mirrors the .reg-card precedent). */
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--dur-3) var(--ease-out),
+    transform var(--dur-3) var(--ease-out);
 }
+
+@starting-style {
+  .volapp-edit-form { opacity: 0; transform: translateY(4px); }
+}
+
+/* Self-report checkbox group: native fieldset chrome reset, keep the
+   panel's column rhythm. Grouping is for the screen-reader legend only. */
+.volapp-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.volapp-fieldset .volapp-subhead { margin: 0; }
+.volapp-fieldset .volapp-panel-sub { margin: 0 0 0.1rem; }
+
+/* Tabular figures on the deadline value so dates line up across cards.
+   Scoped to an assigned-only wrapper; the shared .volapp-meta-row dd
+   stays untouched so Pool/Dashboard render unchanged. */
+.volapp-deadline-val { font-variant-numeric: tabular-nums; }
 
 .volapp-check {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* Comfortable hit target; label + box share one target (no dead zone). */
+  min-height: 44px;
   font-size: 0.92rem;
   color: var(--ink);
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: var(--radius-sm);
 }
 
 .volapp-check input { accent-color: var(--ember); }
+
+.volapp-check:focus-within {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep the opacity fade (aids comprehension), drop the movement. */
+  .volapp-edit-form { transition: opacity var(--dur-2) var(--ease-out); }
+  @starting-style {
+    .volapp-edit-form { transform: none; }
+  }
+}
 
 /* ── Responsive: lean on the admin shell's mobile collapse ── */
 @media (max-width: 640px) {
   .volapp-card-grid { grid-template-columns: 1fr; }
   .volapp-cat-fields .form-input { flex-basis: 100%; }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   INSIGHTS (volunteer-hub /insights) — insights-only refinements.
+   The base .insights-* chrome is defined in the shared admin-insights.css
+   (also used by Admin Insights) and must NOT be restyled there. Everything
+   here is scoped under .volapp-insights (set on this page's grid root) so it
+   applies to the volunteer screen only and never leaks to Admin.
+═════════════════════════════════════════════════════════════ */
+
+/* Tabular figures on the big stat values so single/double-digit loads and
+   resolution times stay optically aligned. Scoped, so the shared
+   .insights-stat-value is untouched. */
+.volapp-insights .insights-stat-value,
+.volapp-insights .insights-stat-unit {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reserve close to the chart's real height on the loading skeleton so the
+   skeleton-to-chart swap does not shift the card much (the recharts
+   containers run at 260px for the area and 240px for the bars; the shared
+   skeleton ships a single 220px block). Trimming the jump is a comprehension
+   win and a CLS/perf concern. The loading grid renders plain cards (none
+   `--wide`), so a single height applies to all four skeleton tiles. */
+.volapp-insights .insights-skeleton-chart {
+  height: 240px;
 }

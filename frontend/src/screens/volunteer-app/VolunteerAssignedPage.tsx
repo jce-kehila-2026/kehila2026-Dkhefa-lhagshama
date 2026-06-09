@@ -135,6 +135,11 @@ export default function VolunteerAssignedPage() {
     }
   }
 
+  // Native min for the deadline picker: blocks past dates in the browser UI
+  // (and surfaces the browser's own localized validity message) without
+  // needing an app-level error string.
+  const today = new Date().toISOString().slice(0, 10)
+
   const urgencyTone = (u?: string) =>
     u === 'high' ? 'badge-red' : u === 'medium' ? 'badge-amber' : 'badge-gray'
 
@@ -205,17 +210,28 @@ export default function VolunteerAssignedPage() {
               <dl className="volapp-meta">
                 <div className="volapp-meta-row">
                   <dt><Calendar size={13} aria-hidden="true" /> {a.deadline}</dt>
-                  <dd>{item.deadline ? formatDate(item.deadline, lang) : v.ui.noDeadline}</dd>
+                  <dd className="volapp-deadline-val">
+                    {item.deadline ? formatDate(item.deadline, lang) : v.ui.noDeadline}
+                  </dd>
                 </div>
               </dl>
 
               {/* ── Edit form ─────────────────────────────────── */}
               {isEditing && (
-                <div className="volapp-edit-form">
+                <form
+                  className="volapp-edit-form"
+                  aria-label={a.editTitle}
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    saveEdit(item.id)
+                  }}
+                >
                   <h4 className="volapp-subhead">{a.editTitle}</h4>
                   <label className="form-label" htmlFor={`urg-${item.id}`}>{a.urgency}</label>
                   <select
                     id={`urg-${item.id}`}
+                    name="urgency"
+                    autoComplete="off"
                     className="form-select"
                     value={editUrgency}
                     onChange={(e) => setEditUrgency(e.target.value)}
@@ -227,17 +243,20 @@ export default function VolunteerAssignedPage() {
                   <label className="form-label" htmlFor={`dl-${item.id}`}>{a.deadline}</label>
                   <input
                     id={`dl-${item.id}`}
+                    name="deadline"
                     type="date"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    min={today}
                     className="form-input"
                     value={editDeadline}
                     onChange={(e) => setEditDeadline(e.target.value)}
                   />
                   <div className="volapp-card-actions">
                     <button
-                      type="button"
+                      type="submit"
                       className="btn btn-primary btn-sm"
                       disabled={isBusy}
-                      onClick={() => saveEdit(item.id)}
                     >
                       {a.save}
                     </button>
@@ -249,44 +268,54 @@ export default function VolunteerAssignedPage() {
                       {v.ui.cancel}
                     </button>
                   </div>
-                </div>
+                </form>
               )}
 
               {/* ── Drop / self-report form ───────────────────── */}
               {isDropping && (
-                <div className="volapp-edit-form">
-                  <h4 className="volapp-subhead">{a.dropTitle}</h4>
-                  <p className="volapp-panel-sub">{a.dropSubtitle}</p>
-                  <label className="volapp-check">
-                    <input
-                      type="checkbox"
-                      checked={report.done}
-                      onChange={(e) => setReport((r) => ({ ...r, done: e.target.checked }))}
-                    />
-                    {a.dropDone}
-                  </label>
-                  <label className="volapp-check">
-                    <input
-                      type="checkbox"
-                      checked={report.reached}
-                      onChange={(e) => setReport((r) => ({ ...r, reached: e.target.checked }))}
-                    />
-                    {a.dropReached}
-                  </label>
-                  <label className="volapp-check">
-                    <input
-                      type="checkbox"
-                      checked={report.stuck}
-                      onChange={(e) => setReport((r) => ({ ...r, stuck: e.target.checked }))}
-                    />
-                    {a.dropStuck}
-                  </label>
+                <form
+                  className="volapp-edit-form"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    submitDrop(item.id)
+                  }}
+                >
+                  <fieldset className="volapp-fieldset">
+                    <legend className="volapp-subhead">{a.dropTitle}</legend>
+                    <p className="volapp-panel-sub">{a.dropSubtitle}</p>
+                    <label className="volapp-check">
+                      <input
+                        type="checkbox"
+                        name="done"
+                        checked={report.done}
+                        onChange={(e) => setReport((r) => ({ ...r, done: e.target.checked }))}
+                      />
+                      {a.dropDone}
+                    </label>
+                    <label className="volapp-check">
+                      <input
+                        type="checkbox"
+                        name="reached"
+                        checked={report.reached}
+                        onChange={(e) => setReport((r) => ({ ...r, reached: e.target.checked }))}
+                      />
+                      {a.dropReached}
+                    </label>
+                    <label className="volapp-check">
+                      <input
+                        type="checkbox"
+                        name="stuck"
+                        checked={report.stuck}
+                        onChange={(e) => setReport((r) => ({ ...r, stuck: e.target.checked }))}
+                      />
+                      {a.dropStuck}
+                    </label>
+                  </fieldset>
                   <div className="volapp-card-actions">
                     <button
-                      type="button"
+                      type="submit"
                       className="btn btn-danger btn-sm"
                       disabled={isBusy}
-                      onClick={() => submitDrop(item.id)}
                     >
                       {a.dropSubmit}
                     </button>
@@ -298,7 +327,7 @@ export default function VolunteerAssignedPage() {
                       {v.ui.cancel}
                     </button>
                   </div>
-                </div>
+                </form>
               )}
 
               {/* ── Default actions ───────────────────────────── */}
@@ -345,7 +374,8 @@ export default function VolunteerAssignedPage() {
       {notice && (
         <p
           className={`volapp-inline-msg${notice.kind === 'err' ? ' is-error' : ''}`}
-          role="status"
+          role={notice.kind === 'err' ? 'alert' : 'status'}
+          aria-live={notice.kind === 'err' ? 'assertive' : 'polite'}
         >
           {notice.text}
         </p>

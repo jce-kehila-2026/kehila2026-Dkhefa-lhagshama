@@ -190,8 +190,8 @@ export default function VolunteerPoolPage() {
                 <dd>{item.deadline ? formatDate(item.deadline, lang) : v.ui.noDeadline}</dd>
               </div>
               <div className="volapp-meta-row">
-                <dt><Users size={13} aria-hidden="true" /></dt>
-                <dd>{p.claimsCount(item.claimsCount ?? 0)}</dd>
+                <dt><Users size={13} aria-hidden="true" /> <span className="sr-only">{p.claimsCount(item.claimsCount ?? 0)}</span></dt>
+                <dd className="volapp-num">{p.claimsCount(item.claimsCount ?? 0)}</dd>
               </div>
             </dl>
 
