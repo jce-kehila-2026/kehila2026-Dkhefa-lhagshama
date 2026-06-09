@@ -1,8 +1,7 @@
 /* Volunteer screen — screen-specific classes (VolunteerPage). */
 
-/* ── Compact inline editorial header (Note 3) ──────────────────
-   Replaces the tall, centered PageHeader band with a start-aligned
-   eyebrow + serif title + lede, in the DirectoryPage style. */
+/* ── Compact inline editorial header ───────────────────────────
+   Start-aligned eyebrow + serif title + lede, in the Directory style. */
 .vol-header {
   background: var(--cream);
   border-block-end: 1px solid var(--hair);
@@ -25,8 +24,339 @@
 
 .vol-header-title {
   margin: 0 0 12px;
+  text-wrap: balance;
 }
 
 .vol-header-lede {
   margin: 0;
+  text-wrap: pretty;
+}
+
+/* ── Body section + two-column layout ──────────────────────────
+   Two informational columns: role-adaptive panel + active list.
+   Logical-property gap so it works identically in RTL. */
+.vol-body {
+  background: var(--paper);
+}
+
+.vol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(32px, 5vw, 56px);
+  align-items: start;
+}
+
+.vol-col-title {
+  margin-block: 0 10px;
+  font-size: var(--fs-h2);
+  text-wrap: balance;
+}
+
+.vol-col-lede {
+  margin: 0 0 24px;
+  font-size: var(--fs-body);
+  max-width: 34rem;
+  text-wrap: pretty;
+}
+
+/* ── Shared panel card (apply CTA + team member) ───────────────── */
+.vol-panel {
+  padding: clamp(28px, 4vw, 44px) clamp(24px, 4vw, 36px);
+  border: 1px solid var(--hair);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Round emblem holding the panel icon */
+.vol-emblem {
+  width: 64px;
+  height: 64px;
+  background: var(--ember-soft);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-end: 20px;
+}
+
+.vol-panel-title {
+  margin-block-end: 12px;
+  font-size: var(--fs-h2);
+}
+
+.vol-panel-blurb {
+  color: var(--gray-700);
+  line-height: 1.7;
+  margin: 0 0 28px;
+  font-size: var(--fs-body);
+  max-width: 34rem;
+}
+
+/* ── Volunteering areas (informational chips) ──────────────────── */
+.vol-areas-label {
+  color: var(--gray-600);
+  display: block;
+  margin-block-end: 12px;
+}
+
+.vol-areas {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.vol-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hair);
+  background: var(--white);
+  color: var(--gray-700);
+  font-weight: 500;
+  font-size: var(--fs-sm);
+  text-align: start;
+}
+
+.vol-area-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ember);
+  flex-shrink: 0;
+}
+
+/* Quiet affordance on the area chips: border warms toward ember on hover.
+   Border-color only (no layout/transform), gated to real pointers. */
+@media (hover: hover) and (pointer: fine) {
+  .vol-area {
+    transition: border-color var(--dur-1) var(--ease-out);
+  }
+  .vol-area:hover {
+    border-color: var(--ember);
+  }
+}
+
+@media (max-width: 380px) {
+  .vol-areas { grid-template-columns: 1fr; }
+}
+
+/* ── Summary strip (two counts) ────────────────────────────────── */
+.vol-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 18px 20px;
+  margin-block-end: 20px;
+  background: var(--sky-3);
+  border-radius: var(--radius);
+  border: 1px solid var(--hair);
+}
+
+.vol-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vol-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ember);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hair);
+  flex-shrink: 0;
+}
+
+.vol-stat-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.vol-stat-num {
+  font-family: var(--font-serif, Frank Ruhl Libre, Georgia, serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.vol-stat-label {
+  font-size: var(--fs-xs);
+  color: var(--gray-600);
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-block-start: 4px;
+}
+
+/* ── Empty state ───────────────────────────────────────────────── */
+.vol-empty {
+  padding: 40px 32px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  box-shadow: none;
+  background: var(--white);
+}
+
+.vol-empty-emblem {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ember-soft);
+  color: var(--ember);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.vol-empty-text {
+  color: var(--gray-600);
+  line-height: 1.6;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* ── Active-volunteer list ─────────────────────────────────────── */
+.vol-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vol-row {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--hair);
+  box-shadow: var(--shadow-xs);
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Subtle lift signals each row is a distinct, scannable unit.
+   transform + box-shadow only, real pointers only. */
+@media (hover: hover) and (pointer: fine) {
+  .vol-row {
+    transition:
+      transform var(--dur-2) var(--ease-out),
+      box-shadow var(--dur-2) var(--ease-out);
+  }
+  .vol-row:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* The whole list column already enters via the <Reveal> wrapper; the rows
+   render visible by default (no mount-gated opacity) so nothing ships blank
+   on a hidden tab or headless capture. Reduced motion drops the hover lift. */
+@media (prefers-reduced-motion: reduce) {
+  .vol-row:hover,
+  .vol-area:hover {
+    transform: none;
+  }
+}
+
+.vol-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif, Frank Ruhl Libre, Georgia, serif);
+  font-weight: 700;
+  color: var(--cream);
+  font-size: 1.0625rem;
+}
+
+.vol-row-info {
+  min-width: 0;
+}
+
+.vol-row-name {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--ink);
+  margin-block-end: 3px;
+}
+
+.vol-row-prof {
+  font-size: var(--fs-sm);
+  color: var(--gray-600);
+  margin-block-end: 8px;
+}
+
+.vol-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  font-size: var(--fs-xs);
+  color: var(--gray-500);
+}
+
+.vol-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Status pill ───────────────────────────────────────────────── */
+.vol-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.vol-status-available {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+/* ember-700 (pressed ember) clears WCAG AA on the ember-soft tint */
+.vol-status-assigned {
+  color: var(--ember-700);
+  background: var(--ember-soft);
+}
+
+.vol-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vol-status-available .vol-status-dot { background: var(--success); }
+.vol-status-assigned .vol-status-dot { background: var(--ember-700); }
+
+/* Narrow viewports: let the status pill drop below the info column */
+@media (max-width: 420px) {
+  .vol-row {
+    grid-template-columns: 52px 1fr;
+  }
+  .vol-status {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
