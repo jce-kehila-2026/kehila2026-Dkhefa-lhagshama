@@ -16,6 +16,7 @@ import { apiJson } from '@/lib/apiClient'
 import type { VolunteerMe } from '@/types'
 import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
 import { StatCard, ErrorState } from '@/components/admin/AdminUI'
+import Reveal from '@/components/motion/Reveal'
 
 interface AssignedItem {
   id: string
@@ -52,10 +53,12 @@ export default function VolunteerDashboard() {
   // Work-status + category-request inline feedback.
   const [statusBusy, setStatusBusy] = useState(false)
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
+  const [statusErr, setStatusErr] = useState(false)
   const [catName, setCatName] = useState('')
   const [catNote, setCatNote] = useState('')
   const [catBusy, setCatBusy] = useState(false)
   const [catMsg, setCatMsg] = useState<string | null>(null)
+  const [catErr, setCatErr] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -102,6 +105,7 @@ export default function VolunteerDashboard() {
     if (statusBusy || me?.workStatus === status) return
     setStatusBusy(true)
     setStatusMsg(null)
+    setStatusErr(false)
     try {
       const updated = await apiJson<VolunteerMe>('/api/volunteer/me', {
         method: 'PATCH',
@@ -110,6 +114,7 @@ export default function VolunteerDashboard() {
       setMe(updated)
       setStatusMsg(d.workStatus.saved)
     } catch {
+      setStatusErr(true)
       setStatusMsg(d.workStatus.error)
     } finally {
       setStatusBusy(false)
@@ -122,6 +127,7 @@ export default function VolunteerDashboard() {
     if (!category || catBusy) return
     setCatBusy(true)
     setCatMsg(null)
+    setCatErr(false)
     try {
       const updated = await apiJson<VolunteerMe>('/api/volunteer/me', {
         method: 'PATCH',
@@ -134,6 +140,7 @@ export default function VolunteerDashboard() {
       setCatNote('')
       setCatMsg(d.categories.requestSaved)
     } catch {
+      setCatErr(true)
       setCatMsg(d.categories.requestError)
     } finally {
       setCatBusy(false)
@@ -161,7 +168,7 @@ export default function VolunteerDashboard() {
       )}
 
       {/* ── KPI tiles ─────────────────────────────────────────── */}
-      <div className="stat-grid">
+      <Reveal className="stat-grid" y={16}>
         {tiles.map((tile) => (
           <StatCard
             key={tile.key}
@@ -172,9 +179,9 @@ export default function VolunteerDashboard() {
             icon={tile.icon}
           />
         ))}
-      </div>
+      </Reveal>
 
-      <div className="volapp-columns">
+      <Reveal className="volapp-columns" y={16} delay={0.05}>
         {/* ── Work status ─────────────────────────────────────── */}
         <section className="card volapp-panel">
           <h2 className="volapp-panel-title">{d.workStatus.title}</h2>
@@ -196,7 +203,14 @@ export default function VolunteerDashboard() {
               )
             })}
           </div>
-          {statusMsg && <p className="volapp-inline-msg" role="status">{statusMsg}</p>}
+          {statusMsg && (
+            <p
+              className={`volapp-inline-msg${statusErr ? ' is-error' : ''}`}
+              role={statusErr ? 'alert' : 'status'}
+            >
+              {statusMsg}
+            </p>
+          )}
         </section>
 
         {/* ── My chats link ───────────────────────────────────── */}
@@ -208,9 +222,10 @@ export default function VolunteerDashboard() {
             {d.myChats.link}
           </Link>
         </section>
-      </div>
+      </Reveal>
 
       {/* ── Categories ──────────────────────────────────────────── */}
+      <Reveal delay={0.1}>
       <section className="card volapp-panel">
         <h2 className="volapp-panel-title">{d.categories.title}</h2>
 
@@ -250,29 +265,43 @@ export default function VolunteerDashboard() {
           <div className="volapp-cat-fields">
             <input
               type="text"
+              name="requestCategory"
               className="form-input"
               value={catName}
               onChange={(e) => setCatName(e.target.value)}
               placeholder={d.categories.requestPlaceholder}
               aria-label={d.categories.requestPlaceholder}
+              autoComplete="off"
+              spellCheck={false}
             />
             <input
               type="text"
+              name="requestCategoryNote"
               className="form-input"
               value={catNote}
               onChange={(e) => setCatNote(e.target.value)}
               placeholder={d.categories.notePlaceholder}
               aria-label={d.categories.notePlaceholder}
+              autoComplete="off"
             />
             <button type="submit" className="btn btn-primary btn-sm" disabled={catBusy || !catName.trim()}>
               {d.categories.requestBtn}
             </button>
           </div>
-          {catMsg && <p className="volapp-inline-msg" role="status">{catMsg}</p>}
+          {catMsg && (
+            <p
+              className={`volapp-inline-msg${catErr ? ' is-error' : ''}`}
+              role={catErr ? 'alert' : 'status'}
+            >
+              {catMsg}
+            </p>
+          )}
         </form>
       </section>
+      </Reveal>
 
       {/* ── Per-category counts (pool byCategory) ──────────────── */}
+      <Reveal delay={0.15}>
       <section className="card volapp-panel">
         <h2 className="volapp-panel-title">{d.perCategory.title}</h2>
         <p className="volapp-panel-sub">{d.perCategory.subtitle}</p>
@@ -294,6 +323,7 @@ export default function VolunteerDashboard() {
           <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
       </section>
+      </Reveal>
     </VolunteerLayout>
   )
 }

@@ -63,6 +63,10 @@
 }
 
 .volapp-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   border: none;
   background: transparent;
   padding: 0.5rem 1rem;
@@ -71,11 +75,16 @@
   font-size: 0.9rem;
   color: var(--gray-600);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  touch-action: manipulation;
+  transition:
+    background var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
 }
 
 .volapp-segment:hover:not(:disabled) { color: var(--ink); }
 .volapp-segment:disabled { cursor: default; opacity: 0.7; }
+.volapp-segment:active:not(:disabled) { transform: scale(0.97); }
 
 .volapp-segment.is-active {
   background: var(--ember);
@@ -83,6 +92,11 @@
 }
 
 .volapp-segment:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .volapp-segment { transition: none; }
+  .volapp-segment:active:not(:disabled) { transform: none; }
+}
 
 /* ── Chats link ── */
 .volapp-chats-link {
@@ -126,6 +140,7 @@
   color: var(--ink);
   font-size: 0.78rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .volapp-filter-chip {
@@ -171,12 +186,14 @@
   align-items: center;
   gap: 0.35rem;
   margin-block-start: 1rem;
+  min-height: 44px;
   font-weight: 600;
   color: var(--ember);
   text-decoration: none;
 }
 
 .volapp-jump:hover { text-decoration: underline; }
+.volapp-jump:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; border-radius: var(--radius-sm); }
 
 /* ── Request card grid (pool + assigned) ── */
 .volapp-card-grid {
