@@ -1,11 +1,15 @@
 import Link from 'next/link'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function Custom404() {
-  const { lang } = useLanguage()
+  const { lang, isRTL } = useLanguage()
   const isHe = lang === 'he'
+  // Home points "back" into the app; mirror the arrow for RTL.
+  const HomeArrow = isRTL ? ArrowRight : ArrowLeft
   return (
     <main
+      className="page-enter"
       style={{
         minHeight: 'calc(100vh - var(--nav-h))',
         display: 'flex',
@@ -17,49 +21,56 @@ export default function Custom404() {
         background: 'var(--paper)',
       }}
     >
-      <span
-        aria-hidden="true"
+      <div
+        role="status"
+        aria-live="polite"
+        aria-labelledby="notfound-title"
         style={{
-          fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-          fontSize: 'clamp(4rem, 14vw, 8rem)',
-          fontWeight: 700,
-          lineHeight: 1,
-          color: 'var(--ink)',
-          letterSpacing: '-0.03em',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        404
-      </span>
-      <span
-        style={{
-          display: 'block',
-          width: 48,
-          height: 2,
-          background: 'var(--ember)',
-          margin: '24px auto',
-          borderRadius: 2,
-        }}
-        aria-hidden="true"
-      />
-      <h1
-        style={{
-          fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-          fontWeight: 400,
-          fontSize: 'var(--fs-h2)',
-          color: 'var(--ink)',
-          margin: '0 0 12px',
-        }}
-      >
-        {isHe ? 'הדף לא נמצא' : 'Page not found'}
-      </h1>
-      <p className="section-lede" style={{ margin: '0 auto 28px', maxWidth: '30rem' }}>
-        {isHe
-          ? 'הקישור שביקשת אינו קיים או הוסר. אפשר לחזור לדף הבית ולהמשיך משם.'
-          : 'The page you asked for does not exist or was moved. Head back home to continue.'}
-      </p>
-      <Link href="/" className="btn btn-primary btn-lg">
-        {isHe ? 'חזרה לדף הבית' : 'Back to home'}
-      </Link>
+        <span className="eyebrow" style={{ color: 'var(--ember)' }}>
+          {isHe ? 'שגיאה 404' : 'Error 404'}
+        </span>
+        <span
+          aria-hidden="true"
+          style={{
+            fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+            fontSize: 'clamp(4rem, 14vw, 8rem)',
+            fontWeight: 700,
+            lineHeight: 1,
+            color: 'var(--ink)',
+            letterSpacing: '-0.03em',
+          }}
+        >
+          404
+        </span>
+        <span className="gold-line center" aria-hidden="true" style={{ marginBlock: '24px' }} />
+        <h1
+          id="notfound-title"
+          style={{
+            fontFamily: 'Frank Ruhl Libre, Georgia, serif',
+            fontWeight: 400,
+            fontSize: 'var(--fs-h2)',
+            color: 'var(--ink)',
+            margin: '0 0 12px',
+            textWrap: 'balance',
+          }}
+        >
+          {isHe ? 'הדף לא נמצא' : 'Page not found'}
+        </h1>
+        <p className="section-lede" style={{ margin: '0 auto 28px', maxWidth: '30rem' }}>
+          {isHe
+            ? 'הקישור שביקשת אינו קיים או שהוסר. אפשר לחזור לדף הבית ולהמשיך משם.'
+            : 'The link you followed does not exist or was moved. Head back to the home page to continue.'}
+        </p>
+        <Link href="/" className="btn btn-primary btn-lg">
+          <HomeArrow size={18} strokeWidth={2} aria-hidden="true" />
+          {isHe ? 'חזרה לדף הבית' : 'Back to Home Page'}
+        </Link>
+      </div>
     </main>
   )
 }
