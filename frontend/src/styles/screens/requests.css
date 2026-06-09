@@ -39,3 +39,154 @@
 .req-header-stepper {
   margin-block-start: clamp(28px, 4vw, 40px);
 }
+
+/* ── Form shell ────────────────────────────────────────────────
+   Centered task column. Width + vertical rhythm were inline; pulled
+   into a class so the page markup stays declarative. */
+.req-shell {
+  max-width: 820px;
+  padding-block: clamp(32px, 5vw, 56px) clamp(56px, 8vw, 88px);
+  padding-inline: 1.5rem;
+}
+
+.req-admin-shell {
+  max-width: 560px;
+  padding-block: clamp(48px, 7vw, 80px);
+  padding-inline: 1.5rem;
+}
+
+/* ── Wizard step enter ─────────────────────────────────────────
+   Each step remounts (keyed), so this fires once per step change.
+   Conveys the "you moved to a new step" state change, not decoration.
+   Stays inside the product motion budget (240ms). */
+.req-step {
+  animation: req-step-in var(--dur-3) var(--ease-out) both;
+}
+
+@keyframes req-step-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .req-step {
+    animation: none;
+  }
+}
+
+/* ── Step heading (eyebrow + serif title) ──────────────────────
+   Replaces four duplicated inline-style blocks (one per wizard step).
+   The auto-fill action shares row 1, so step 1 needs the split layout. */
+.req-step-head {
+  margin-block-end: var(--sp-6);
+}
+
+.req-step-head--split {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.req-step-eyebrow {
+  color: var(--ember);
+  display: block;
+  margin-block-end: var(--sp-2);
+}
+
+.req-step-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: var(--fs-h3);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.req-step-intro {
+  font-size: var(--fs-sm);
+  color: var(--gray-600);
+  margin-block: var(--sp-2) var(--sp-5);
+  line-height: 1.6;
+  max-width: 60ch;
+}
+
+/* The auto-fill ("fill from my profile") action, kept on the ember accent. */
+.req-fill-btn {
+  color: var(--ember);
+  flex-shrink: 0;
+}
+
+/* ── Inline banners (verify email / volunteer on-behalf) ───────
+   Shared .form-banner carries the look; this only spaces it. */
+.req-banner {
+  margin-block-end: var(--sp-5);
+}
+
+.req-banner-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+/* ── Wizard navigation row ─────────────────────────────────────
+   Logical-property aware so RTL flips correctly. */
+.req-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-block-start: var(--sp-5);
+}
+
+/* ── Reassurance strip ─────────────────────────────────────────
+   Quiet, single-row trust signals. Deliberately NOT three elevated
+   cards (that reads as a marketing bento): a hairline-divided list on
+   one shared surface, so it stays out of the form's way. */
+.req-trust {
+  list-style: none;
+  margin-block: var(--sp-7) 0;
+  margin-inline: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--hair);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+@media (min-width: 720px) {
+  .req-trust {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.req-trust-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--white);
+}
+
+.req-trust-icon {
+  flex-shrink: 0;
+  inline-size: 34px;
+  block-size: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ember-soft);
+  color: var(--ember);
+  border-radius: var(--radius-sm);
+}
+
+.req-trust-text {
+  font-size: var(--fs-sm);
+  color: var(--gray-700);
+  line-height: 1.45;
+  text-align: start;
+}

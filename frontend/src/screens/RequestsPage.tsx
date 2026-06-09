@@ -236,7 +236,22 @@ export default function RequestsPage() {
     if (step === 3) errs = validateStep3({ idUploaded }, t) as unknown as Record<string, string>
     if (step === 4) errs = validateStep4(values, t) as unknown as Record<string, string>
 
-    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
+      // a11y: move focus to the first invalid control so screen-reader and
+      // keyboard users land on the problem (presentation-only; does not change
+      // what is validated or submitted).
+      if (typeof document !== 'undefined') {
+        const firstKey = Object.keys(errs)[0]
+        requestAnimationFrame(() => {
+          const target = document.getElementById(firstKey)
+            || document.querySelector<HTMLElement>(`[name="${firstKey}"]`)
+            || document.querySelector<HTMLElement>('[aria-invalid="true"]')
+          target?.focus?.()
+        })
+      }
+      return
+    }
     if (step < 4) setStep(s => s + 1)
     else submitForm()
   }
@@ -323,7 +338,7 @@ export default function RequestsPage() {
             </Reveal>
           </div>
         </section>
-        <div className="page-container" style={{ maxWidth:'560px', paddingBlock:'clamp(48px, 7vw, 80px)', paddingInline:'1.5rem' }}>
+        <div className="page-container req-admin-shell">
           <Reveal>
             <div className="card" style={{ padding:'clamp(32px, 5vw, 48px)', textAlign:'center', boxShadow:'var(--shadow-lg)' }}>
               <div aria-hidden="true" style={{
@@ -383,12 +398,12 @@ export default function RequestsPage() {
         </div>
       </section>
 
-      <div className="page-container" style={{ maxWidth:'820px', paddingBlock:'clamp(32px, 5vw, 56px) clamp(56px, 8vw, 88px)', paddingInline:'1.5rem' }}>
+      <div className="page-container req-shell">
         {/* #86 — email-not-verified banner; shown only when user is signed in but unverified */}
         {!emailVerified && (
-          <div className="form-banner form-banner-info" style={{ marginBlockEnd:'var(--sp-5)' }}>
-            <AlertTriangle size={16} />
-            <span style={{ flex:1, fontWeight:500 }}>{vb.text}</span>
+          <div className="form-banner form-banner-info req-banner" role="status">
+            <AlertTriangle size={16} aria-hidden="true" />
+            <span className="req-banner-text">{vb.text}</span>
             <button
               type="button"
               className="btn btn-outline btn-sm"
@@ -402,9 +417,9 @@ export default function RequestsPage() {
 
         {/* FEATURE 1 — volunteer on-behalf banner */}
         {role === 'volunteer' && (
-          <div className="form-banner form-banner-info" style={{ marginBlockEnd:'var(--sp-5)' }}>
-            <Users size={16} />
-            <span style={{ flex:1, fontWeight:500 }}>{rq.onBehalf.banner}</span>
+          <div className="form-banner form-banner-info req-banner" role="status">
+            <Users size={16} aria-hidden="true" />
+            <span className="req-banner-text">{rq.onBehalf.banner}</span>
           </div>
         )}
 
@@ -414,28 +429,23 @@ export default function RequestsPage() {
 
         {/* STEP 1 — PERSONAL DETAILS */}
         {step === 1 && (
-          <div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:'var(--sp-4)', flexWrap:'wrap', marginBlockEnd:'var(--sp-6)' }}>
+          <div className="req-step" key="step1">
+            <div className="req-step-head req-step-head--split">
               <div style={{ minWidth:0 }}>
-                <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+                <span className="eyebrow req-step-eyebrow">
                   {lang === 'he' ? `שלב 1 מתוך 4` : `Step 1 of 4`}
                 </span>
-                <h3 style={{
-                  fontFamily:'Frank Ruhl Libre, Georgia, serif',
-                  fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
-                  lineHeight:1.2, letterSpacing:'-0.01em', margin:0,
-                }}>{role === 'volunteer' ? rq.onBehalf.step1Title : rq.step1.title}</h3>
+                <h2 className="req-step-title">{role === 'volunteer' ? rq.onBehalf.step1Title : rq.step1.title}</h2>
               </div>
               {/* #67 — auto-fill button */}
               <button
                 type="button"
-                className={`btn btn-ghost btn-sm${profileLoading ? ' is-loading' : ''}`}
+                className={`btn btn-ghost btn-sm req-fill-btn${profileLoading ? ' is-loading' : ''}`}
                 onClick={fillFromProfile}
                 disabled={profileLoading}
                 aria-busy={profileLoading}
-                style={{ color:'var(--ember)', flexShrink:0 }}
               >
-                <Sparkles size={14} /> {s2.autoFill.fillBtn}
+                <Sparkles size={14} aria-hidden="true" /> {s2.autoFill.fillBtn}
               </button>
             </div>
 
@@ -443,11 +453,13 @@ export default function RequestsPage() {
               <FormGroup>
                 <Label htmlFor="firstName" required>{rq.step1.firstName}</Label>
                 <Input id="firstName" name="firstName" value={values.firstName} onChange={handleChange}
+                  autoComplete="given-name" aria-invalid={!!errors.firstName}
                   placeholder={rq.step1.firstNamePH} error={errors.firstName} />
               </FormGroup>
               <FormGroup>
                 <Label htmlFor="lastName" required>{rq.step1.lastName}</Label>
                 <Input id="lastName" name="lastName" value={values.lastName} onChange={handleChange}
+                  autoComplete="family-name" aria-invalid={!!errors.lastName}
                   placeholder={rq.step1.lastNamePH} error={errors.lastName} />
               </FormGroup>
             </FormRow>
@@ -478,6 +490,7 @@ export default function RequestsPage() {
               <FormGroup>
                 <Label htmlFor="idNumber" required>{rq.step1.idNumber}</Label>
                 <Input id="idNumber" name="idNumber" value={values.idNumber} onChange={handleChange}
+                  inputMode="numeric" autoComplete="off" spellCheck={false} aria-invalid={!!errors.idNumber}
                   placeholder={rq.step1.idPH} maxLength={9} error={errors.idNumber} />
               </FormGroup>
             )}
@@ -488,6 +501,7 @@ export default function RequestsPage() {
                   <FormGroup>
                     <Label htmlFor="idNumber">{rq.step1.idNumber}</Label>
                     <Input id="idNumber" name="idNumber" value={values.idNumber} onChange={handleChange}
+                      autoComplete="off" spellCheck={false} aria-invalid={!!errors.idNumber}
                       placeholder="AB123456" maxLength={40} error={errors.idNumber} />
                   </FormGroup>
                 )}
@@ -503,11 +517,13 @@ export default function RequestsPage() {
               <FormGroup>
                 <Label htmlFor="phone" required>{rq.step1.phone}</Label>
                 <Input id="phone" name="phone" type="tel" value={values.phone} onChange={handleChange}
+                  inputMode="tel" autoComplete="tel" aria-invalid={!!errors.phone}
                   placeholder={rq.step1.phonePH} error={errors.phone} />
               </FormGroup>
               <FormGroup>
                 <Label htmlFor="email" required>{rq.step1.email}</Label>
                 <Input id="email" name="email" type="email" value={values.email} onChange={handleChange}
+                  inputMode="email" autoComplete="email" spellCheck={false} aria-invalid={!!errors.email}
                   placeholder={rq.step1.emailPH} error={errors.email}
                   hint={s2.autoFill.emailNote} />
               </FormGroup>
@@ -516,14 +532,16 @@ export default function RequestsPage() {
             <FormRow>
               <FormGroup>
                 <Label htmlFor="city" required>{rq.step1.city}</Label>
-                <Select id="city" name="city" value={values.city} onChange={handleChange} error={errors.city}>
-                  <option value="">{lang === 'he' ? 'בחר עיר...' : 'Select city...'}</option>
+                <Select id="city" name="city" value={values.city} onChange={handleChange}
+                  autoComplete="address-level2" aria-invalid={!!errors.city} error={errors.city}>
+                  <option value="">{lang === 'he' ? 'בחר עיר…' : 'Select city…'}</option>
                   {rq.cities.map(c => <option key={c} value={c}>{c}</option>)}
                 </Select>
               </FormGroup>
               <FormGroup>
                 <Label htmlFor="age">{rq.step1.age}</Label>
                 <Input id="age" name="age" type="number" value={values.age} onChange={handleChange}
+                  inputMode="numeric" autoComplete="off"
                   placeholder={rq.step1.agePH} min={1} max={120} />
               </FormGroup>
             </FormRow>
@@ -546,17 +564,22 @@ export default function RequestsPage() {
 
         {/* STEP 2 — REQUEST TYPE */}
         {step === 2 && (
-          <div>
-            <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+          <div className="req-step" key="step2">
+            <span className="eyebrow req-step-eyebrow">
               {lang === 'he' ? `שלב 2 מתוך 4` : `Step 2 of 4`}
             </span>
-            <h3 style={{
-              fontFamily:'Frank Ruhl Libre, Georgia, serif',
-              fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
-              lineHeight:1.2, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-2)',
-            }}>{rq.step2.title}</h3>
-            <p style={{ fontSize:'var(--fs-sm)', color:'var(--gray-600)', marginBlockEnd:'var(--sp-5)', lineHeight:1.6 }}>{rq.step2.subtitle}</p>
-            <div className="choice-grid" role="radiogroup" aria-label={rq.step2.title} style={{ marginBottom:'24px' }}>
+            <h2 className="req-step-title">{rq.step2.title}</h2>
+            <p className="req-step-intro">{rq.step2.subtitle}</p>
+            <div
+              id="category"
+              className="choice-grid"
+              role="radiogroup"
+              aria-label={rq.step2.title}
+              aria-invalid={!!errors.category}
+              aria-describedby={errors.category ? 'category-error' : undefined}
+              tabIndex={errors.category ? -1 : undefined}
+              style={{ marginBottom:'24px' }}
+            >
               {CATS.map(({ key, Icon, bg, color }) => {
                 const cat = (rq.step2.cats as Record<string, { label?: string; hint?: string }>)[key]
                 const selected = values.category === key
@@ -580,13 +603,13 @@ export default function RequestsPage() {
                 )
               })}
             </div>
-            {errors.category && <div className="form-error" style={{ marginBottom:'14px' }}>{errors.category}</div>}
+            {errors.category && <div id="category-error" role="alert" className="form-error" style={{ marginBottom:'14px' }}>{errors.category}</div>}
 
             <FormGroup>
               <Label htmlFor="description" required>{rq.step2.description}</Label>
               <Textarea id="description" name="description" value={values.description}
                 onChange={handleChange} placeholder={rq.step2.descPH}
-                rows={4} error={errors.description} />
+                rows={4} aria-invalid={!!errors.description} error={errors.description} />
             </FormGroup>
             <FormRow>
               <FormGroup>
@@ -617,16 +640,12 @@ export default function RequestsPage() {
 
         {/* STEP 3 — DOCUMENTS */}
         {step === 3 && (
-          <div>
-            <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+          <div className="req-step" key="step3">
+            <span className="eyebrow req-step-eyebrow">
               {lang === 'he' ? `שלב 3 מתוך 4` : `Step 3 of 4`}
             </span>
-            <h3 style={{
-              fontFamily:'Frank Ruhl Libre, Georgia, serif',
-              fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
-              lineHeight:1.2, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-2)',
-            }}>{rq.step3.title}</h3>
-            <p style={{ fontSize:'var(--fs-sm)', color:'var(--gray-600)', marginBlockEnd:'var(--sp-5)', lineHeight:1.6 }}>{rq.step3.subtitle}</p>
+            <h2 className="req-step-title">{rq.step3.title}</h2>
+            <p className="req-step-intro">{rq.step3.subtitle}</p>
             <FormGroup>
               <UploadArea
                 label={rq.step3.idLabel}
@@ -661,15 +680,11 @@ export default function RequestsPage() {
 
         {/* STEP 4 — SUMMARY + CONSENT */}
         {step === 4 && (
-          <div>
-            <span className="eyebrow" style={{ color:'var(--ember)', display:'block', marginBlockEnd:'var(--sp-2)' }}>
+          <div className="req-step" key="step4">
+            <span className="eyebrow req-step-eyebrow">
               {lang === 'he' ? `שלב 4 מתוך 4` : `Step 4 of 4`}
             </span>
-            <h3 style={{
-              fontFamily:'Frank Ruhl Libre, Georgia, serif',
-              fontSize:'var(--fs-h3)', fontWeight:400, color:'var(--ink)',
-              lineHeight:1.2, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-5)',
-            }}>{rq.step4.title}</h3>
+            <h2 className="req-step-title" style={{ marginBlockEnd:'var(--sp-5)' }}>{rq.step4.title}</h2>
             <div className="review-panel" style={{ marginBottom:'24px' }}>
               <dl className="review-grid">
                 {[
@@ -700,10 +715,12 @@ export default function RequestsPage() {
                   type="checkbox" name="consent"
                   checked={values.consent}
                   onChange={handleChange}
+                  aria-invalid={!!errors.consent}
+                  aria-describedby={errors.consent ? 'consent-error' : undefined}
                 />
                 <span>{rq.step4.consent}</span>
               </label>
-              {errors.consent && <div className="form-error" style={{ marginTop:'8px' }}>{errors.consent}</div>}
+              {errors.consent && <div id="consent-error" role="alert" className="form-error" style={{ marginTop:'8px' }}>{errors.consent}</div>}
             </FormGroup>
 
             {/* #67 — save-to-profile offer */}
@@ -730,10 +747,10 @@ export default function RequestsPage() {
         </Reveal>
 
         {/* NAV BUTTONS */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'var(--sp-3)', marginBlockStart:'var(--sp-5)' }}>
+        <div className="req-nav">
           {step > 1 ? (
             <button className="btn btn-outline" onClick={() => setStep(s => s - 1)} disabled={submitting}>
-              <BackArrow size={16} /> {rq.nav.back}
+              <BackArrow size={16} aria-hidden="true" /> {rq.nav.back}
             </button>
           ) : <span />}
           {/* #86 — email verification is a gentle reminder (banner above), NOT a
@@ -745,38 +762,22 @@ export default function RequestsPage() {
             aria-busy={submitting}
           >
             {step === 4 ? (
-              <><CheckCircle size={16} /> {rq.nav.submit}</>
+              <><CheckCircle size={16} aria-hidden="true" /> {rq.nav.submit}</>
             ) : (
-              <>{rq.nav.next} <NextArrow size={16} /></>
+              <>{rq.nav.next} <NextArrow size={16} aria-hidden="true" /></>
             )}
           </button>
         </div>
 
         {/* Quiet reassurance strip — sets expectations and signals trust. */}
         <Reveal delay={0.1}>
-          <ul style={{
-            listStyle:'none', margin:'var(--sp-7) 0 0', padding:0,
-            display:'grid', gap:'var(--sp-3)',
-            gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',
-          }}>
+          <ul className="req-trust">
             {trustItems.map(({ Icon, text }, i) => (
-              <li key={i} style={{
-                display:'flex', alignItems:'center', gap:'var(--sp-3)',
-                padding:'var(--sp-4)',
-                background:'var(--white)', border:'1px solid var(--hair)',
-                borderRadius:'var(--radius)', boxShadow:'var(--shadow-xs)',
-              }}>
-                <span aria-hidden="true" style={{
-                  flexShrink:0, width:'38px', height:'38px',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  background:'var(--ember-soft)', color:'var(--ember)',
-                  borderRadius:'var(--radius-sm)',
-                }}>
+              <li key={i} className="req-trust-item">
+                <span className="req-trust-icon" aria-hidden="true">
                   <Icon size={18} />
                 </span>
-                <span style={{ fontSize:'var(--fs-sm)', color:'var(--gray-700)', lineHeight:1.45, textAlign:'start' }}>
-                  {text}
-                </span>
+                <span className="req-trust-text">{text}</span>
               </li>
             ))}
           </ul>
