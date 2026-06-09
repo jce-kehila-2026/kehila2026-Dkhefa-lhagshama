@@ -88,6 +88,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--gray-600);
+  font-variant-numeric: tabular-nums;
 }
 
 .myreq-col-body {
@@ -137,6 +138,97 @@
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
+}
+
+/* Base card — keep the ?focus=<id> scroll target clear of the sticky nav. */
+.myreq-card {
+  scroll-margin-block-start: calc(var(--nav-h) + 16px);
+}
+
+/* Card hover lift — tactile, pointer devices only so taps don't stick it. */
+@media (hover: hover) and (pointer: fine) {
+  .myreq-card { transition: transform var(--dur-2) var(--ease-out); }
+  .myreq-card:hover { transform: translateY(-1px); }
+}
+
+/* Disclosure-bar press feedback — the whole bar is the toggle, so the
+   scale is subtle. */
+.myreq-card-toggle {
+  transition: transform var(--dur-1) var(--ease-out);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.myreq-card-toggle:active {
+  transform: scale(0.995);
+}
+
+/* Chevron rotates between collapsed/expanded instead of swapping glyphs. */
+.myreq-card-chevron {
+  transition: background var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+
+.myreq-card-chevron[data-expanded] {
+  transform: rotate(180deg);
+}
+
+/* Suggest-card dismiss — 30px visual circle, but a 44x44 tap target so it
+   meets touch guidance without an oversized corner button. */
+.myreq-suggest-dismiss {
+  transition: transform var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.myreq-suggest-dismiss::before {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  inline-size: 44px;
+  block-size: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.myreq-suggest-dismiss:hover {
+  background: var(--sky-2);
+}
+
+.myreq-suggest-dismiss:active {
+  transform: scale(0.94);
+}
+
+/* Expanded detail panel — short reveal so the content does not appear from
+   nothing. Enhances an already-visible default (the panel renders regardless;
+   the animation only softens its entrance). */
+.myreq-detail-panel {
+  animation: myreq-panel-in var(--dur-3) var(--ease-out) both;
+}
+
+@keyframes myreq-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Reduced motion: drop every transform path; keep instant/opacity only. */
+@media (prefers-reduced-motion: reduce) {
+  .myreq-card,
+  .myreq-card:hover,
+  .myreq-card-toggle,
+  .myreq-card-toggle:active,
+  .myreq-suggest-dismiss,
+  .myreq-suggest-dismiss:active {
+    transition: none;
+    transform: none;
+  }
+  .myreq-card-chevron {
+    transition: none; /* no tween */
+  }
+  .myreq-card-chevron[data-expanded] {
+    transform: rotate(180deg); /* state still legible, snaps instantly */
+  }
+  .myreq-detail-panel {
+    animation: none;
+  }
 }
 
 /* ── req 9 — focused card highlight (?focus=<id>) ──────────────── */
@@ -237,9 +329,8 @@
 .referral-panel {
   margin-block-start: 20px;
   padding: 18px 20px;
-  background: linear-gradient(180deg, var(--white), var(--ember-soft) 420%);
-  border: 1px solid var(--ember-soft);
-  border-inline-start: 3px solid var(--ember);
+  background: var(--ember-soft);
+  border: 1px solid var(--ember);
   border-radius: var(--radius-lg);
 }
 

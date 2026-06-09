@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { CheckCircle, ChevronDown, ChevronUp, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, Sparkles, ExternalLink, X, MessageCircle } from "lucide-react";
+import { CheckCircle, ChevronDown, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, Sparkles, ExternalLink, X, MessageCircle } from "lucide-react";
 
 import RatingForm from "@/components/forms/RatingForm";
 import Reveal from "../components/motion/Reveal";
@@ -85,7 +85,7 @@ function LifecycleStatusPill({ status, t }: { status: string; t: Translations })
 
 // ── Deadline pill (#68) ───────────────────────────────────────
 function DeadlinePill({ deadline, t }: { deadline?: string | null; t: Translations }) {
-  if (!deadline) return <span style={{ color: "var(--gray-400)" }}>—</span>;
+  if (!deadline) return <span style={{ color: "var(--gray-400)" }} aria-hidden="true">·</span>;
   const days = Math.round((new Date(deadline).getTime() - Date.now()) / 86400000);
   const overdue = days < 0;
   const label = t.myRequests.dueIn(days);
@@ -251,8 +251,8 @@ function RateExperienceCard({ requestId, t }: { requestId: string; t: Translatio
       style={{
         marginBlockStart: "20px",
         padding: "22px 24px",
-        background: "linear-gradient(180deg, var(--white), var(--ember-soft) 380%)",
-        border: "1px solid var(--hair)",
+        background: "var(--ember-soft)",
+        border: "1px solid var(--ember-soft)",
         borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-xs)",
       }}
@@ -344,6 +344,7 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
       {/* Header — the whole bar is the toggle */}
       <button
         type="button"
+        className="myreq-card-toggle"
         onClick={() => onToggle(item.id)}
         aria-expanded={isExpanded}
         aria-controls={panelId}
@@ -392,6 +393,8 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
           </div>
           <span
             aria-hidden="true"
+            className="myreq-card-chevron"
+            data-expanded={isExpanded || undefined}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -402,10 +405,9 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
               background: isExpanded ? "var(--ember-soft)" : "var(--sky-3)",
               color: isExpanded ? "var(--ember-700)" : "var(--gray-500)",
               flexShrink: 0,
-              transition: "background var(--dur-2) var(--ease-out)",
             }}
           >
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <ChevronDown size={16} />
           </span>
         </div>
 
@@ -416,7 +418,7 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
           fontSize: "15px",
           lineHeight: 1.55,
         }}>
-          {truncate(item.description || "", 140) || "—"}
+          {truncate(item.description || "", 140) || "·"}
         </p>
 
         {/* Meta grid — 4 collapsed facts (req 11): category, status, created, deadline */}
@@ -435,7 +437,7 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
             <LifecycleStatusPill status={item.status} t={t} />
           </MetaField>
           <MetaField icon={<Calendar size={12} aria-hidden="true" />} label={tbl.date}>
-            {formatDate(item.createdAt, lang) || "—"}
+            {formatDate(item.createdAt, lang) || "·"}
           </MetaField>
           <MetaField label={tbl.deadline}>
             <DeadlinePill deadline={item.deadline} t={t} />
@@ -469,9 +471,10 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
       {isExpanded && (
         <div
           id={panelId}
+          className="myreq-detail-panel"
           style={{
             padding: "4px 24px 24px",
-            background: "linear-gradient(180deg, var(--sky-3), var(--white) 60%)",
+            background: "var(--sky-3)",
             borderBlockStart: "1px solid var(--hair)",
           }}
         >
@@ -535,7 +538,7 @@ function SuggestCard({ items, lang, t, onDismiss }: {
         position: "relative",
         marginBlockEnd: "28px",
         padding: "24px 26px",
-        background: "linear-gradient(180deg, var(--white), var(--ember-soft) 420%)",
+        background: "var(--ember-soft)",
         border: "1px solid var(--ember-soft)",
         borderRadius: "var(--radius-lg)",
         boxShadow: "var(--shadow-xs)",
@@ -543,6 +546,7 @@ function SuggestCard({ items, lang, t, onDismiss }: {
     >
       <button
         type="button"
+        className="myreq-suggest-dismiss"
         onClick={onDismiss}
         aria-label={s.dismiss}
         title={s.dismiss}
@@ -596,7 +600,7 @@ function SuggestCard({ items, lang, t, onDismiss }: {
             >
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>
-                  {title || "—"}
+                  {title || "·"}
                 </div>
                 {source && source !== title && (
                   <div style={{ fontSize: "12.5px", color: "var(--gray-500)", marginBlockStart: "2px" }}>
@@ -848,7 +852,7 @@ export default function MyRequestsPage() {
         ) : (
           <>
             {/* Active requests — archived ones are grouped separately below */}
-            <div style={{ ...labelStyle, marginBlockEnd: "18px" }}>
+            <div style={{ ...labelStyle, marginBlockEnd: "18px" }} aria-live="polite">
               {activeItems.length} · {t.myRequests.title}
             </div>
 
