@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -21,6 +21,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  // First field, so we can move focus to the start of the form when the
+  // credentials are rejected (web-guidelines: "focus first error on submit").
+  const emailRef = useRef<HTMLInputElement>(null)
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -34,6 +37,10 @@ export default function LoginPage() {
     } catch {
       setError(a.error)
       setSubmitting(false)
+      // Return keyboard focus to the first field so the user can correct and
+      // retry without reaching for the mouse. The error text itself is
+      // announced via the role="alert" banner referenced by aria-describedby.
+      emailRef.current?.focus()
     }
   }
 
@@ -47,15 +54,15 @@ export default function LoginPage() {
   // volunteers, shield → satisfaction.
   const trustPoints = [
     {
-      icon: <Users size={18} strokeWidth={2.25} />,
+      icon: <Users size={18} strokeWidth={2.25} aria-hidden="true" />,
       label: `${mockStats.beneficiaries.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${t.hero.stats.beneficiaries}`,
     },
     {
-      icon: <HeartHandshake size={18} strokeWidth={2.25} />,
+      icon: <HeartHandshake size={18} strokeWidth={2.25} aria-hidden="true" />,
       label: `${mockStats.volunteers.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}+ ${t.hero.stats.volunteers}`,
     },
     {
-      icon: <ShieldCheck size={18} strokeWidth={2.25} />,
+      icon: <ShieldCheck size={18} strokeWidth={2.25} aria-hidden="true" />,
       label: `${mockStats.satisfaction}% ${t.hero.stats.satisfaction}`,
     },
   ]
@@ -63,44 +70,14 @@ export default function LoginPage() {
   return (
     <div className="auth-grid" style={{ minHeight: 'calc(100vh - var(--nav-h))' }}>
       {/* ── Brand aside — image + welcome + quiet trust signals. Hidden on small screens. ── */}
-      <aside
-        className="auth-aside"
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Soft layered wash to give the panel depth without competing with the form */}
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            insetInlineEnd: '-12%',
-            insetBlockStart: '-18%',
-            width: '60%',
-            aspectRatio: '1 / 1',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(185,105,78,0.16), transparent 68%)',
-            pointerEvents: 'none',
-          }}
-        />
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            insetInlineStart: '-14%',
-            insetBlockEnd: '-16%',
-            width: '52%',
-            aspectRatio: '1 / 1',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(15,30,45,0.07), transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
+      <aside className="auth-aside">
+        {/* Flat tinted corner blocks give the panel depth without a gradient. */}
+        <span aria-hidden="true" className="login-aside-wash login-aside-wash--ember" />
+        <span aria-hidden="true" className="login-aside-wash login-aside-wash--sky" />
 
-        <div className="auth-aside-inner" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="auth-aside-inner">
           <Reveal y={20}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div className="login-aside-head">
               <AssetImage
                 slot="authAside"
                 rounded="50%"
@@ -108,77 +85,19 @@ export default function LoginPage() {
                 shadow="var(--shadow-lg)"
                 border="4px solid var(--paper)"
                 priority
-                style={{ width: 104, height: 104 }}
+                className="login-aside-avatar"
               />
-              <span
-                className="eyebrow"
-                style={{ textAlign: 'center', color: 'var(--ember)', margin: '24px 0 10px' }}
-              >
-                {orgName}
-              </span>
-              <h1
-                style={{
-                  fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-                  fontSize: 'var(--fs-display)',
-                  fontWeight: 400,
-                  color: 'var(--ink)',
-                  lineHeight: 1.14,
-                  letterSpacing: '-0.01em',
-                  textAlign: 'center',
-                  maxWidth: '24rem',
-                  margin: 0,
-                  textWrap: 'balance',
-                }}
-              >
-                {a.title}
-              </h1>
-              {a.subtitle && (
-                <p
-                  className="section-lede"
-                  style={{
-                    textAlign: 'center',
-                    margin: '16px auto 0',
-                    maxWidth: '26rem',
-                    fontSize: '1.0625rem',
-                  }}
-                >
-                  {a.subtitle}
-                </p>
-              )}
+              <span className="eyebrow login-aside-org">{orgName}</span>
+              <h1 className="login-aside-title">{a.title}</h1>
+              {a.subtitle && <p className="login-aside-lede">{a.subtitle}</p>}
             </div>
           </Reveal>
 
           <Reveal y={20} delay={0.12}>
-            <ul
-              style={{
-                listStyle: 'none',
-                margin: '36px 0 0',
-                padding: 0,
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: '10px',
-              }}
-            >
+            <ul className="login-trust">
               {trustPoints.map((p, i) => (
-                <li
-                  key={i}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    paddingBlock: '8px',
-                    paddingInline: '14px',
-                    background: 'var(--white)',
-                    border: '1px solid var(--hair)',
-                    borderRadius: '999px',
-                    boxShadow: 'var(--shadow-xs)',
-                    fontSize: 'var(--fs-sm)',
-                    fontWeight: 600,
-                    color: 'var(--ink-2)',
-                  }}
-                >
-                  <span style={{ color: 'var(--ember)', display: 'inline-flex' }}>{p.icon}</span>
+                <li key={i} className="login-trust-item">
+                  <span className="login-trust-icon">{p.icon}</span>
                   {p.label}
                 </li>
               ))}
@@ -189,77 +108,50 @@ export default function LoginPage() {
 
       {/* ── Form column ───────────────────────────────────────────── */}
       <main className="auth-main">
-        <Reveal y={24}>
-          <form
-            onSubmit={onSubmit}
-            className="auth-form"
-            noValidate
-            style={{ gap: '20px', boxShadow: 'var(--shadow-lg)', borderColor: 'var(--hair)' }}
-          >
-            <header style={{ marginBlockEnd: '2px' }}>
-              <span
-                className="eyebrow"
-                style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '10px' }}
-              >
-                {orgName}
-              </span>
-              <h2
-                style={{
-                  fontFamily: 'Frank Ruhl Libre, Georgia, serif',
-                  fontWeight: 400,
-                  fontSize: 'var(--fs-h2)',
-                  color: 'var(--ink)',
-                  lineHeight: 1.16,
-                  letterSpacing: '-0.01em',
-                  margin: 0,
-                  textWrap: 'balance',
-                }}
-              >
-                {a.title}
-              </h2>
-              {a.subtitle && (
-                <p
-                  style={{
-                    margin: '8px 0 0',
-                    color: 'var(--gray-600)',
-                    fontSize: 'var(--fs-sm)',
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {a.subtitle}
-                </p>
-              )}
+        <Reveal y={16}>
+          <form onSubmit={onSubmit} className="auth-form" noValidate>
+            <header className="login-form-head">
+              <span className="eyebrow login-form-org">{orgName}</span>
+              <h2 className="login-form-title">{a.title}</h2>
+              {a.subtitle && <p className="login-form-sub">{a.subtitle}</p>}
             </header>
 
             {error && (
-              <div className="form-banner form-banner-error" role="alert">
+              <div id="login-error" className="form-banner form-banner-error" role="alert">
                 <AlertCircle size={16} aria-hidden="true" />
                 <span>{error}</span>
               </div>
             )}
 
-            <div className="form-group" style={{ marginBlockEnd: 0 }}>
-              <label className="form-label" htmlFor="login-email" style={{ textAlign: 'start' }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="login-email">
                 {a.email}
               </label>
               <input
+                ref={emailRef}
                 id="login-email"
+                name="email"
                 type="email"
+                inputMode="email"
                 autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`form-input${error ? ' error' : ''}`}
                 aria-invalid={Boolean(error)}
+                aria-describedby={error ? 'login-error' : undefined}
               />
             </div>
 
-            <div className="form-group" style={{ marginBlockEnd: 0 }}>
-              <label className="form-label" htmlFor="login-password" style={{ textAlign: 'start' }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="login-password">
                 {a.password}
               </label>
               <input
                 id="login-password"
+                name="password"
                 type="password"
                 autoComplete="current-password"
                 required
@@ -268,6 +160,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className={`form-input${error ? ' error' : ''}`}
                 aria-invalid={Boolean(error)}
+                aria-describedby={error ? 'login-error' : undefined}
               />
             </div>
 
@@ -275,37 +168,15 @@ export default function LoginPage() {
               type="submit"
               disabled={submitting}
               aria-busy={submitting}
-              className={`btn btn-ember btn-full${submitting ? ' is-loading' : ''}`}
-              style={{
-                marginBlockStart: 4,
-                gap: '8px',
-                fontWeight: 600,
-              }}
+              className={`btn btn-ember btn-full login-submit${submitting ? ' is-loading' : ''}`}
             >
               {submitting ? a.submitting : a.submit}
               {!submitting && <ArrowIcon size={16} aria-hidden="true" />}
             </button>
 
-            <p
-              style={{
-                fontSize: 'var(--fs-sm)',
-                textAlign: 'center',
-                color: 'var(--gray-600)',
-                margin: '6px 0 0',
-                paddingBlockStart: '16px',
-                borderBlockStart: '1px solid var(--hair)',
-              }}
-            >
+            <p className="login-alt">
               {a.noAccount}{' '}
-              <Link
-                href="/register"
-                style={{
-                  color: 'var(--ember)',
-                  fontWeight: 600,
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '3px',
-                }}
-              >
+              <Link href="/register" className="login-alt-link">
                 {a.registerLink}
               </Link>
             </p>

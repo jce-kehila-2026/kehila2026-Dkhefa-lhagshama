@@ -1,6 +1,10 @@
-/* Auto-split from globals.css — do not edit class names. */
+/* Auth surfaces (Login + Register).
+   Generic .auth-* layout classes are shared between Login and Register — keep
+   them intact. Page-specific styling is prefixed .login-* so a later Register
+   pass can add its own without collision. Brand tokens only: no gradients,
+   no glassmorphism. RTL-safe via logical properties throughout. */
 
-/* ── Auth surfaces (Login + Register) ───────────────────────── */
+/* ── Shared auth layout (Login + Register) ─────────────────────── */
 
 .auth-grid {
   display: grid;
@@ -14,17 +18,25 @@
 
 .auth-aside {
   display: none;
-  background:
-    radial-gradient(120% 120% at 80% 0%, rgba(185,105,78,0.08), transparent 55%),
-    var(--sky-2);
+  position: relative;
+  overflow: hidden;
+  background: var(--sky-2);
   padding: clamp(40px, 5vw, 72px);
   align-items: center;
   justify-content: center;
+  border-inline-end: 1px solid var(--hair);
 }
 
 @media (min-width: 900px) { .auth-aside { display: flex; } }
 
-.auth-aside-inner { display: flex; flex-direction: column; align-items: center; max-width: 30rem; }
+.auth-aside-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 30rem;
+}
 
 .auth-main {
   display: flex;
@@ -39,10 +51,170 @@
   margin-inline: auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
   background: var(--white);
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--hair);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-lg);
   padding: clamp(24px, 4vw, 36px);
+}
+
+/* ── Login aside (brand panel) ─────────────────────────────────── */
+
+/* Two flat tinted corner blocks give the panel quiet depth without a
+   gradient. They sit behind the content and never intercept pointer events. */
+.login-aside-wash {
+  position: absolute;
+  inline-size: 56%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-aside-wash--ember {
+  inset-inline-end: -12%;
+  inset-block-start: -18%;
+  background: var(--ember-soft);
+  opacity: 0.5;
+}
+
+.login-aside-wash--sky {
+  inset-inline-start: -14%;
+  inset-block-end: -16%;
+  background: var(--sky-3);
+}
+
+.login-aside-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-aside-avatar { inline-size: 104px; block-size: 104px; }
+
+.login-aside-org {
+  text-align: center;
+  color: var(--ember);
+  margin-block: 24px 10px;
+}
+
+.login-aside-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: var(--fs-display);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+  text-align: center;
+  max-inline-size: 24rem;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.login-aside-lede {
+  text-align: center;
+  margin: 16px auto 0;
+  max-inline-size: 34ch;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.login-trust {
+  list-style: none;
+  margin: 36px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.login-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 8px;
+  padding-inline: 14px;
+  background: var(--white);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  box-shadow: var(--shadow-xs);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.login-trust-icon { color: var(--ember); display: inline-flex; }
+
+/* ── Login form column ─────────────────────────────────────────── */
+
+/* No bottom margin: the parent .auth-form `gap` owns vertical rhythm so the
+   header sits on the same 20px grid as the fields below it. */
+.login-form-head { margin-block-end: 0; }
+
+/* The shared .form-group carries its own 20px bottom margin for stacked forms.
+   Inside the auth card the flex `gap` already spaces fields, so neutralise the
+   margin here (scoped to .auth-form only — the global .form-group is untouched)
+   to avoid a doubled 40px gap. */
+.auth-form .form-group { margin-block-end: 0; }
+
+/* Remove the 300ms double-tap delay on the form's own controls. */
+.auth-form .form-input,
+.login-submit { touch-action: manipulation; }
+
+.login-form-org {
+  color: var(--ember);
+  display: block;
+  margin-block-end: 10px;
+}
+
+.login-form-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 400;
+  font-size: var(--fs-h2);
+  color: var(--ink);
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.login-form-sub {
+  margin: 8px 0 0;
+  color: var(--gray-600);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.login-submit { margin-block-start: 4px; gap: 8px; font-weight: 600; }
+
+.login-alt {
+  font-size: var(--fs-sm);
+  text-align: center;
+  color: var(--gray-600);
+  margin: 6px 0 0;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--hair);
+}
+
+.login-alt-link {
+  color: var(--ember);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.login-alt-link:hover { color: var(--ember-700); }
+
+/* Color-only feedback above; no motion to disable. Movement-based motion on
+   this screen lives in <Reveal>, which already renders static under reduced
+   motion. This guard is here as a defensive no-op for the .login-* surface. */
+@media (prefers-reduced-motion: reduce) {
+  .login-alt-link { transition: none; }
 }
