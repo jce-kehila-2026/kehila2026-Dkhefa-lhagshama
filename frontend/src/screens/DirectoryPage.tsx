@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Search, Star, Phone, MapPin, Store, HeartHandshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle, Globe, LayoutGrid, Utensils, Wrench, HeartPulse, GraduationCap, Sparkles, Laptop, Briefcase, Scale, Users, Home } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useRouter } from 'next/router'
@@ -32,6 +32,17 @@ const NGO_AREA_ICONS: Record<string, LucideIcon> = {
   legal: Scale,
   social: Users,
   housing: Home,
+}
+
+// Browser autofill hints for the registration form. Presentation metadata
+// only — lets the browser pre-fill name / phone / city sensibly.
+const REG_AUTOCOMPLETE: Record<string, string> = {
+  business_name: 'organization',
+  owner_name: 'name',
+  phone: 'tel',
+  city: 'address-level2',
+  desc: 'off',
+  category: 'off',
 }
 
 // The language context is exported with a precise per-key shape, but this page
@@ -86,31 +97,31 @@ export default function DirectoryPage() {
     const callLabel = String(d.modal.call)
     const visitLabel = String(d.modal.visitWebsite)
     const content = (
-      <div style={{ textAlign: 'start' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBlockEnd: '18px' }}>
+      <div className="dir-modal-content">
+        <div className="dir-modal-chips">
           {categoryLabel && (
-            <span style={{ background: 'var(--ember-soft)', color: 'var(--ember-700)', paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 600 }}>{categoryLabel}</span>
+            <span className="dir-modal-cat">{categoryLabel}</span>
           )}
           {L(biz.city) && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: 'var(--gray-600)' }}>
+            <span className="dir-modal-city">
               <MapPin size={13} aria-hidden="true" /> {L(biz.city)}
             </span>
           )}
         </div>
         {L(biz.description) && (
-          <p style={{ fontSize: '14px', color: 'var(--gray-700)', lineHeight: 1.7, margin: 0 }}>{L(biz.description)}</p>
+          <p className="dir-modal-body">{L(biz.description)}</p>
         )}
       </div>
     )
     const footer = (
       <>
         {phone && (
-          <a href={`tel:${phone}`} className="btn btn-outline btn-sm" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <a href={`tel:${phone}`} className="btn btn-outline btn-sm dir-modal-cta" style={{ textDecoration: 'none' }}>
             <Phone size={14} aria-hidden="true" /> {callLabel}
           </a>
         )}
         {website && (
-          <a href={website} target="_blank" rel="noopener noreferrer" className="btn btn-ember btn-sm" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <a href={website} target="_blank" rel="noopener noreferrer" className="btn btn-ember btn-sm dir-modal-cta" style={{ textDecoration: 'none' }}>
             <Globe size={14} aria-hidden="true" /> {visitLabel}
           </a>
         )}
@@ -125,21 +136,20 @@ export default function DirectoryPage() {
     const audience = L(answer.audience)
     const startLabel = String(d.modal.startRequest)
     const content = (
-      <div style={{ textAlign: 'start' }}>
+      <div className="dir-modal-content">
         {(region || audience) && (
-          <div style={{ fontSize: '12.5px', color: 'var(--gray-500)', marginBlockEnd: '14px' }}>
+          <div className="dir-modal-meta">
             {region}{region && audience ? ' • ' : ''}{audience}
           </div>
         )}
         {L(answer.body) && (
-          <p style={{ fontSize: '14px', color: 'var(--gray-700)', lineHeight: 1.7, margin: 0 }}>{L(answer.body)}</p>
+          <p className="dir-modal-body">{L(answer.body)}</p>
         )}
       </div>
     )
     const footer = (
       <button
-        className="btn btn-ember btn-sm"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        className="btn btn-ember btn-sm dir-modal-cta"
         onClick={() => { closeModal(); router.push('/requests') }}
       >
         {startLabel}
@@ -269,6 +279,14 @@ export default function DirectoryPage() {
     }
   }, [answerCategory])
 
+  // Escape closes the registration modal — standard dialog keyboard affordance.
+  useEffect(() => {
+    if (!showRegForm) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowRegForm(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [showRegForm])
+
   useEffect(() => {
     const live = { current: true }
     loadBusinesses(live)
@@ -296,6 +314,24 @@ export default function DirectoryPage() {
     boxShadow: active ? 'var(--shadow-xs)' : 'none',
     transition: 'color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out)',
   })
+
+  // WAI-ARIA tabs keyboard pattern: Arrow keys move between tabs, Home/End
+  // jump to the ends. Direction-aware so RTL arrows feel natural. This only
+  // moves the active tab (same effect as a click) — no data logic changes.
+  const onTablistKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const order = ['business', 'ngo']
+    const fwd = isRTL ? 'ArrowLeft' : 'ArrowRight'
+    const back = isRTL ? 'ArrowRight' : 'ArrowLeft'
+    const idx = order.indexOf(activeTab)
+    let next = idx
+    if (e.key === fwd) next = (idx + 1) % order.length
+    else if (e.key === back) next = (idx - 1 + order.length) % order.length
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = order.length - 1
+    else return
+    e.preventDefault()
+    setActiveTab(order[next])
+  }
 
   const updateRegisterField = (field: string, value: string) => {
     setRegisterForm(prev => ({ ...prev, [field]: value }))
@@ -393,12 +429,9 @@ export default function DirectoryPage() {
       <section style={{ background: 'var(--cream)', borderBlockEnd: '1px solid var(--hair)' }}>
         <div className="page-container" style={{ paddingBlock: 'clamp(40px, 6vw, 64px) clamp(16px, 2vw, 22px)' }}>
           <Reveal>
-            <div style={{
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: '24px',
-            }}>
-              <div style={{ maxWidth: '40rem' }}>
-                <span className="eyebrow" style={{ color: 'var(--ember)', display: 'block', marginBlockEnd: '14px' }}>
+            <div className="dir-header-row">
+              <div className="dir-header-copy">
+                <span className="eyebrow dir-header-eyebrow">
                   {lang === 'he' ? 'מדריך קהילתי' : 'Community directory'}
                 </span>
                 <h1 className="section-display-bold" style={{ margin: 0 }}>
@@ -416,19 +449,21 @@ export default function DirectoryPage() {
             </div>
           </Reveal>
 
-          {/* Segmented tab control sits at the header baseline (no overlap) */}
+          {/* Segmented tab control sits at the header baseline (no overlap).
+              Roving tabindex + arrow-key handling implement the WAI-ARIA tabs
+              pattern; each tab controls the results panel below. */}
           <div
             role="tablist"
             aria-label={d.pageTitle}
-            style={{
-              display: 'inline-flex', gap: '4px', marginBlockStart: 'clamp(28px, 4vw, 40px)',
-              padding: '5px', borderRadius: '999px',
-              background: 'rgba(15,30,45,0.05)', border: '1px solid var(--hair)',
-            }}
+            className="dir-tabs"
+            onKeyDown={onTablistKeyDown}
           >
             <button
               role="tab"
+              id="dir-tab-business"
               aria-selected={activeTab === 'business'}
+              aria-controls="dir-panel"
+              tabIndex={activeTab === 'business' ? 0 : -1}
               className="dir-tab"
               style={tabStyle(activeTab === 'business')}
               onClick={() => setActiveTab('business')}
@@ -438,7 +473,10 @@ export default function DirectoryPage() {
             </button>
             <button
               role="tab"
+              id="dir-tab-ngo"
               aria-selected={activeTab === 'ngo'}
+              aria-controls="dir-panel"
+              tabIndex={activeTab === 'ngo' ? 0 : -1}
               className="dir-tab"
               style={tabStyle(activeTab === 'ngo')}
               onClick={() => setActiveTab('ngo')}
@@ -451,12 +489,16 @@ export default function DirectoryPage() {
       </section>
 
       <div className="page-container" style={{ paddingBlock: 'clamp(40px, 5vw, 56px) 72px' }}>
+        {/* ── CONTROLS: search + chips + secondary filters in one block ── */}
+        <div
+          className="dir-controls"
+          id="dir-panel"
+          role="tabpanel"
+          aria-labelledby={activeTab === 'business' ? 'dir-tab-business' : 'dir-tab-ngo'}
+        >
         {/* ── SEARCH (always visible, above fold) ────────────────────── */}
-        <div style={{ position: 'relative', marginBlockEnd: '16px' }}>
-          <Search size={17} aria-hidden="true" style={{
-            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-            insetInlineStart: '16px', color: 'var(--gray-400)', pointerEvents: 'none',
-          }} />
+        <div className="dir-search">
+          <Search size={17} aria-hidden="true" className="dir-search-icon" />
           <input
             type="search"
             value={activeTab === 'business' ? bizSearch : answerSearch}
@@ -465,9 +507,11 @@ export default function DirectoryPage() {
               else { setAnswerSearch(e.target.value); setAnswerPage(1) }
             }}
             placeholder={activeTab === 'business' ? d.searchPH : d.searchNGO}
-            className="form-input"
-            style={{ paddingInlineStart: '44px', height: '48px', borderRadius: 'var(--radius)', textAlign: 'start', width: '100%' }}
+            className="form-input dir-search-input"
             aria-label={activeTab === 'business' ? d.searchPH : d.searchNGO}
+            autoComplete="off"
+            spellCheck={false}
+            enterKeyHint="search"
           />
         </div>
 
@@ -507,7 +551,7 @@ export default function DirectoryPage() {
                 )
               })}
             </div>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBlockStart: '16px' }}>
+            <div className="dir-filter-row">
               <input
                 type="text"
                 value={answerRegion}
@@ -515,7 +559,6 @@ export default function DirectoryPage() {
                 placeholder={d.regionPH}
                 aria-label={d.regionPH}
                 className="form-input"
-                style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
               />
               <input
                 type="text"
@@ -524,39 +567,26 @@ export default function DirectoryPage() {
                 placeholder={d.audiencePH}
                 aria-label={d.audiencePH}
                 className="form-input"
-                style={{ minWidth: '180px', flex: 1, textAlign: 'start' }}
               />
             </div>
           </>
         )}
-
-        <div style={{ marginBlockEnd: '24px' }} aria-hidden="true" />
+        </div>
 
         {/* ── RESULTS COUNT ─────────────────────────────────────────── */}
         {!error && (
-          <div
-            aria-live="polite"
-            style={{
-              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize: '12px', letterSpacing: '0.04em', textTransform: 'uppercase',
-              color: 'var(--gray-500)', marginBlockEnd: '20px', fontWeight: 500,
-            }}
-          >
+          <div aria-live="polite" className="dir-results-count">
             {loading ? t.common.loading : `${resultsCount} ${t.common.results}`}
           </div>
         )}
 
         {/* ── ERROR STATE (with Retry) ──────────────────────────────── */}
         {!loading && error && (
-          <div className="dir-empty" role="alert" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px', padding: 'clamp(40px, 7vw, 72px) 24px', background: 'var(--white)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: '56px', height: '56px', borderRadius: '50%',
-              background: 'var(--danger-soft)', color: 'var(--danger)', marginBlockEnd: '8px',
-            }}>
+          <div className="dir-state" role="alert">
+            <span className="dir-state-icon is-error">
               <AlertTriangle size={26} aria-hidden="true" />
             </span>
-            <h3 className="section-display" style={{ color: 'var(--ink)', margin: 0, fontSize: 'var(--fs-h3)' }}>{d.loadError}</h3>
+            <h3 className="section-display dir-state-title">{d.loadError}</h3>
             <button className="btn btn-ember" onClick={() => retry()} style={{ marginBlockStart: '12px' }}>
               {d.retry}
             </button>
@@ -565,7 +595,7 @@ export default function DirectoryPage() {
 
         {/* ── LOADING SKELETON — branded card bones ─────────────────── */}
         {loading && !error && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }} aria-hidden="true">
+          <div className="dir-grid" aria-hidden="true">
             {Array.from({ length: PER_PAGE }).map((_, i) => (
               <div key={i} className="card-bones">
                 <div className="card-bones-head">
@@ -588,19 +618,19 @@ export default function DirectoryPage() {
         {!loading && !error && activeTab === 'business' && (
           <>
             {bizPageData.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+              <div className="dir-grid">
                 {bizPageData.map((biz, i) => {
                   const BannerIcon = BIZ_CAT_ICONS[biz.category as string] || Store
                   const photo = biz.photo ? String(biz.photo) : ''
-                  const base = (biz.logoColor as string) || 'var(--ink)'
                   return (
                   <Reveal key={biz.id} delay={Math.min(i, 5) * 0.06} className="card card-interactive dir-biz-card">
-                    {/* Banner — photo if available, else a gradient + category icon. */}
+                    {/* Banner — photo when present, else a flat ink panel with the
+                        category glyph. No gradient (brand constraint). */}
                     <div
                       className="dir-biz-banner"
                       style={photo
                         ? { backgroundImage: `url("${photo}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                        : { background: `linear-gradient(135deg, ${base} 0%, color-mix(in srgb, ${base} 70%, #0F1E2D) 100%)` }
+                        : undefined
                       }
                       aria-hidden="true"
                     >
@@ -612,32 +642,26 @@ export default function DirectoryPage() {
                       )}
                     </div>
                     <div className="dir-biz-body">
-                      <div style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '17px', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25 }}>{L(biz.name)}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', color: 'var(--gray-500)', marginBlockStart: '4px', marginBlockEnd: '12px' }}>
+                      <div className="dir-biz-name">{L(biz.name)}</div>
+                      <div className="dir-biz-meta">
                         <MapPin size={12} aria-hidden="true" />
                         {d.categories[biz.category] || biz.category} • {L(biz.city)}
                       </div>
-                      <p style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: 1.65, marginBlockEnd: '16px', flex: 1 }}>
+                      <p className="dir-biz-desc">
                         {L(biz.description)}
                       </p>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBlockEnd: '16px' }}>
+                      <div className="dir-tags">
                         {L_arr(biz.tags).map(tag => (
-                          <span key={tag} style={{
-                            background: 'var(--sky-3)', color: 'var(--ink-2)',
-                            paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500,
-                          }}>{tag}</span>
+                          <span key={tag} className="dir-tag">{tag}</span>
                         ))}
                       </div>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start',
-                        marginBlockEnd: '18px', paddingBlockStart: '14px', borderBlockStart: '1px solid var(--hair)', width: '100%',
-                      }}>
+                      <div className="dir-rating">
                         <Star size={15} fill="var(--ember)" color="var(--ember)" aria-hidden="true" />
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>{biz.rating}</span>
-                        <span style={{ fontSize: '12.5px', color: 'var(--gray-500)' }}>({biz.reviews})</span>
+                        <span className="dir-rating-value">{biz.rating}</span>
+                        <span className="dir-rating-count">({biz.reviews})</span>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm" aria-label={`${L(biz.name)} — ${biz.phone}`} style={{ flex: '1 1 140px', minWidth: 0, textDecoration: 'none', display: 'flex', justifyContent: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div className="dir-card-actions">
+                        <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm dir-biz-call" aria-label={`${L(biz.name)} — ${biz.phone}`}>
                           <Phone size={14} aria-hidden="true" /> {biz.phone}
                         </a>
                         <button className="btn btn-ember btn-sm" style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }} onClick={() => openBusinessModal(biz)}>{d.moreBtn}</button>
@@ -648,12 +672,12 @@ export default function DirectoryPage() {
                 })}
               </div>
             ) : (
-              <div className="dir-empty" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px', padding: 'clamp(48px, 8vw, 80px) 24px', background: 'var(--white)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'var(--sky-3)', color: 'var(--ink-2)', marginBlockEnd: '8px' }}>
+              <div className="dir-state">
+                <span className="dir-state-icon">
                   <Store size={26} aria-hidden="true" />
                 </span>
-                <h3 className="section-display" style={{ color: 'var(--ink)', margin: 0, fontSize: 'var(--fs-h3)' }}>{d.emptyBiz}</h3>
-                <p style={{ color: 'var(--gray-500)', margin: 0, maxWidth: '24rem' }}>{d.noResultsHint}</p>
+                <h3 className="section-display dir-state-title">{d.emptyBiz}</h3>
+                <p className="dir-state-hint">{d.noResultsHint}</p>
               </div>
             )}
             <Pagination total={filteredBiz.length} perPage={PER_PAGE} current={bizPage} onChange={setBizPage} />
@@ -664,50 +688,40 @@ export default function DirectoryPage() {
         {!loading && !error && activeTab === 'ngo' && (
           <>
             {answerPageData.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+              <div className="dir-grid">
                 {answerPageData.map((answer, i) => {
                   const aTitle = L(answer.title)
                   const aRegion = L(answer.region)
                   const aAudience = L(answer.audience)
                   const areaLabel = answer.category && (answer.category === 'all' ? d.filterAll : d.ngoAreas[answer.category] || answer.category)
                   return (
-                  <Reveal key={answer.id} delay={Math.min(i, 5) * 0.06} className="card card-interactive" style={{ padding: '26px', display: 'flex', flexDirection: 'column' }}>
+                  <Reveal key={answer.id} delay={Math.min(i, 5) * 0.06} className="card card-interactive dir-answer-card">
                     {areaLabel && (
-                      <span style={{
-                        alignSelf: 'flex-start',
-                        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                        fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-                        color: 'var(--ember-700)', background: 'var(--ember-soft)',
-                        paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', marginBlockEnd: '14px',
-                      }}>
+                      <span className="dir-answer-badge">
                         {areaLabel}
                       </span>
                     )}
-                    <h3 style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '18px', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.3, marginBlockEnd: '6px' }}>
+                    <h3 className="dir-answer-title">
                       {aTitle || d.questionFallback}
                     </h3>
                     {(aRegion || aAudience) && (
-                      <div style={{ fontSize: '12.5px', color: 'var(--gray-500)', marginBlockEnd: '14px' }}>
+                      <div className="dir-answer-sub">
                         {aRegion}{aRegion && aAudience ? ' • ' : ''}{aAudience}
                       </div>
                     )}
-                    <p style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: 1.65, marginBlockEnd: '18px', flex: 1 }}>
+                    <p className="dir-answer-body">
                       {L(answer.body)}
                     </p>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBlockEnd: '18px' }}>
+                    <div className="dir-tags">
                       {aRegion && (
-                        <span style={{ background: 'var(--sky-3)', color: 'var(--ink-2)', paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500 }}>
-                          {aRegion}
-                        </span>
+                        <span className="dir-tag">{aRegion}</span>
                       )}
                       {aAudience && (
-                        <span style={{ background: 'var(--sky-3)', color: 'var(--ink-2)', paddingBlock: '4px', paddingInline: '11px', borderRadius: '999px', fontSize: '12px', fontWeight: 500 }}>
-                          {aAudience}
-                        </span>
+                        <span className="dir-tag">{aAudience}</span>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', paddingBlockStart: '16px', borderBlockStart: '1px solid var(--hair)' }}>
-                      <button className="btn btn-navy btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => openAnswerModal(answer)}>
+                    <div className="dir-answer-footer">
+                      <button className="btn btn-navy btn-sm dir-answer-cta" onClick={() => openAnswerModal(answer)}>
                         {d.moreBtn}
                         <ArrowIcon size={14} aria-hidden="true" />
                       </button>
@@ -717,12 +731,12 @@ export default function DirectoryPage() {
                 })}
               </div>
             ) : (
-              <div className="dir-empty" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px', padding: 'clamp(48px, 8vw, 80px) 24px', background: 'var(--white)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'var(--sky-3)', color: 'var(--ink-2)', marginBlockEnd: '8px' }}>
+              <div className="dir-state">
+                <span className="dir-state-icon">
                   <HeartHandshake size={26} aria-hidden="true" />
                 </span>
-                <h3 className="section-display" style={{ color: 'var(--ink)', margin: 0, fontSize: 'var(--fs-h3)' }}>{d.emptyAnswers}</h3>
-                <p style={{ color: 'var(--gray-500)', margin: 0, maxWidth: '24rem' }}>{d.noResultsHint}</p>
+                <h3 className="section-display dir-state-title">{d.emptyAnswers}</h3>
+                <p className="dir-state-hint">{d.noResultsHint}</p>
               </div>
             )}
             <Pagination total={filteredAnswers.length} perPage={PER_PAGE} current={answerPage} onChange={setAnswerPage} />
@@ -733,23 +747,25 @@ export default function DirectoryPage() {
       {/* Business Registration Modal */}
       {showRegForm && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowRegForm(false)}>
-          <div className="modal-box">
+          <div className="modal-box" role="dialog" aria-modal="true" aria-labelledby="dir-reg-title">
             <div className="modal-header">
-              <h3 style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '20px', fontWeight: 700, color: 'var(--ink)' }}>
+              <h3 id="dir-reg-title" style={{ fontFamily: 'Frank Ruhl Libre, Georgia, serif', fontSize: '20px', fontWeight: 700, color: 'var(--ink)' }}>
                 {d.registerNew}
               </h3>
-              <button onClick={() => setShowRegForm(false)} className="btn btn-ghost btn-sm" aria-label={t.common.cancel} style={{ padding: '6px', display: 'inline-flex' }}>
+              <button onClick={() => setShowRegForm(false)} className="btn btn-ghost btn-sm dir-modal-close" aria-label={t.common.cancel}>
                 <X size={18} aria-hidden="true" />
               </button>
             </div>
             <div className="modal-body">
               {['business_name', 'owner_name', 'phone', 'category', 'city', 'desc'].map(field => (
                 <div className="form-group" key={field}>
-                  <label className="form-label">
+                  <label className="form-label" htmlFor={`dir-reg-${field}`}>
                     {d.fields[field]}
                   </label>
                   {field === 'desc' ? (
                     <textarea
+                      id={`dir-reg-${field}`}
+                      name={field}
                       className="form-textarea"
                       rows={3}
                       value={registerForm.desc}
@@ -757,6 +773,8 @@ export default function DirectoryPage() {
                     />
                   ) : field === 'category' ? (
                     <select
+                      id={`dir-reg-${field}`}
+                      name={field}
                       className="form-select"
                       value={registerForm.category}
                       onChange={(e) => updateRegisterField('category', e.target.value)}
@@ -767,6 +785,9 @@ export default function DirectoryPage() {
                     </select>
                   ) : (
                     <input
+                      id={`dir-reg-${field}`}
+                      name={field}
+                      autoComplete={REG_AUTOCOMPLETE[field] || 'off'}
                       className="form-input"
                       type={field === 'phone' ? 'tel' : 'text'}
                       value={(registerForm as Record<string, string>)[field]}
@@ -782,6 +803,9 @@ export default function DirectoryPage() {
                 </label>
                 <input
                   id="biz-website"
+                  name="website"
+                  autoComplete="url"
+                  spellCheck={false}
                   className="form-input"
                   type="url"
                   inputMode="url"

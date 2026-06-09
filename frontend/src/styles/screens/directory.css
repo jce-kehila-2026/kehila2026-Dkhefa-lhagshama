@@ -3,13 +3,25 @@
 /* Opt-in lift for cards that are actually clickable (links/buttons).
    Static info cards stay still — motion should signal affordance. */
 
-.card-interactive { cursor: pointer; }
+.card-interactive {
+  cursor: pointer;
+  /* Removes the 300ms tap delay and double-tap-zoom on touch. */
+  touch-action: manipulation;
+  /* Name the properties so the lift eases out instead of snapping; the
+     global reduced-motion reset nulls the transform + shortens the timing. */
+  transition: transform var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out);
+}
 
 .card-interactive:hover {
   box-shadow: var(--shadow);
   transform: translateY(-3px);
   border-color: var(--sky);
 }
+
+/* Press feedback: settle toward the surface so a click feels acknowledged. */
+.card-interactive:active { transform: translateY(-1px); }
 
 .card-interactive:focus-within { box-shadow: var(--ring-ink); }
 
@@ -18,7 +30,12 @@
 ───────────────────────────────────────── */
 
 .filter-chip {
-  padding: 7px 15px;
+  /* min-height keeps the chip a comfortable tap target (≥40px) on this
+     touch-friendly directory surface; padding-block carries the rest. */
+  min-height: 40px;
+  padding-block: 8px;
+  padding-inline: 16px;
+  touch-action: manipulation;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
@@ -78,6 +95,15 @@
    a shared class hook so keyboard users get a ring there too.          */
 
 .dir-tab:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--radius-sm); }
+
+/* Press feedback on the segmented tabs, matching the button vocabulary.
+   The inline base style transitions color/background/shadow; add transform
+   here so the press scale eases rather than snaps. */
+.dir-tab { transition: transform var(--dur-1) var(--ease-out); touch-action: manipulation; }
+
+.dir-tab:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) { .dir-tab:active { transform: none; } }
 
 /* ═════════════════════════════════════════════════════════════
    BRANDED SKELETONS + ERROR MOTION + HELP TOOLTIPS (additive)
@@ -160,7 +186,10 @@
   overflow: hidden;
 }
 
-/* Fixed-aspect banner occupies the top of the card. */
+/* Fixed-aspect banner occupies the top of the card. Flat ink fill (no
+   gradient) with a hairline divider to the body; the category glyph sits
+   in cream for clear contrast against the ink. A photo, when present, is
+   set inline as a background-image on this same element. */
 .dir-biz-banner {
   position: relative;
   inline-size: 100%;
@@ -169,11 +198,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ink);
+  background-color: var(--ink);
+  border-block-end: 1px solid var(--hair);
   overflow: hidden;
 }
 
-.dir-biz-banner > svg { opacity: 0.92; }
+.dir-biz-banner > svg {
+  opacity: 0.92;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+
+/* The category glyph leans in slightly as the card is hovered — a quiet cue
+   that the whole card is one interactive surface. Pointer-fine only so a tap
+   on touch doesn't trigger a stuck hover; the global reduce reset drops it. */
+@media (hover: hover) and (pointer: fine) {
+  .dir-biz-card:hover .dir-biz-banner > svg { transform: scale(1.06); }
+}
 
 /* Featured ribbon floats over the banner's start corner. */
 .dir-biz-featured {
@@ -202,4 +242,316 @@
   flex-direction: column;
   flex: 1;
   padding: 22px 24px 24px;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   EXTRACTED PRESENTATION CLASSES
+   These replace inline-style clusters that previously lived in the
+   component. Logic is unchanged; only the styling moved here so values
+   come from tokens and stay consistent across both result lists.
+═════════════════════════════════════════════════════════════ */
+
+/* ── Page header: eyebrow + serif title on one side, action on the other.
+   Asymmetric but disciplined: title hugs the start, the register CTA the
+   end; both drop to a stacked column when there's no room. ── */
+.dir-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.dir-header-copy { max-inline-size: 40rem; }
+
+.dir-header-eyebrow {
+  color: var(--ember);
+  display: block;
+  margin-block-end: 14px;
+}
+
+/* ── Segmented tab control: a tinted track holding two pills. ── */
+.dir-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-block-start: clamp(28px, 4vw, 40px);
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--sky-3);
+  border: 1px solid var(--hair);
+}
+
+/* ── Controls block: search + chips + secondary filters sit in a stack
+   with consistent rhythm (no spacer-div hacks). ── */
+.dir-controls { margin-block-end: clamp(28px, 4vw, 36px); }
+
+.dir-search { position: relative; margin-block-end: 16px; }
+
+.dir-search-icon {
+  position: absolute;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  inset-inline-start: 16px;
+  color: var(--gray-500);
+  pointer-events: none;
+}
+
+.dir-search-input {
+  padding-inline-start: 44px;
+  block-size: 48px;
+  border-radius: var(--radius);
+  text-align: start;
+  inline-size: 100%;
+}
+
+.dir-filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-block-start: 16px;
+}
+
+.dir-filter-row .form-input {
+  min-inline-size: 180px;
+  flex: 1;
+  text-align: start;
+}
+
+/* ── Results count: mono, uppercase, calm. ink-2 clears 4.5:1 on paper. ── */
+.dir-results-count {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-block-end: 20px;
+  font-weight: 500;
+}
+
+/* ── Shared results grid: one definition for skeletons and both lists, so
+   column width and gutter never drift apart. ── */
+.dir-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* ── Business card interior typography / meta ── */
+.dir-biz-name {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.dir-biz-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-sm);
+  color: var(--gray-600);
+  margin-block-start: 4px;
+  margin-block-end: 12px;
+}
+
+.dir-biz-desc {
+  font-size: var(--fs-sm);
+  color: var(--gray-700);
+  line-height: 1.65;
+  margin-block-end: 16px;
+  flex: 1;
+}
+
+/* ── Tag pill (shared by business + answer cards) ── */
+.dir-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-block-end: 16px;
+}
+
+.dir-tag {
+  background: var(--sky-3);
+  color: var(--ink-2);
+  padding-block: 4px;
+  padding-inline: 11px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+/* ── Rating row, divided from the body above it ── */
+.dir-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  inline-size: 100%;
+  margin-block-end: 18px;
+  padding-block-start: 14px;
+  border-block-start: 1px solid var(--hair);
+}
+
+.dir-rating-value { font-size: var(--fs-sm); font-weight: 700; color: var(--ink); }
+
+.dir-rating-count { font-size: var(--fs-sm); color: var(--gray-600); }
+
+/* ── Card action row (phone + details) ── */
+.dir-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.dir-biz-call {
+  flex: 1 1 140px;
+  min-inline-size: 0;
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Answer (NGO) card ── */
+.dir-answer-card {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dir-answer-badge {
+  align-self: flex-start;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ember-700);
+  background: var(--ember-soft);
+  padding-block: 4px;
+  padding-inline: 11px;
+  border-radius: 999px;
+  margin-block-end: 14px;
+}
+
+.dir-answer-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-block-end: 6px;
+}
+
+.dir-answer-sub {
+  font-size: var(--fs-sm);
+  color: var(--gray-600);
+  margin-block-end: 14px;
+}
+
+.dir-answer-body {
+  font-size: var(--fs-sm);
+  color: var(--gray-700);
+  line-height: 1.65;
+  margin-block-end: 18px;
+  flex: 1;
+}
+
+.dir-answer-footer {
+  display: flex;
+  gap: 8px;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--hair);
+}
+
+.dir-answer-cta {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ── State panels (empty + error) share one calm, centered shell ── */
+.dir-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: clamp(48px, 8vw, 80px) 24px;
+  background: var(--white);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.dir-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 56px;
+  block-size: 56px;
+  border-radius: 50%;
+  background: var(--sky-3);
+  color: var(--ink-2);
+  margin-block-end: 8px;
+}
+
+.dir-state-icon.is-error { background: var(--danger-soft); color: var(--danger); }
+
+.dir-state-title { color: var(--ink); margin: 0; font-size: var(--fs-h3); }
+
+.dir-state-hint { color: var(--gray-600); margin: 0; max-inline-size: 24rem; }
+
+/* ── Detail modal content (built in the component as a ReactNode) ── */
+.dir-modal-content { text-align: start; }
+
+.dir-modal-chips {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-block-end: 18px;
+}
+
+.dir-modal-cat {
+  background: var(--ember-soft);
+  color: var(--ember-700);
+  padding-block: 4px;
+  padding-inline: 11px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.dir-modal-city {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-sm);
+  color: var(--gray-600);
+}
+
+.dir-modal-meta {
+  font-size: var(--fs-sm);
+  color: var(--gray-600);
+  margin-block-end: 14px;
+}
+
+.dir-modal-body {
+  font-size: var(--fs-sm);
+  color: var(--gray-700);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.dir-modal-cta { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Registration-modal close: a comfortable square tap target (≥40px) with the
+   glyph centered, so dismissing the form is easy on touch. */
+.dir-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 40px;
+  min-block-size: 40px;
+  padding: 6px;
 }
