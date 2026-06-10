@@ -54,6 +54,10 @@ export default function VolunteerPoolPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeCat, setActiveCat] = useState<string | null>(null)
   const [claiming, setClaiming] = useState<string | null>(null)
+  // req: replace window.prompt with an inline note field. noteFor = the item id
+  // whose claim note input is open; noteText = its draft.
+  const [noteFor, setNoteFor] = useState<string | null>(null)
+  const [noteText, setNoteText] = useState('')
   const [notice, setNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   const load = useCallback(async () => {
@@ -78,9 +82,8 @@ export default function VolunteerPoolPage() {
     return activeCat ? all.filter((i) => i.category === activeCat) : all
   }, [data, activeCat])
 
-  const claim = async (item: PoolItem) => {
+  const claim = async (item: PoolItem, note?: string) => {
     if (item.claimedByMe || claiming) return
-    const note = window.prompt(p.claimNotePrompt) ?? undefined
     setClaiming(item.id)
     setNotice(null)
     try {
@@ -100,6 +103,8 @@ export default function VolunteerPoolPage() {
       setNotice({ kind: 'err', text: p.claimError })
     } finally {
       setClaiming(null)
+      setNoteFor(null)
+      setNoteText('')
     }
   }
 
@@ -195,21 +200,54 @@ export default function VolunteerPoolPage() {
               </div>
             </dl>
 
-            <button
-              type="button"
-              className="btn btn-primary btn-sm volapp-claim-btn"
-              disabled={item.claimedByMe || claiming === item.id}
-              onClick={() => claim(item)}
-            >
-              {item.claimedByMe ? (
-                <>
-                  <Check size={15} aria-hidden="true" />
-                  {p.claimed}
-                </>
-              ) : (
-                p.claim
-              )}
-            </button>
+            {item.claimedByMe ? (
+              <button type="button" className="btn btn-primary btn-sm volapp-claim-btn" disabled>
+                <Check size={15} aria-hidden="true" />
+                {p.claimed}
+              </button>
+            ) : noteFor === item.id ? (
+              <div className="volapp-claim-note">
+                <label htmlFor={`claim-note-${item.id}`} className="sr-only">
+                  {p.claimNotePrompt}
+                </label>
+                <textarea
+                  id={`claim-note-${item.id}`}
+                  className="form-textarea"
+                  rows={3}
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder={p.claimNotePrompt}
+                  autoFocus
+                />
+                <div className="volapp-claim-note-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={claiming === item.id}
+                    onClick={() => claim(item, noteText.trim() || undefined)}
+                  >
+                    {p.claim}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    disabled={claiming === item.id}
+                    onClick={() => { setNoteFor(null); setNoteText('') }}
+                  >
+                    {t.common.cancel}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm volapp-claim-btn"
+                disabled={claiming === item.id}
+                onClick={() => { setNoteFor(item.id); setNoteText('') }}
+              >
+                {p.claim}
+              </button>
+            )}
           </article>
         ))}
       </div>

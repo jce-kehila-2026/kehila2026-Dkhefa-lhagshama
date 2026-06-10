@@ -298,6 +298,18 @@
 /* Pool: tabular numerals on the claims-count value (additive, pool-only). */
 .volapp-num { font-variant-numeric: tabular-nums; }
 
+/* Inline claim-note (replaces window.prompt): textarea + confirm/cancel,
+   sitting where the claim button was, pinned to the card's bottom edge. */
+.volapp-claim-note {
+  margin-block-start: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.volapp-claim-note .form-textarea { width: 100%; }
+.volapp-claim-note-actions { display: flex; gap: var(--sp-2); }
+.volapp-claim-note-actions .btn { flex: 1; justify-content: center; }
+
 /* Layout only: press/focus/disabled/reduced-motion all inherited from
    the shared .btn / .btn-primary system. Don't duplicate them here. */
 .volapp-claim-btn {
