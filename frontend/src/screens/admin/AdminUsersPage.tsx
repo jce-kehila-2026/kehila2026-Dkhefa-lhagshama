@@ -3,6 +3,7 @@ import { Users, ShieldCheck, UserCheck, UserX, Lock } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiJson, apiFetch } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
+import ConfirmDialog from '@/components/feedback/ConfirmDialog'
 import Reveal from '../../components/motion/Reveal'
 import {
   StatCard,
@@ -44,6 +45,9 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  // Disabling an account is destructive (locks them out), so it goes through a
+  // branded confirm dialog. Re-enabling is non-destructive and stays one-click.
+  const [confirmDisableUid, setConfirmDisableUid] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -109,6 +113,9 @@ export default function AdminUsersPage() {
   const adminCount = items.filter((u) => (u.role || 'beneficiary') === 'admin').length
   const activeCount = items.filter((u) => !u.disabled).length
   const disabledCount = items.filter((u) => u.disabled).length
+
+  const confirmTarget = confirmDisableUid ? items.find((u) => u.uid === confirmDisableUid) : null
+  const confirmName = confirmTarget?.displayName || confirmTarget?.email || confirmDisableUid || ''
 
   return (
     <AdminLayout title={a.userMgmt.title} subtitle={a.userMgmt.subtitle}>
@@ -228,7 +235,11 @@ export default function AdminUsersPage() {
                                 type="button"
                                 className="btn btn-ghost btn-sm"
                                 disabled={busy}
-                                onClick={() => toggleDisabled(u.uid, u.disabled)}
+                                onClick={() =>
+                                  u.disabled
+                                    ? toggleDisabled(u.uid, u.disabled)
+                                    : setConfirmDisableUid(u.uid)
+                                }
                                 aria-label={`${u.disabled ? a.userMgmt.enable : a.userMgmt.disable}: ${name}`}
                               >
                                 {u.disabled
@@ -248,6 +259,21 @@ export default function AdminUsersPage() {
           </div>
         </Reveal>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDisableUid}
+        variant="danger"
+        title={a.userMgmt.disableConfirmTitle}
+        message={confirmName ? `${confirmName}: ${a.userMgmt.disableConfirmBody}` : a.userMgmt.disableConfirmBody}
+        confirmLabel={a.userMgmt.disable}
+        cancelLabel={t.common.cancel}
+        busy={busyId === confirmDisableUid}
+        onConfirm={() => {
+          const uid = confirmDisableUid
+          if (uid) toggleDisabled(uid, false).then(() => setConfirmDisableUid(null))
+        }}
+        onCancel={() => setConfirmDisableUid(null)}
+      />
     </AdminLayout>
   )
 }
