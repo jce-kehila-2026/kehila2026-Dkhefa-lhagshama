@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { AlertCircle } from 'lucide-react'
 import type { CSSProperties, ReactNode, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
@@ -31,12 +32,18 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ error, hint, ...props }: InputProps) {
+  const errorId = useId()
   return (
     <>
-      <input className={`form-input${error ? ' error shake' : ''}`} {...props} />
+      <input
+        className={`form-input${error ? ' error shake' : ''}`}
+        {...props}
+        aria-invalid={error ? true : props['aria-invalid']}
+        aria-describedby={error ? errorId : props['aria-describedby']}
+      />
       {error && (
-        <div className="form-error">
-          <AlertCircle size={12} />
+        <div id={errorId} className="form-error" role="alert">
+          <AlertCircle size={12} aria-hidden="true" />
           {error}
         </div>
       )}
@@ -52,14 +59,20 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export function Select({ error, hint, children, ...props }: SelectProps) {
+  const errorId = useId()
   return (
     <>
-      <select className={`form-select${error ? ' error shake' : ''}`} {...props}>
+      <select
+        className={`form-select${error ? ' error shake' : ''}`}
+        {...props}
+        aria-invalid={error ? true : props['aria-invalid']}
+        aria-describedby={error ? errorId : props['aria-describedby']}
+      >
         {children}
       </select>
       {error && (
-        <div className="form-error">
-          <AlertCircle size={12} />
+        <div id={errorId} className="form-error" role="alert">
+          <AlertCircle size={12} aria-hidden="true" />
           {error}
         </div>
       )}
@@ -74,12 +87,18 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 export function Textarea({ error, hint, ...props }: TextareaProps) {
+  const errorId = useId()
   return (
     <>
-      <textarea className={`form-textarea${error ? ' error shake' : ''}`} {...props} />
+      <textarea
+        className={`form-textarea${error ? ' error shake' : ''}`}
+        {...props}
+        aria-invalid={error ? true : props['aria-invalid']}
+        aria-describedby={error ? errorId : props['aria-describedby']}
+      />
       {error && (
-        <div className="form-error">
-          <AlertCircle size={12} />
+        <div id={errorId} className="form-error" role="alert">
+          <AlertCircle size={12} aria-hidden="true" />
           {error}
         </div>
       )}
