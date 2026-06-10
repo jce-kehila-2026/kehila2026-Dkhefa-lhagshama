@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import Reveal from '@/components/motion/Reveal'
 
 export default function VolunteerThanksPage() {
-  const { t, lang, isRTL } = useLanguage()
+  const { t, isRTL } = useLanguage()
   const v = t.volunteerSignup
   const HomeArrow = isRTL ? ArrowRight : ArrowLeft
 
@@ -80,7 +80,7 @@ export default function VolunteerThanksPage() {
               marginBlockEnd: 'var(--sp-3)',
             }}
           >
-            {lang === 'he' ? 'הבקשה נשלחה' : 'Application received'}
+            {v.thanksEyebrow}
           </span>
 
           <h1

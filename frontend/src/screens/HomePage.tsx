@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, useRef } from 'react'
+import type { CSSProperties, ReactNode, KeyboardEvent } from 'react'
 import { useRouter } from 'next/router'
 import { ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Star, Check, HeartHandshake } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
@@ -31,8 +31,24 @@ export default function HomePage() {
 
   const serviceEntries = Object.entries(t.services.items)
 
-  // Success-stories gallery: one panel is the highlight at a time.
+  // Success-stories gallery: one panel is the highlight at a time. It behaves
+  // as an ARIA tablist — roving tabindex + arrow/Home/End keys (RTL-aware).
   const [activeStory, setActiveStory] = useState(0)
+  const storyTablistRef = useRef<HTMLDivElement>(null)
+  const onStoryKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const count = mockStories.length
+    const forward = e.key === 'ArrowDown' || e.key === (isRTL ? 'ArrowLeft' : 'ArrowRight')
+    const backward = e.key === 'ArrowUp' || e.key === (isRTL ? 'ArrowRight' : 'ArrowLeft')
+    let next: number
+    if (forward) next = (i + 1) % count
+    else if (backward) next = (i - 1 + count) % count
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = count - 1
+    else return
+    e.preventDefault()
+    setActiveStory(next)
+    storyTablistRef.current?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus()
+  }
 
   return (
     <main>
@@ -165,7 +181,7 @@ export default function HomePage() {
           <Reveal>
             <header className="home-section-head-start">
               <span className="home-eyebrow-onink">
-                {lang === 'he' ? 'קולות מהקהילה' : 'Voices from the community'}
+                {t.stories.eyebrow}
               </span>
               <h2 className="home-display-onink">{t.stories.title}</h2>
               <p className="home-lede-onink">{t.stories.subtitle}</p>
@@ -173,7 +189,7 @@ export default function HomePage() {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <div className="story-gallery" role="tablist" aria-label={t.stories.title}>
+            <div ref={storyTablistRef} className="story-gallery" role="tablist" aria-label={t.stories.title}>
               {mockStories.map((s, i) => {
                 const active = i === activeStory
                 const name = lang === 'he' ? s.name : s.nameEn
@@ -184,9 +200,10 @@ export default function HomePage() {
                     type="button"
                     role="tab"
                     aria-selected={active}
-                    aria-label={name}
+                    tabIndex={active ? 0 : -1}
                     className={`story-panel${active ? ' is-active' : ''}`}
                     onClick={() => setActiveStory(i)}
+                    onKeyDown={(e) => onStoryKey(e, i)}
                     onMouseEnter={() => !reduce && setActiveStory(i)}
                     onFocus={() => setActiveStory(i)}
                   >

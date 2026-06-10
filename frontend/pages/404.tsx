@@ -3,8 +3,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function Custom404() {
-  const { lang, isRTL } = useLanguage()
-  const isHe = lang === 'he'
+  const { t, isRTL } = useLanguage()
   // Home points "back" into the app; mirror the arrow for RTL.
   const HomeArrow = isRTL ? ArrowRight : ArrowLeft
   return (
@@ -32,7 +31,7 @@ export default function Custom404() {
         }}
       >
         <span className="eyebrow" style={{ color: 'var(--ember)' }}>
-          {isHe ? 'שגיאה 404' : 'Error 404'}
+          {t.notFound.eyebrow}
         </span>
         <span
           aria-hidden="true"
@@ -59,16 +58,14 @@ export default function Custom404() {
             textWrap: 'balance',
           }}
         >
-          {isHe ? 'הדף לא נמצא' : 'Page not found'}
+          {t.notFound.title}
         </h1>
         <p className="section-lede" style={{ margin: '0 auto 28px', maxWidth: '30rem' }}>
-          {isHe
-            ? 'הקישור שביקשת אינו קיים או שהוסר. אפשר לחזור לדף הבית ולהמשיך משם.'
-            : 'The link you followed does not exist or was moved. Head back to the home page to continue.'}
+          {t.notFound.subtitle}
         </p>
         <Link href="/" className="btn btn-primary btn-lg">
           <HomeArrow size={18} strokeWidth={2} aria-hidden="true" />
-          {isHe ? 'חזרה לדף הבית' : 'Back to Home Page'}
+          {t.notFound.btn}
         </Link>
       </div>
     </main>

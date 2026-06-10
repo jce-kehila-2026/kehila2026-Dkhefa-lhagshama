@@ -106,8 +106,8 @@ export default function VolunteerPage() {
                 {/* Summary strip */}
                 <div className="vol-summary">
                   {[
-                    { icon: <Users size={18} />, num: volunteers.length, label: lang === 'he' ? 'מתנדבים פעילים' : 'Active volunteers' },
-                    { icon: <Sparkles size={18} />, num: availableCount, label: lang === 'he' ? 'זמינים כעת' : 'Available now' },
+                    { icon: <Users size={18} />, num: volunteers.length, label: v.statActiveVolunteers },
+                    { icon: <Sparkles size={18} />, num: availableCount, label: v.statAvailableNow },
                   ].map((stat, i) => (
                     <div key={i} className="vol-stat">
                       <span className="vol-stat-icon" aria-hidden="true">
@@ -127,7 +127,7 @@ export default function VolunteerPage() {
                       <HeartHandshake size={26} />
                     </div>
                     <p className="vol-empty-text">
-                      {lang === 'he' ? 'עדיין אין מתנדבים רשומים. היו הראשונים להצטרף.' : 'No volunteers yet. Be the first to join.'}
+                      {v.emptyState}
                     </p>
                   </div>
                 ) : (
@@ -162,7 +162,7 @@ export default function VolunteerPage() {
                           {/* Status pill */}
                           <span className={`vol-status ${isAvailable ? 'vol-status-available' : 'vol-status-assigned'}`}>
                             <span className="vol-status-dot" aria-hidden="true" />
-                            {isAvailable ? v.available : (lang === 'he' ? 'משויך' : 'Assigned')}
+                            {isAvailable ? v.available : v.assigned}
                           </span>
                         </div>
                       )

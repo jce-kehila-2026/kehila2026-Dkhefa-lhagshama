@@ -114,6 +114,7 @@ const base = {
     // ── STORIES ───────────────────────────────────────────────
     stories: {
       title:   'סיפורי הצלחה',
+      eyebrow: 'קולות מהקהילה',
       subtitle:'מה אומרים המטופלים שלנו',
     },
 
@@ -313,6 +314,10 @@ const base = {
         areasList:  ['חינוך וחניכה','ייעוץ משפטי','תעסוקה','שילוב חברתי','בריאות ורווחה','יזמות ועסקים'],
       },
       available: 'זמין לשיוך',
+      assigned: 'משויך',
+      statActiveVolunteers: 'מתנדבים פעילים',
+      statAvailableNow: 'זמינים כעת',
+      emptyState: 'עדיין אין מתנדבים רשומים. היו הראשונים להצטרף.',
       // Note 4 — role-adaptive VolunteerPage content
       applyCta:    'הגשת מועמדות להתנדבות',
       memberTitle: 'אתם חלק מהצוות',
@@ -738,6 +743,7 @@ const base = {
 
     // ── 404 ───────────────────────────────────────────────────
     notFound: {
+      eyebrow: 'שגיאה 404',
       title:   'הדף לא נמצא',
       subtitle:'הדף שחיפשת אינו קיים או הועבר למיקום אחר.',
       btn:     'חזרה לדף הבית',
@@ -843,6 +849,7 @@ const base = {
       thanksTitle:    'תודה על ההגשה!',
       thanksSubtitle: 'קיבלנו את בקשתך להצטרף כמתנדב/ת. נציג יצור איתך קשר בקרוב לתיאום.',
       thanksBackHome: 'חזרה לדף הבית',
+      thanksEyebrow:  'הבקשה נשלחה',
     },
 
     // ── CHAT (UC-04) ──────────────────────────────────────────
@@ -1112,6 +1119,7 @@ const base = {
 
     stories: {
       title:   'Success Stories',
+      eyebrow: 'Voices from the community',
       subtitle:'What our beneficiaries say about us',
     },
 
@@ -1306,6 +1314,10 @@ const base = {
         areasList:  ['Education & Mentoring','Legal Consulting','Employment','Social Integration','Health & Welfare','Entrepreneurship & Business'],
       },
       available: 'Available for Assignment',
+      assigned: 'Assigned',
+      statActiveVolunteers: 'Active volunteers',
+      statAvailableNow: 'Available now',
+      emptyState: 'No volunteers yet. Be the first to join.',
       // Note 4 — role-adaptive VolunteerPage content
       applyCta:    'Apply to volunteer',
       memberTitle: "You're part of the team",
@@ -1722,6 +1734,7 @@ const base = {
     },
 
     notFound: {
+      eyebrow: 'Error 404',
       title:   'Page Not Found',
       subtitle:'The page you\'re looking for doesn\'t exist or has been moved.',
       btn:     'Back to Home',
@@ -1827,6 +1840,7 @@ const base = {
       thanksTitle:    'Thank You for Applying!',
       thanksSubtitle: 'We received your volunteer application. A representative will contact you soon to coordinate.',
       thanksBackHome: 'Back to Home',
+      thanksEyebrow:  'Application received',
     },
 
     // ── CHAT (UC-04) ──────────────────────────────────────────
