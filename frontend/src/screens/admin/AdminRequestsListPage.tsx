@@ -68,10 +68,21 @@ export default function AdminRequestsListPage() {
     const params = new URLSearchParams(window.location.search)
     setClaimsOnly(params.get('claims') === 'true')
     const status = params.get('status')
-    if (status && (STATUS_FILTERS as readonly string[]).includes(status)) {
+    if (status && ([...STATUS_FILTERS, ARCHIVED_FILTER] as readonly string[]).includes(status)) {
       setFilter(status as FilterKey)
     }
   }, [])
+
+  // Reflect the active filter in the URL so the view is bookmarkable, shareable,
+  // and survives a refresh. replaceState (not push) keeps history clean per click.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams()
+    if (filter) params.set('status', filter)
+    if (claimsOnly) params.set('claims', 'true')
+    const qs = params.toString()
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+  }, [filter, claimsOnly])
 
   // Resolve the human label for a filter tab. Active statuses use the canonical
   // admin status labels; the archived tab + "all" use their dedicated keys.
