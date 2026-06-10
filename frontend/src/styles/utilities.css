@@ -19,7 +19,7 @@
 ───────────────────────────────────────── */
 
 .font-display {
-  font-family: 'Frank Ruhl Libre', serif;
+  font-family: var(--font-serif);
 }
 
 /* ─────────────────────────────────────────
@@ -47,7 +47,7 @@
 .section-head-bold { position: relative; }
 
 .section-display-bold {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 500;
   font-size: var(--fs-display);
   line-height: 1.1;
@@ -114,7 +114,7 @@
    (the org name, a section kicker), NOT above every section. */
 
 .eyebrow {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.12em;
@@ -127,7 +127,7 @@
 /* Section header composition: eyebrow + serif display heading. */
 
 .section-eyebrow {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.12em;
@@ -137,7 +137,7 @@
 }
 
 .section-display {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: var(--fs-display);
   line-height: 1.14;

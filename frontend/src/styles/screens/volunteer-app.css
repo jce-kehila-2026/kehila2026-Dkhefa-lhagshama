@@ -20,7 +20,7 @@
 }
 
 .volapp-panel-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 1.2rem;
   font-weight: 400;
   color: var(--ink);
@@ -47,7 +47,7 @@
 .volapp-inline-msg {
   margin: 0.5rem 0 0;
   font-size: 0.85rem;
-  color: #2E6E45;
+  color: var(--success);
 }
 
 .volapp-inline-msg.is-error { color: var(--ember); }
@@ -234,7 +234,7 @@
 }
 
 .volapp-req-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 1.1rem;
   font-weight: 400;
   color: var(--ink);

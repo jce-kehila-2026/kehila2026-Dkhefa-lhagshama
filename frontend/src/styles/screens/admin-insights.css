@@ -34,7 +34,7 @@
 
 .insights-card-title {
   margin: 0 0 var(--sp-4);
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: var(--fs-h3);
   line-height: 1.2;
@@ -64,7 +64,7 @@
 }
 
 .insights-stat-value {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: clamp(2.4rem, 1.8rem + 3vw, 3.6rem);
   line-height: 1;

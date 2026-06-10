@@ -202,7 +202,7 @@
   border: 1px solid var(--hair);
   background: var(--paper);
   font-size: 13.5px;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: border-color var(--dur-2) var(--ease-out),

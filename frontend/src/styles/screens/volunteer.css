@@ -181,7 +181,7 @@
 }
 
 .vol-stat-num {
-  font-family: var(--font-serif, Frank Ruhl Libre, Georgia, serif);
+  font-family: var(--font-serif);
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--ink);
@@ -192,7 +192,7 @@
 .vol-stat-label {
   font-size: var(--fs-xs);
   color: var(--gray-600);
-  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-family: var(--font-mono, var(--font-mono));
   letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-block-start: 4px;
@@ -277,7 +277,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif, Frank Ruhl Libre, Georgia, serif);
+  font-family: var(--font-serif);
   font-weight: 700;
   color: var(--cream);
   font-size: 1.0625rem;
@@ -324,7 +324,7 @@
   border-radius: 999px;
   font-size: var(--fs-xs);
   font-weight: 600;
-  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-family: var(--font-mono, var(--font-mono));
   letter-spacing: 0.03em;
   white-space: nowrap;
 }

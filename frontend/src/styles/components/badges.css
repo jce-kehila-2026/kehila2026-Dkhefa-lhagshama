@@ -50,7 +50,7 @@
 
 .badge-blue  { background: var(--sky-2); color: var(--ink); }
 
-.badge-green { background: #DCEAE0; color: #2E6E45; }
+.badge-green { background: var(--success-soft); color: var(--success); }
 
 .badge-red   { background: #F4DDD3; color: var(--ember); }
 

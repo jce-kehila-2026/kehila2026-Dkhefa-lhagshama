@@ -54,7 +54,7 @@ a { color: inherit; }
 
 ::-webkit-scrollbar-thumb:hover { background: var(--ink-2); }
 
-h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
+h1, h2, h3 { font-family: var(--font-serif); }
 
 *:focus-visible {
   outline: 2px solid var(--ember);

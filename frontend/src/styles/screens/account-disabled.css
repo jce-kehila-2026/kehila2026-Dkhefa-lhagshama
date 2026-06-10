@@ -53,7 +53,7 @@
 }
 
 .disabled-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-size: var(--fs-display);
   font-weight: 400;
   line-height: 1.14;

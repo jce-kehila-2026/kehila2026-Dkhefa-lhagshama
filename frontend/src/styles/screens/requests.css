@@ -96,7 +96,7 @@
 }
 
 .req-step-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-size: var(--fs-h3);
   font-weight: 400;
   color: var(--ink);

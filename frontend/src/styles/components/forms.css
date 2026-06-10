@@ -108,7 +108,7 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono);
   transition: background-color var(--dur-3) var(--ease-out),
               color var(--dur-3) var(--ease-out),
               box-shadow var(--dur-3) var(--ease-out);
@@ -219,7 +219,7 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 700;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono);
   background: var(--gray-100);
   color: var(--gray-500);
   border: 1px solid var(--line);

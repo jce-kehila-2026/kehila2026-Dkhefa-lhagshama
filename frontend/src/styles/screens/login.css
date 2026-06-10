@@ -100,7 +100,7 @@
 }
 
 .login-aside-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-size: var(--fs-display);
   font-weight: 400;
   color: var(--ink);
@@ -172,7 +172,7 @@
 }
 
 .login-form-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: var(--fs-h2);
   color: var(--ink);
@@ -270,7 +270,7 @@
 }
 
 .reg-aside-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: var(--fs-display);
   line-height: 1.14;
@@ -336,7 +336,7 @@
 }
 
 .reg-head-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: var(--fs-h2);
   line-height: 1.18;

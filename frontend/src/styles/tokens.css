@@ -71,6 +71,10 @@
   --fs-sm:      0.875rem;
   --fs-xs:      0.75rem;
 
+  /* ── Font families — single source so screens stop repeating the stacks ── */
+  --font-serif: "Frank Ruhl Libre", Georgia, serif;
+  --font-mono:  ui-monospace, "SF Mono", Menlo, monospace;
+
   /* ── Spacing scale (4px base, geometric-ish for rhythm) ──────── */
   --sp-1:  4px;
   --sp-2:  8px;

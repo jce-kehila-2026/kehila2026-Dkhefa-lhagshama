@@ -349,7 +349,7 @@
 }
 
 .referral-panel-title {
-  font-family: "Frank Ruhl Libre", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 1.05rem;
   font-weight: 500;
   color: var(--ink);
