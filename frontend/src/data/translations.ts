@@ -660,7 +660,8 @@ const base = {
 
     // ── REQUEST LIFECYCLE (Notes 1,6,7,8) ─────────────────────
     lifecycle: {
-      // Canonical status enum labels (Note 6). 'resolved' is retired.
+      // Canonical status enum labels (Note 6). 'resolved' is retired for new
+      // writes but legacy docs still carry it, so it keeps a display label.
       statusLabels: {
         pending:         'ממתין',
         in_progress:     'בטיפול',
@@ -668,6 +669,7 @@ const base = {
         closed:          'סגור',
         rejected:        'נדחה',
         referred:        'הופנה',
+        resolved:        'נפתר',
       },
       archivedLabel: 'בארכיון',
       archivedBadge: 'בארכיון',
@@ -1802,7 +1804,8 @@ const base = {
 
     // ── REQUEST LIFECYCLE (Notes 1,6,7,8) ─────────────────────
     lifecycle: {
-      // Canonical status enum labels (Note 6). 'resolved' is retired.
+      // Canonical status enum labels (Note 6). 'resolved' is retired for new
+      // writes but legacy docs still carry it, so it keeps a display label.
       statusLabels: {
         pending:         'Pending',
         in_progress:     'In progress',
@@ -1810,6 +1813,7 @@ const base = {
         closed:          'Closed',
         rejected:        'Rejected',
         referred:        'Referred',
+        resolved:        'Resolved',
       },
       archivedLabel: 'Archived',
       archivedBadge: 'Archived',

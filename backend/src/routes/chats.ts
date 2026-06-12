@@ -21,6 +21,7 @@ import express, { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { auth, db, storage } from '@/lib/firebaseAdmin';
+import { resolveDisplayName } from '@/lib/displayName';
 import { mintSignedReadUrl, SIGNED_URL_TTL_MS } from '@/lib/signedUrl';
 import { notifyBeneficiaryOfRequest } from '@/lib/notify';
 import { sanitizeFilename } from '@/lib/sanitizeFilename';
@@ -50,12 +51,17 @@ export async function postSystemMessage(
   marker: string,
   targetUid?: string,
 ): Promise<void> {
+  // Denormalize the affected user's name at write time so the note stays
+  // readable after the user leaves the participants list (e2e round 2,
+  // defect D3: "X was removed" showed a uid fragment once X was gone).
+  const targetName = targetUid ? await resolveDisplayName(targetUid) : null;
   const msgRef = db().collection('messages').doc();
   await msgRef.set({
     chatId,
     senderId: 'system',
     content: `[SYSTEM] ${marker}`,
     ...(targetUid ? { targetUid } : {}),
+    ...(targetName ? { targetName } : {}),
     timestamp: FieldValue.serverTimestamp(),
     status: 'sent',
     isSystem: true,
@@ -547,12 +553,12 @@ router.get('/:id/participants', authenticate, async (req: Request, res: Response
   try {
     const participants = await Promise.all(
       (chatData.participants ?? []).map(async (uid) => {
+        // Name falls through users → volunteers → Auth (e2e round 2, defect
+        // D3: users mirror docs are mostly missing/empty, so rail + bubbles
+        // degraded to uid fragments).
+        const displayName = await resolveDisplayName(uid);
         const userSnap = await db().collection('users').doc(uid).get();
         const data = userSnap.exists ? userSnap.data() : undefined;
-        const displayName =
-          (typeof data?.displayName === 'string' && data.displayName.trim()) ||
-          [data?.firstName, data?.lastName].filter(Boolean).join(' ').trim() ||
-          null;
         const avatarUrl = await mintSignedReadUrl(
           typeof data?.photoURL === 'string' ? data.photoURL : null,
         );

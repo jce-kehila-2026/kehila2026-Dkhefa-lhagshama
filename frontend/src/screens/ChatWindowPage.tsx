@@ -681,10 +681,15 @@ export default function ChatWindowPage() {
     const raw = msg.content.startsWith("[SYSTEM]")
       ? msg.content.slice("[SYSTEM]".length).trim()
       : msg.content.trim();
-    const targetName = msg.targetUid
-      ? participants[msg.targetUid]?.displayName?.trim() ||
-        msg.targetUid.slice(0, 6)
-      : null;
+    // Prefer the name denormalized onto the message at write time (survives
+    // the user leaving the chat), then the live participants map, then a uid
+    // fragment as the last resort.
+    const targetName =
+      msg.targetName?.trim() ||
+      (msg.targetUid
+        ? participants[msg.targetUid]?.displayName?.trim() ||
+          msg.targetUid.slice(0, 6)
+        : null);
     switch (raw) {
       case "chat_created":
         return c.system.chatCreated;

@@ -53,35 +53,70 @@ async function isTargetAdmin(uid: string): Promise<boolean> {
 }
 
 // ── GET /api/admin/users ──────────────────────────────────────────────────
-// Reads from the users/{uid} Firestore collection (mirrored from Auth).
-// Query params: role, limit (default 50)
+// Firebase Auth is the source of truth for WHO exists — the users/{uid}
+// Firestore mirror is lazily created and misses most accounts (e2e round 2,
+// defect D2: the chat user picker could not find the volunteer because their
+// mirror doc was never written). Auth's listUsers is merged with the mirror
+// (disabled flag, profile names) and the volunteers roster (fullName), so
+// every real account shows up with the best display name we have.
+// Query params: role, limit (default 50, max 200)
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const { role, limit: limitStr } = req.query as Record<string, string | undefined>;
     const limit = Math.min(parseInt(limitStr ?? '50', 10) || 50, 200);
 
-    let query = db().collection('users').orderBy('createdAt', 'desc').limit(limit) as
-      FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    // Page through Auth (1000/page); the project is far below one page today.
+    const authUsers = [];
+    let pageToken: string | undefined;
+    do {
+      const page = await adminAuth().listUsers(1000, pageToken);
+      authUsers.push(...page.users);
+      pageToken = page.pageToken;
+    } while (pageToken && authUsers.length < 10000);
 
-    if (role && ROLES.includes(role as Role)) {
-      query = query.where('role', '==', role);
-    }
+    const [usersSnap, volsSnap] = await Promise.all([
+      db().collection('users').get(),
+      db().collection('volunteers').get(),
+    ]);
+    const mirror = new Map(usersSnap.docs.map((d) => [d.id, d.data()]));
+    const volunteers = new Map(volsSnap.docs.map((d) => [d.id, d.data()]));
 
-    const snap = await query.get();
-    const items = snap.docs.map((d) => {
-      const data = d.data();
+    let items = authUsers.map((u) => {
+      const m = mirror.get(u.uid);
+      const v = volunteers.get(u.uid);
+      const displayName =
+        (typeof m?.displayName === 'string' && m.displayName.trim()) ||
+        [m?.firstName, m?.lastName].filter(Boolean).join(' ').trim() ||
+        u.displayName?.trim() ||
+        (typeof v?.fullName === 'string' && v.fullName.trim()) ||
+        (typeof v?.name === 'string' && v.name.trim()) ||
+        null;
+      const createdAt =
+        m?.createdAt?.toDate?.()?.toISOString?.() ??
+        (u.metadata.creationTime ? new Date(u.metadata.creationTime).toISOString() : null);
       return {
-        uid: d.id,
-        email: data.email ?? null,
-        displayName: data.displayName ?? null,
-        role: data.role ?? null,
-        disabled: data.disabled ?? false,
-        createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? null,
+        uid: u.uid,
+        email: u.email ?? m?.email ?? null,
+        displayName,
+        role: ((u.customClaims?.role as string | undefined) ?? m?.role ?? null) as
+          | string
+          | null,
+        disabled: m?.disabled === true || u.disabled === true,
+        createdAt,
+        updatedAt: m?.updatedAt?.toDate?.()?.toISOString?.() ?? null,
       };
     });
 
-    res.json({ items });
+    if (role && ROLES.includes(role as Role)) {
+      items = items.filter((i) => i.role === role);
+    }
+
+    // Newest first (mirrors the previous orderBy createdAt desc), unknown last.
+    items.sort(
+      (a, b) => (b.createdAt ? Date.parse(b.createdAt) : 0) - (a.createdAt ? Date.parse(a.createdAt) : 0),
+    );
+
+    res.json({ items: items.slice(0, limit) });
   } catch (err) {
     console.error('[adminUsers] GET /:', err);
     res.status(500).json({ error: 'internal_error' });

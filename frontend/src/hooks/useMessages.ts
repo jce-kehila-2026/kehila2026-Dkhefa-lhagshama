@@ -36,6 +36,9 @@ export interface ChatMessage {
   isSystem: boolean;
   /** Uid the system note is about (participant added/removed), when any. */
   targetUid: string | null;
+  /** Display name denormalized at write time, so the note stays readable
+   * even after the named user leaves the participants list. */
+  targetName: string | null;
 }
 
 interface UseMessagesResult {
@@ -54,6 +57,7 @@ interface RawMessageDoc {
   attachment?: ChatAttachment | null;
   isSystem?: boolean;
   targetUid?: string;
+  targetName?: string;
 }
 
 /** Normalize a raw `attachment` map into a ChatAttachment, or null if absent. */
@@ -111,6 +115,7 @@ export function useMessages(chatId: string | null): UseMessagesResult {
             attachment: toAttachment(d.attachment),
             isSystem: d.isSystem === true || d.senderId === 'system',
             targetUid: typeof d.targetUid === 'string' ? d.targetUid : null,
+            targetName: typeof d.targetName === 'string' ? d.targetName : null,
           };
         });
         setMessages(msgs);
