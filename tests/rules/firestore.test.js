@@ -78,12 +78,15 @@ describe('/requests', () => {
     await assertSucceeds(getDoc(doc(asUser('alice'), 'requests/req1')));
   });
 
-  test('assigned handler can read', async () => {
-    await assertSucceeds(getDoc(doc(asUser('handler1'), 'requests/req1')));
+  // F2-B (commit 7115a8c): direct client-SDK reads are owner-or-admin ONLY.
+  // Staff (assigned handler / volunteer) must use GET /api/requests/:id, which
+  // projects away the national-ID scan and internal notes the raw doc carries.
+  test('assigned handler cannot read directly (server-mediated)', async () => {
+    await assertFails(getDoc(doc(asUser('handler1'), 'requests/req1')));
   });
 
-  test('assigned volunteer can read', async () => {
-    await assertSucceeds(getDoc(doc(asUser('vol1'), 'requests/req1')));
+  test('assigned volunteer cannot read directly (server-mediated)', async () => {
+    await assertFails(getDoc(doc(asUser('vol1'), 'requests/req1')));
   });
 
   test('admin can read any request', async () => {
@@ -140,7 +143,12 @@ describe('/users', () => {
 describe('/requestEvents', () => {
   beforeEach(() =>
     seed(async (db) => {
-      await setDoc(doc(db, 'requests/req1'), { beneficiaryId: 'alice' });
+      // `handler` must be present: the rule dereferences
+      // get(/requests/...).data.handler, and a missing field would error.
+      await setDoc(doc(db, 'requests/req1'), {
+        beneficiaryId: 'alice',
+        handler: 'vol1',
+      });
       await setDoc(doc(db, 'requestEvents/evPublic'), {
         requestId: 'req1',
         visibility: 'all',
@@ -152,8 +160,17 @@ describe('/requestEvents', () => {
     }),
   );
 
-  test('volunteer reads any event', async () => {
+  // F3 (commit 7115a8c): the blanket volunteer grant is gone. Only admins and
+  // the parent request's assigned handler see every event (incl. internal).
+  test('handler volunteer reads any event (incl. internal)', async () => {
     await assertSucceeds(getDoc(doc(asVolunteer(), 'requestEvents/evInternal')));
+    await assertSucceeds(getDoc(doc(asVolunteer(), 'requestEvents/evPublic')));
+  });
+
+  test('non-handler volunteer cannot read any event', async () => {
+    const otherVol = asUser('vol2', { role: 'volunteer' });
+    await assertFails(getDoc(doc(otherVol, 'requestEvents/evInternal')));
+    await assertFails(getDoc(doc(otherVol, 'requestEvents/evPublic')));
   });
 
   test('admin reads any event', async () => {

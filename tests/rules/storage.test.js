@@ -7,8 +7,8 @@
  *
  * Read access requires either ownership of the matching Firestore request doc
  * or the admin custom claim, so these tests seed a request doc in the Firestore
- * emulator first. Write access is allowed for any signed-in user under the 10MB
- * size cap (the doc may not exist yet at upload time).
+ * emulator first. Write access requires a signed-in user with a VERIFIED email
+ * (#84/#86) under the 10MB size cap (the doc may not exist yet at upload time).
  *
  * Run against the Storage + Firestore emulators:
  *   npm run test:rules        # from repo root (boots emulators for you)
@@ -79,9 +79,18 @@ const seedRequest = (beneficiaryId) =>
   );
 
 describe('/requests/{requestId}/{filename} — uploads', () => {
-  test('signed-in user can upload a small file', async () => {
-    const storage = asUser('alice').storage();
+  // storage.rules requires request.auth.token.email_verified == true (#84/#86),
+  // so the allow-path token must carry a verified email.
+  test('signed-in user with verified email can upload a small file', async () => {
+    const storage = asUser('alice', { email_verified: true }).storage();
     await assertSucceeds(
+      uploadBytes(ref(storage, 'requests/req1/doc.pdf'), smallFile, META),
+    );
+  });
+
+  test('signed-in user with UNVERIFIED email cannot upload', async () => {
+    const storage = asUser('alice', { email_verified: false }).storage();
+    await assertFails(
       uploadBytes(ref(storage, 'requests/req1/doc.pdf'), smallFile, META),
     );
   });
@@ -94,7 +103,8 @@ describe('/requests/{requestId}/{filename} — uploads', () => {
   });
 
   test('upload over 10MB is rejected', async () => {
-    const storage = asUser('alice').storage();
+    // email_verified so the size cap — not the verification gate — is what fails.
+    const storage = asUser('alice', { email_verified: true }).storage();
     const big = new Uint8Array(10 * 1024 * 1024 + 1);
     await assertFails(
       uploadBytes(ref(storage, 'requests/req1/big.pdf'), big, META),
@@ -172,7 +182,8 @@ describe('/requests/{requestId}/{filename} — reads', () => {
 
 describe('catch-all deny', () => {
   test('upload outside /requests is denied', async () => {
-    const storage = asUser('alice').storage();
+    // email_verified so the catch-all path — not the verification gate — denies.
+    const storage = asUser('alice', { email_verified: true }).storage();
     await assertFails(
       uploadBytes(ref(storage, 'random/path.pdf'), smallFile, META),
     );
