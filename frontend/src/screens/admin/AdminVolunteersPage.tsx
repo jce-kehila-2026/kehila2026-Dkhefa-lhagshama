@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { HeartHandshake, Clock, CheckCircle2, Check, X } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiJson, apiFetch } from '@/lib/apiClient'
@@ -260,12 +261,29 @@ export default function AdminVolunteersPage() {
                     return (
                       <tr key={v.id}>
                         <td data-label={a.vol.colName}>
-                          <span className="admin-vol-identity">
-                            <span className="admin-vol-avatar" aria-hidden="true">
-                              {initials(name)}
+                          {/* Active roster rows drill into the volunteer's
+                              profile; pending applications have no roster doc
+                              yet, so their name stays a plain cell. The link
+                              wraps only the name cell — row action buttons
+                              keep working independently. */}
+                          {tab === 'active' && v.uid ? (
+                            <Link
+                              href={`/admin/volunteers/${v.uid}`}
+                              className="admin-vol-identity admin-vol-identity--link"
+                            >
+                              <span className="admin-vol-avatar" aria-hidden="true">
+                                {initials(name)}
+                              </span>
+                              <span className="admin-vol-name">{name}</span>
+                            </Link>
+                          ) : (
+                            <span className="admin-vol-identity">
+                              <span className="admin-vol-avatar" aria-hidden="true">
+                                {initials(name)}
+                              </span>
+                              <span className="admin-vol-name">{name}</span>
                             </span>
-                            <span className="admin-vol-name">{name}</span>
-                          </span>
+                          )}
                         </td>
                         <td
                           data-label={a.vol.colEmail}

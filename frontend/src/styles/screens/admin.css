@@ -1566,6 +1566,34 @@
   white-space: nowrap;
 }
 
+/* Active-roster identity cell as a link to the volunteer drill-down
+   (/admin/volunteers/[uid]). Colour + underline cues only (no transform)
+   so nothing shifts under the pointer; ring on keyboard focus. */
+.admin-vol-identity--link {
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+@media (hover: hover) {
+  .admin-vol-identity--link:hover .admin-vol-name {
+    color: var(--ember);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.admin-vol-identity--link:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* Larger monogram for the volunteer drill-down profile header. */
+.admin-vol-avatar--lg {
+  inline-size: 54px;
+  block-size: 54px;
+  font-size: var(--fs-sm);
+}
+
 /* Email cell; muted, with a distinct shade for the "no email" placeholder. */
 .admin-vol-email { color: var(--gray-600); }
 .admin-vol-email--empty { color: var(--gray-400); }
