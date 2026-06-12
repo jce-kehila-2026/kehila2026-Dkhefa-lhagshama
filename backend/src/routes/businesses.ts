@@ -18,12 +18,15 @@ const createBusinessSchema = z.object({
   city: z.string().trim().min(1).max(80),
   description: z.string().trim().min(10).max(1200),
   // Optional public website for the business; validated as a URL when present.
+  // Scheme is restricted to http(s) — zod's .url() alone accepts javascript:
+  // URLs, which would become a stored link-injection on the public directory.
   // An empty/blank string is treated as "not provided" so the form can send "".
   website: z
     .string()
     .trim()
     .max(2000)
     .url()
+    .refine((value) => /^https?:\/\//i.test(value), { message: 'invalid_url_scheme' })
     .optional()
     .or(z.literal('')),
 });

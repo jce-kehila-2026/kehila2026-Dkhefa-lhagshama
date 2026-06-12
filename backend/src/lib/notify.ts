@@ -22,17 +22,25 @@ interface NotifyArgs {
   to: string;
   subject: string;
   text: string;
+  /** Notification kind, used only for PII-free skip logging. */
+  kind?: NotifyKind;
 }
 
 /** Low-level email send. Never throws — logs and returns false on failure. */
-export async function notifyUser({ to, subject, text }: NotifyArgs): Promise<boolean> {
+export async function notifyUser({ to, subject, text, kind }: NotifyArgs): Promise<boolean> {
   const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.NOTIFY_FROM_EMAIL;
 
   if (!apiKey || !from) {
-    // Dev fallback: no provider configured — log so the flow is observable.
-    // eslint-disable-next-line no-console
-    console.log(`[notify:log] (no SENDGRID_API_KEY/NOTIFY_FROM_EMAIL) → ${to}: ${subject}\n${text}`);
+    if (process.env.NODE_ENV !== 'production') {
+      // Dev fallback: no provider configured — log so the flow is observable.
+      // eslint-disable-next-line no-console
+      console.log(`[notify:log] (no SENDGRID_API_KEY/NOTIFY_FROM_EMAIL) → ${to}: ${subject}\n${text}`);
+    } else {
+      // Production: never log recipient email or message body (beneficiary PII).
+      // eslint-disable-next-line no-console
+      console.log(`[notify:skipped] kind=${kind ?? 'unknown'} (sendgrid unconfigured)`);
+    }
     return false;
   }
 
@@ -130,7 +138,7 @@ export async function notifyBeneficiaryOfRequest(
       return;
     }
     const m = MESSAGES[kind];
-    await notifyUser({ to, subject: m.subject, text: m.text(requestId) });
+    await notifyUser({ to, subject: m.subject, text: m.text(requestId), kind });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.warn('[notify] notifyBeneficiaryOfRequest failed:', err);
