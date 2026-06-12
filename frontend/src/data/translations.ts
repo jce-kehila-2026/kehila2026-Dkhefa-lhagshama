@@ -188,6 +188,9 @@ const base = {
           legal:     { label: 'ייעוץ משפטי', hint: 'מעמד, אזרחות, זכויות' },
           social:    { label: 'שילוב חברתי', hint: 'קהילה, רווחה, תמיכה' },
         },
+        // Matching organizations helper (feedback round 2) — pre-submit phrasing
+        suggestHeading:  'ארגונים שיכולים לעזור',
+        suggestSubtitle: 'עמותות מהמאגר שמטפלות בתחום הזה - אפשר לפנות אליהן גם ישירות.',
       },
       step3: {
         title:         'העלאת מסמכים',
@@ -1190,6 +1193,9 @@ const base = {
           legal:     { label: 'Legal Aid',            hint: 'Status, citizenship, rights' },
           social:    { label: 'Social Integration',   hint: 'Community, welfare, support' },
         },
+        // Matching organizations helper (feedback round 2) — pre-submit phrasing
+        suggestHeading:  'Organizations that can help',
+        suggestSubtitle: 'Community organizations in our catalog that work in this area - you can also reach out to them directly.',
       },
       step3: {
         title:         'Upload Documents',

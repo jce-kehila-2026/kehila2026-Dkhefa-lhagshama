@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { CheckCircle, ChevronDown, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, Sparkles, ExternalLink, X, MessageCircle } from "lucide-react";
+import { CheckCircle, ChevronDown, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, MessageCircle } from "lucide-react";
 
 import RatingForm from "@/components/forms/RatingForm";
+import SuggestCard from "@/components/SuggestCard";
 import Reveal from "../components/motion/Reveal";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -510,124 +511,6 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
   );
 }
 
-// ── Suggest-alternatives card (UC-01 A1, simple If-Then) ──────
-// After a beneficiary submits (?new=<id>), surface up to 3 approved community
-// answers in the SAME category. Bilingual text fields may be a `{ he, en }`
-// object or a plain string — render the active-language value, falling back to
-// whichever exists. Dismissible; renders nothing when there are no matches.
-function pickLangValue(
-  value: Suggestion["title"],
-  lang: string,
-): string {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  return value[lang as "he" | "en"] || value.he || value.en || "";
-}
-
-function SuggestCard({ items, lang, t, onDismiss }: {
-  items: Suggestion[];
-  lang: string;
-  t: Translations;
-  onDismiss: () => void;
-}) {
-  const s = t.myRequests.suggest;
-  return (
-    <div
-      className="card"
-      style={{
-        position: "relative",
-        marginBlockEnd: "28px",
-        padding: "24px 26px",
-        background: "var(--ember-soft)",
-        border: "1px solid var(--ember-soft)",
-        borderRadius: "var(--radius-lg)",
-        boxShadow: "var(--shadow-xs)",
-      }}
-    >
-      <button
-        type="button"
-        className="myreq-suggest-dismiss"
-        onClick={onDismiss}
-        aria-label={s.dismiss}
-        title={s.dismiss}
-        style={{
-          appearance: "none",
-          position: "absolute",
-          insetBlockStart: "14px",
-          insetInlineEnd: "14px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 30,
-          height: 30,
-          padding: 0,
-          border: "none",
-          borderRadius: "50%",
-          background: "var(--sky-3)",
-          color: "var(--gray-500)",
-          cursor: "pointer",
-        }}
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBlockEnd: "4px" }}>
-        <Sparkles size={16} color="var(--ember)" aria-hidden="true" />
-        <span style={{ ...labelStyle, color: "var(--ember)" }}>{s.heading}</span>
-      </div>
-      <p style={{ fontSize: "13.5px", color: "var(--gray-600)", lineHeight: 1.6, maxWidth: "56ch", marginBlockEnd: "16px" }}>
-        {s.subtitle}
-      </p>
-
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "10px" }}>
-        {items.slice(0, 3).map((item) => {
-          const title = pickLangValue(item.title, lang) || pickLangValue(item.sourceName, lang);
-          const source = pickLangValue(item.sourceName, lang);
-          return (
-            <li
-              key={item.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "14px",
-                flexWrap: "wrap",
-                padding: "12px 14px",
-                background: "var(--white)",
-                border: "1px solid var(--hair)",
-                borderRadius: "var(--radius-sm)",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>
-                  {title || "·"}
-                </div>
-                {source && source !== title && (
-                  <div style={{ fontSize: "12.5px", color: "var(--gray-500)", marginBlockStart: "2px" }}>
-                    {source}
-                  </div>
-                )}
-              </div>
-              {item.sourceUrl && (
-                <a
-                  href={item.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-ghost btn-sm"
-                  style={{ flexShrink: 0, gap: "6px" }}
-                >
-                  {s.open}
-                  <ExternalLink size={14} aria-hidden="true" />
-                </a>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
 // ── Main page ─────────────────────────────────────────────────
 export default function MyRequestsPage() {
   const { t: tRaw, lang } = useLanguage();
@@ -774,7 +657,10 @@ export default function MyRequestsPage() {
             <SuggestCard
               items={suggestions}
               lang={lang}
-              t={t}
+              heading={t.myRequests.suggest.heading}
+              subtitle={t.myRequests.suggest.subtitle}
+              openLabel={t.myRequests.suggest.open}
+              dismissLabel={t.myRequests.suggest.dismiss}
               onDismiss={() => setSuggestDismissed(true)}
             />
           </Reveal>

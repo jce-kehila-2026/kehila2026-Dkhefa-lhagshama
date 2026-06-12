@@ -19,6 +19,7 @@ interface RequestFormValues {
 
 import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles, Clock, Lock } from 'lucide-react'
 import Reveal from '../components/motion/Reveal'
+import SuggestCard from '@/components/SuggestCard'
 import StepIndicator from '@/components/forms/StepIndicator'
 import UploadArea from '@/components/forms/UploadArea'
 import { FormGroup, Label, Input, Select, Textarea, FormRow } from '@/components/forms/FormElements'
@@ -31,6 +32,7 @@ import { firebaseAuth } from '../lib/firebase' // #86
 import { useForm } from '../hooks/useForm'
 import { validateStep1, validateStep2, validateStep3, validateStep4 } from '../utils/validators'
 import { apiFetch, apiJson } from '../lib/apiClient'
+import type { Suggestion } from '@/types'
 
 // ── Constants ──────────────────────────────────────────────────
 const CATS = [
@@ -142,6 +144,27 @@ export default function RequestsPage() {
   useEffect(() => {
     if (!submitted) saveDraft(values)
   }, [values, submitted])
+
+  // Matching organizations (feedback round 2) — once a category is chosen in
+  // step 2, fetch up to 3 approved community answers in that category from the
+  // public suggestions endpoint and offer them inline under the tiles. Silent
+  // on error or when empty. Keyed on `values.category` (not the click handler)
+  // so a category restored from the draft on mount also triggers the fetch.
+  // Dismissal is local and resets whenever the category changes.
+  const [orgSuggestions, setOrgSuggestions] = useState<Suggestion[]>([])
+  const [orgSuggestionsDismissed, setOrgSuggestionsDismissed] = useState(false)
+  useEffect(() => {
+    setOrgSuggestionsDismissed(false)
+    if (!values.category) {
+      setOrgSuggestions([])
+      return
+    }
+    let alive = true
+    apiJson<{ items?: Suggestion[] }>(`/api/suggestions?category=${encodeURIComponent(values.category)}`)
+      .then((data) => { if (alive) setOrgSuggestions(Array.isArray(data.items) ? data.items : []) })
+      .catch(() => { if (alive) setOrgSuggestions([]) })
+    return () => { alive = false }
+  }, [values.category])
 
   // Auth guard — redirect to login if not signed in (#93 — next= so draft is kept)
   useEffect(() => {
@@ -604,6 +627,21 @@ export default function RequestsPage() {
               })}
             </div>
             {errors.category && <div id="category-error" role="alert" className="form-error" style={{ marginBottom:'14px' }}>{errors.category}</div>}
+
+            {/* Matching organizations helper — community answers in the chosen category */}
+            {!orgSuggestionsDismissed && orgSuggestions.length > 0 && (
+              <Reveal>
+                <SuggestCard
+                  items={orgSuggestions}
+                  lang={lang}
+                  heading={rq.step2.suggestHeading}
+                  subtitle={rq.step2.suggestSubtitle}
+                  openLabel={t.myRequests.suggest.open}
+                  dismissLabel={t.myRequests.suggest.dismiss}
+                  onDismiss={() => setOrgSuggestionsDismissed(true)}
+                />
+              </Reveal>
+            )}
 
             <FormGroup>
               <Label htmlFor="description" required>{rq.step2.description}</Label>
