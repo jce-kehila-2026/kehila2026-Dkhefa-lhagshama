@@ -60,11 +60,11 @@ A second round of features (reqs 25–27) builds on the case-management and chat
 
 ### Mutual-consent close (req 25)
 
-Closing a request is now a two-sided handshake. Either the assigned volunteer **or** the beneficiary can **propose** a close; the other side **confirms**. Once both approve, the request moves to status `closed` and its chat is marked inactive (`active: false`). Either side can **decline**, which clears the pending proposal. Admins keep the existing force-close via the status endpoint.
+Closing a request is now a two-sided handshake. Either the assigned volunteer **or** the beneficiary can **propose** a close; the other side **confirms**. Once both approve, the request moves to status `closed` and its chat is marked inactive (`active: false`). Either side can **decline**, which clears the pending proposal. Admins keep a force-close via the status endpoint (since customer feedback round 2 they can one-step close straight from `in_progress`, not only from `awaiting_review`).
 
 ### Chat file attachments (req 26)
 
-Both the beneficiary and the assigned volunteer can upload files inside a chat and download them. Same constraints as request uploads: PDF / JPEG / PNG / DOCX, 10 MB max. Files are stored under `chats/{chatId}/{file}` and downloaded via **backend-minted signed URLs**, gated to chat participants. There is no client-side Storage access and **no storage-rules change**.
+Both the beneficiary and the assigned volunteer can upload files inside a chat and download them. Same constraints as request uploads: PDF / JPEG / PNG / DOCX, 10 MB max. Files are stored under `chats/{chatId}/{file}` and downloaded via **backend-minted signed URLs**, gated to chat participants — plus a read-only **admin oversight carve-out** (customer feedback round 2): admins can read any chat, its messages and its attachments, but may post only after joining as a participant. There is no client-side Storage access and **no storage-rules change**.
 
 ### Email notifications (req 27)
 
@@ -80,6 +80,17 @@ Channel is the **SendGrid REST API via global `fetch`** (no new dependency), gat
 
 - New backend libs: `lib/notify.ts` (notification channel + throttle) and `lib/closeConsent.ts` (mutual-consent state machine).
 - New fields are additive — see `docs/DATA-MODEL-DELTAS.md` (Round 2) for the per-collection field list and the `db-design.drawio` TODO.
+
+## Customer feedback round 2 (2026-06-12)
+
+A second customer round layered on the above — headline changes a new teammate should know:
+
+- **Admin-managed help categories**: the request-form tiles, the volunteer category picker and the `/directory` NGO filter chips all come from a live `categories` collection with admin CRUD (`/admin/categories`); category labels resolve through `useCategories().labelFor`, never the static t-maps.
+- **Directory orgType split + admin CRUD**: answers carry `orgType: 'ngo' | 'partner'`, and `/admin/directory` has full create/edit/delete for answers and businesses.
+- **Direct (staff/group) chats + admin oversight**: admins create request-less chats, manage participants, and oversee every chat in `/admin/chats` with a pause/resume toggle. Chat reads are no longer participant-only — Firestore rules give admins a read-only carve-out for `/chats`, `/messages` and chat attachments.
+- **Generalized chat lifecycle**: `chats.active` goes `false` on ALL request end states (`closed`, `rejected`, `referred`), back to `true` on admin reopen, and is admin-toggleable — not just the mutual-consent close described above.
+
+See `docs/DATA-MODEL-DELTAS.md` (the dated Round 2 sections) for the exact field-level deltas.
 
 ## Course context
 

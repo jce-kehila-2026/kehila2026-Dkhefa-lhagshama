@@ -4,6 +4,7 @@ import { Inbox, ChevronLeft, ChevronRight, Plus, HandHeart, X } from 'lucide-rea
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson } from '@/lib/apiClient'
+import type { CloseRequestSummary } from '@/types'
 import AdminLayout from '@/components/admin/AdminLayout'
 import CreateTaskDialog from '@/components/admin/CreateTaskDialog'
 import Reveal from '../../components/motion/Reveal'
@@ -53,12 +54,7 @@ interface RequestRow {
   assignedVolunteerId?: string | null
   assignedVolunteerName?: string | null
   // Compact consent-close handshake state (req 25), null when none pending.
-  closeRequest?: {
-    proposedRole?: string | null
-    proposedAt?: string | null
-    volunteerApproved?: boolean
-    beneficiaryApproved?: boolean
-  } | null
+  closeRequest?: CloseRequestSummary | null
   [key: string]: unknown
 }
 

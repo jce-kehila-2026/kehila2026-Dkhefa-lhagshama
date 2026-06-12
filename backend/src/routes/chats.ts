@@ -7,8 +7,12 @@
  *
  * Schema:
  *   chats/{chatId}     – participants[], requestId, kind, createdBy, title,
- *                        active, lastMessageAt
- *   messages/{msgId}   – chatId, senderId, content, timestamp, status
+ *                        active, lastMessageAt, lastReplyNotifyAt (email throttle)
+ *   messages/{msgId}   – chatId, senderId, content, timestamp, status; optional:
+ *                        attachment { name, path, type, size } (req 26),
+ *                        isSystem + targetUid + targetName (system messages —
+ *                        targetName is denormalized at write time so removed
+ *                        participants keep readable names)
  *
  * Tolerant reads: chat docs created before the direct-chat feature carry no
  * kind/createdBy/title/active — readers treat them as kind 'request' and

@@ -1,6 +1,6 @@
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
-import { LanguageProvider } from '@/contexts/LanguageContext'
+import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext'
 import { AppProvider } from '@/contexts/AppContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import Navbar from '@/components/layout/Navbar'
@@ -30,6 +30,17 @@ import '@/styles/screens/requests.css'
 import '@/styles/screens/volunteer.css'
 import '@/styles/screens/volunteer-app.css'
 
+// Lives below LanguageProvider (App itself renders the provider, so it cannot
+// call useLanguage) — keeps the a11y skip link translated in the HE UI.
+function SkipLink() {
+  const { t } = useLanguage()
+  return (
+    <a href="#main-content" className="skip-link">
+      {t.common.skipToContent}
+    </a>
+  )
+}
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
   // Admin and volunteer-hub routes render their own shell (sidebar) — hide the
@@ -43,11 +54,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <AuthProvider>
         <AppProvider>
           <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            {!hideChrome && (
-              <a href="#main-content" className="skip-link">
-                Skip to content
-              </a>
-            )}
+            {!hideChrome && <SkipLink />}
             {!hideChrome && <Navbar />}
             {/* key on route → a single calm page-enter on each navigation. */}
             <div id="main-content" className="page-enter" key={router.pathname} style={{ flex: 1 }}>

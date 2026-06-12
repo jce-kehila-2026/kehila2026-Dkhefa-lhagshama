@@ -16,6 +16,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
+import { resolveDisplayName } from '@/lib/displayName';
 import { writeAuditLog } from '@/lib/audit';
 import { authenticate, requireRole } from '@/middleware/auth';
 import { chatIsActive, chatKind, postSystemMessage } from '@/routes/chats';
@@ -26,9 +27,10 @@ router.use(authenticate, requireRole('admin'));
 // ── GET /api/admin/chats ──────────────────────────────────────────────────
 // Query params: limit (default 100, cap 300).
 // Returns every chat, newest activity first, with display names resolved in
-// one batched pass over the unique participant uids (users collection first,
-// volunteers/{uid} fullName/name as fallback, then the raw uid — mirrors the
-// adminInsights.ts name-resolution pattern).
+// one batched pass over the unique participant uids via the shared
+// lib/displayName chain (users → volunteers → Auth displayName → Auth email
+// local part) — the same resolution the chat participants rail uses, so the
+// oversight table and an open chat never disagree on a name.
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const limitStr = typeof req.query.limit === 'string' ? req.query.limit : undefined;
@@ -61,30 +63,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const nameByUid = new Map<string, string>();
     await Promise.all(
       uniqueUids.map(async (uid) => {
-        try {
-          const uSnap = await db().collection('users').doc(uid).get();
-          const u = uSnap.exists
-            ? (uSnap.data() as {
-                displayName?: string;
-                firstName?: string;
-                lastName?: string;
-              })
-            : null;
-          const fromUsers =
-            (typeof u?.displayName === 'string' && u.displayName.trim()) ||
-            [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim();
-          if (fromUsers) {
-            nameByUid.set(uid, fromUsers);
-            return;
-          }
-          const vSnap = await db().collection('volunteers').doc(uid).get();
-          const v = vSnap.exists
-            ? (vSnap.data() as { fullName?: string; name?: string })
-            : null;
-          nameByUid.set(uid, v?.fullName ?? v?.name ?? uid);
-        } catch {
-          nameByUid.set(uid, uid);
-        }
+        nameByUid.set(uid, (await resolveDisplayName(uid)) ?? uid);
       }),
     );
 

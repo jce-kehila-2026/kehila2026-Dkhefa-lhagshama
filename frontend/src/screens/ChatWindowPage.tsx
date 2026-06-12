@@ -616,21 +616,35 @@ export default function ChatWindowPage() {
   async function handleDownload(att: NonNullable<ChatMessage["attachment"]>) {
     if (typeof chatId !== "string" || downloading[att.name]) return;
     setDownloading((d) => ({ ...d, [att.name]: true }));
+    // Open the tab synchronously, inside the click's transient activation:
+    // Safari (and strict popup settings) block window.open after an await.
+    // Detach it from this page, then point it at the signed URL once minted;
+    // close it again on any failure so no blank tab is left behind.
+    const win = window.open("", "_blank");
+    if (win) win.opener = null;
     try {
       const res = await apiFetch(
         `/api/chats/${encodeURIComponent(chatId)}/attachments/${encodeURIComponent(att.name)}`,
       );
       if (!res.ok) {
+        win?.close();
         toast(c.downloadFailed, "error");
         return;
       }
       const data = (await res.json()) as { url?: string };
       if (!data?.url) {
+        win?.close();
         toast(c.downloadFailed, "error");
         return;
       }
-      window.open(data.url, "_blank", "noopener,noreferrer");
+      if (win) {
+        win.location.replace(data.url);
+      } else {
+        // Popup denied even synchronously — best-effort fallback.
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      }
     } catch {
+      win?.close();
       toast(c.downloadFailed, "error");
     } finally {
       setDownloading((d) => {

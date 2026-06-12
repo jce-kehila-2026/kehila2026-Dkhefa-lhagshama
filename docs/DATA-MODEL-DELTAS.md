@@ -145,6 +145,7 @@ Chats gain a kind (request-bound vs admin-created direct/staff chats), a creator
 | `chats` | `requestId` | string \| **null** | Now nullable: direct chats carry `requestId: null`. (Previously always a request id.) |
 | `chats` | `active` | boolean (default `true`) | **Semantics upgraded** (field itself existed since round-2 close-consent): now set `false` on ALL request end states (`closed`, `rejected`, `referred`) — not just mutual-consent close — set back `true` on admin reopen (`closed → in_progress`), and toggleable by an admin via `PATCH /api/admin/chats/:id`. Inactive chat = read-only composer (server rejects message/attachment posts with 409 `chat_inactive`). **Absent = `true`**. |
 | `messages` | `targetUid` | string (optional) | On participant add/remove system messages: the uid of the affected user, so the UI can name them. |
+| `messages` | `targetName` | string (optional) | Display name of `targetUid`, denormalized at system-message write time (via `lib/displayName.ts`) so the note keeps a readable name after the user leaves the chat. Absent when the name could not be resolved — the UI falls back to the live participants map, then a uid fragment. |
 
 ### Behavioral notes (no schema change)
 
@@ -158,7 +159,7 @@ Chats gain a kind (request-bound vs admin-created direct/staff chats), a creator
 Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
 
 - [ ] **`chats` entity** — add `+ kind: enum(request,direct)`, `+ createdBy: string (uid | 'system')`, `+ title: string | null`; change `requestId` to `+ requestId: string | null (null = direct chat)`; annotate `active` as "false on closed/rejected/referred + admin toggle".
-- [ ] **`messages` entity** — add `+ targetUid: string (system messages only)`.
+- [ ] **`messages` entity** — add `+ targetUid: string (system messages only)` and `+ targetName: string (denormalized display name, system messages only)`.
 - [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki Architecture & Design page.
 
 ## Notes

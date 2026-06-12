@@ -176,10 +176,13 @@ export default function AdminVolunteerDetailPage() {
       // this volunteer's assigned requests, fetched in parallel. A uid that is
       // absent from the active list is NOT an error — it's a former volunteer;
       // their assigned requests still render below the note.
+      // archived=all: referral sets archived=true automatically (as does the
+      // explicit archive action), and the default mode hides those rows — the
+      // drill-down must show the volunteer's FULL history.
       const [volData, reqData] = await Promise.all([
         apiJson('/api/admin/volunteers') as Promise<{ active?: VolunteerDetail[] }>,
         apiJson(
-          `/api/admin/requests?volunteerId=${encodeURIComponent(uid)}`,
+          `/api/admin/requests?volunteerId=${encodeURIComponent(uid)}&archived=all`,
         ) as Promise<{ items?: AssignedRow[] }>,
       ])
       setVolunteer((volData.active || []).find((v) => v.uid === uid) || null)

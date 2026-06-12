@@ -32,8 +32,6 @@ export interface CloseResult {
    * fresh handshake, so it reports 'proposed'). Null when status !== 'ok'.
    */
   action: CloseEffect | null;
-  /** Role that proposed the handshake this action touched, when known. */
-  proposedRole: CloseRole | null;
 }
 
 /** Statuses from which a consent-close is allowed. */
@@ -55,11 +53,10 @@ export async function applyCloseConsent(
   const result = await db().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists)
-      return { status: 'not_found', closed: false, closeRequest: null, action: null, proposedRole: null } as CloseResult;
+      return { status: 'not_found', closed: false, closeRequest: null, action: null } as CloseResult;
     const data = snap.data() ?? {};
 
     const existing = (data.closeRequest as Record<string, unknown> | null | undefined) ?? null;
-    const existingRole = (existing?.proposedRole as CloseRole | undefined) ?? null;
 
     // Defensive ownership check.
     const owns =
@@ -67,15 +64,15 @@ export async function applyCloseConsent(
         ? data.beneficiaryId === actorUid
         : data.assignedVolunteerId === actorUid || data.handler === actorUid;
     if (!owns)
-      return { status: 'forbidden', closed: false, closeRequest: null, action: null, proposedRole: null } as CloseResult;
+      return { status: 'forbidden', closed: false, closeRequest: null, action: null } as CloseResult;
 
     if (action === 'decline') {
       tx.update(ref, { closeRequest: null, updatedAt: FieldValue.serverTimestamp() });
-      return { status: 'ok', closed: false, closeRequest: null, action: 'declined', proposedRole: existingRole } as CloseResult;
+      return { status: 'ok', closed: false, closeRequest: null, action: 'declined' } as CloseResult;
     }
 
     if (!CLOSEABLE.has(String(data.status))) {
-      return { status: 'invalid_state', closed: false, closeRequest: null, action: null, proposedRole: null } as CloseResult;
+      return { status: 'invalid_state', closed: false, closeRequest: null, action: null } as CloseResult;
     }
 
     // Build the next handshake state. propose (or approve with no existing
@@ -100,7 +97,6 @@ export async function applyCloseConsent(
       };
       effect = 'approved';
     }
-    const nextRole = (next.proposedRole as CloseRole | undefined) ?? role;
 
     const bothApproved = next.volunteerApproved === true && next.beneficiaryApproved === true;
 
@@ -110,11 +106,11 @@ export async function applyCloseConsent(
         closeRequest: null,
         updatedAt: FieldValue.serverTimestamp(),
       });
-      return { status: 'ok', closed: true, closeRequest: null, action: effect, proposedRole: nextRole } as CloseResult;
+      return { status: 'ok', closed: true, closeRequest: null, action: effect } as CloseResult;
     }
 
     tx.update(ref, { closeRequest: next, updatedAt: FieldValue.serverTimestamp() });
-    return { status: 'ok', closed: false, closeRequest: next, action: effect, proposedRole: nextRole } as CloseResult;
+    return { status: 'ok', closed: false, closeRequest: next, action: effect } as CloseResult;
   });
 
   // When closed, mark the linked chat(s) inactive (outside the request tx).

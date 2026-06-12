@@ -2,9 +2,10 @@
  * User notifications (req 27) — email channel.
  *
  * Sends transactional email via the SendGrid REST API using the global `fetch`
- * (no extra dependency). Gated behind env vars; when unconfigured it LOGS the
- * notification instead of sending, so the flow works in dev/CI without
- * credentials and "really sends" once keys are set.
+ * (no extra dependency). Gated behind env vars; when unconfigured it LOGS a
+ * redacted kind-only line instead of sending (full payload only with the
+ * explicit dev opt-in NODE_ENV=development or NOTIFY_DEBUG=1), so the flow is
+ * observable in dev/CI without credentials and "really sends" once keys are set.
  *
  * Required env to actually send:
  *   SENDGRID_API_KEY   — SendGrid API key
@@ -32,12 +33,15 @@ export async function notifyUser({ to, subject, text, kind }: NotifyArgs): Promi
   const from = process.env.NOTIFY_FROM_EMAIL;
 
   if (!apiKey || !from) {
-    if (process.env.NODE_ENV !== 'production') {
-      // Dev fallback: no provider configured — log so the flow is observable.
+    // Fail-closed default: nothing in the deploy path sets NODE_ENV, so the
+    // PII-free redacted line is what runs unless a dev explicitly opts in to
+    // the full payload (NODE_ENV=development or NOTIFY_DEBUG=1). Never log
+    // recipient email or message body (beneficiary PII) by default.
+    if (process.env.NODE_ENV === 'development' || process.env.NOTIFY_DEBUG === '1') {
+      // Dev opt-in: no provider configured — log so the flow is observable.
       // eslint-disable-next-line no-console
       console.log(`[notify:log] (no SENDGRID_API_KEY/NOTIFY_FROM_EMAIL) → ${to}: ${subject}\n${text}`);
     } else {
-      // Production: never log recipient email or message body (beneficiary PII).
       // eslint-disable-next-line no-console
       console.log(`[notify:skipped] kind=${kind ?? 'unknown'} (sendgrid unconfigured)`);
     }

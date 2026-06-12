@@ -82,7 +82,7 @@ export default function RequestsPage() {
   const { toast } = useApp()
   const { user, role, loading: authLoading } = useAuth()
   // Admin-managed taxonomy: tile list + bilingual label resolution.
-  const { categories, loading: catsLoading, labelFor } = useCategories()
+  const { categories, loading: catsLoading, labelFor, refresh: refreshCats } = useCategories()
   const navigate = useNavigate()
   const router = useRouter()
   const BackArrow  = isRTL ? ArrowRight : ArrowLeft
@@ -196,6 +196,18 @@ export default function RequestsPage() {
       router.replace(`/login?next=${encodeURIComponent('/requests')}`)
     }
   }, [authLoading, user, router, values])
+
+  // A restored draft may carry a category an admin has since archived or
+  // deleted. Once the taxonomy arrives, clear any value that is not an active
+  // id so step-2 validation forces a re-pick — otherwise the stale id sails
+  // through to submit, where the backend rejects it with a 400 the generic
+  // toast cannot explain. (Skipped when the fetch failed: categories === [].)
+  useEffect(() => {
+    if (catsLoading || categories.length === 0) return
+    if (values.category && !categories.some((c) => c.id === values.category)) {
+      setValue('category', '')
+    }
+  }, [catsLoading, categories, values.category, setValue])
 
   // #67 — core profile loader. `announce` controls whether we surface a toast
   // (true for the explicit "auto-fill" button, false for the silent mount fill).
@@ -319,8 +331,8 @@ export default function RequestsPage() {
         body: JSON.stringify(payload),
       })
       if (!res.ok) {
-        let detail = ''
-        try { detail = JSON.stringify(await res.json()) } catch { /* noop */ }
+        let body: { fieldErrors?: Record<string, unknown> } | null = null
+        try { body = await res.json() } catch { /* noop */ }
         // #93 — 401 on submit → save draft + prompt re-login
         if (res.status === 401) {
           saveDraft(values)
@@ -328,7 +340,16 @@ export default function RequestsPage() {
           router.push(`/login?next=${encodeURIComponent('/requests')}`)
           return
         }
-        throw new Error(`submit_failed: ${res.status} ${detail}`)
+        // Backend category validation (a draft-restored category can be
+        // archived between save and submit) — send the user back to step 2
+        // with a field error instead of a dead-end generic toast.
+        if (res.status === 400 && body?.fieldErrors?.category) {
+          setFieldErrors({ category: rq.step2.catsInvalid })
+          setValue('category', '')
+          setStep(2)
+          return
+        }
+        throw new Error(`submit_failed: ${res.status} ${body ? JSON.stringify(body) : ''}`)
       }
       const body = await res.json()
       const newId = body.requestId || requestId
@@ -351,7 +372,14 @@ export default function RequestsPage() {
       const differs = !snap || (Object.keys(offered) as (keyof typeof offered)[])
         .some((k) => (offered[k] || '') !== (snap[k] || ''))
       if (differs) {
-        try { window.sessionStorage?.setItem(SAVE_PROFILE_OFFER_KEY, JSON.stringify(offered)) } catch { /* noop */ }
+        // uid-bound: MyRequestsPage discards a stash written by another
+        // account, so a previous user's PII can never surface after a switch.
+        const stash = { uid: user?.uid ?? '', ...offered }
+        try { window.sessionStorage?.setItem(SAVE_PROFILE_OFFER_KEY, JSON.stringify(stash)) } catch { /* noop */ }
+      } else {
+        // Nothing to offer — also drop any stale stash from an earlier
+        // session/user instead of leaving it to resurface on /my-requests.
+        try { window.sessionStorage?.removeItem(SAVE_PROFILE_OFFER_KEY) } catch { /* noop */ }
       }
       // #94 — replace route so back-button doesn't re-open the form
       router.replace(`/my-requests?new=${newId}`)
@@ -669,6 +697,19 @@ export default function RequestsPage() {
                   })}
             </div>
             {errors.category && <div id="category-error" role="alert" className="form-error" style={{ marginBottom:'14px' }}>{errors.category}</div>}
+
+            {/* Taxonomy failed to load (backend down / unseeded): without
+                tiles step 2 is a dead end, so surface the failure + a retry
+                (useCategories never caches failures, so retry refetches). */}
+            {!catsLoading && categories.length === 0 && (
+              <div className="form-banner form-banner-info" role="alert" style={{ marginBottom:'24px' }}>
+                <AlertTriangle size={16} aria-hidden="true" />
+                <span style={{ flex:1 }}>{rq.step2.catsLoadError}</span>
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => refreshCats()}>
+                  {rq.step2.catsRetry}
+                </button>
+              </div>
+            )}
 
             {/* Matching organizations helper — community answers in the chosen category */}
             {!orgSuggestionsDismissed && orgSuggestions.length > 0 && (

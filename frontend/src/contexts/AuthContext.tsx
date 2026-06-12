@@ -162,6 +162,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshClaims]);
 
   const logout = useCallback(async () => {
+    // PII hygiene: the post-submit save-to-profile stash (#67) must never
+    // survive an account switch in the same tab. It is also uid-bound on
+    // read (MyRequestsPage) — this is belt and braces.
+    try { window.sessionStorage?.removeItem('pff:saveProfileOffer'); } catch { /* noop */ }
     await fbLogout();
   }, []);
 

@@ -60,15 +60,15 @@ export default function ChatListPage() {
   const [error, setError] = useState("");
 
   // req 13b — linked-request status per requestId, fetched lazily through
-  // Express. `null` while in flight; absence ⇒ treated as active (fail-open
+  // Express. Absent key ⇒ in flight / failed, treated as active (fail-open
   // toward visibility). Drives the active/past split + tab.
-  const [reqStatus, setReqStatus] = useState<Record<string, string | null>>({});
+  const [reqStatus, setReqStatus] = useState<Record<string, string>>({});
   const [tab, setTab] = useState<"active" | "past">("active");
 
   // Direct-chat row labels: comma-joined other-participant names, fetched
-  // lazily per chat (mirrors the request-status fan-out). `null` while in
+  // lazily per chat (mirrors the request-status fan-out). Absent key ⇒ in
   // flight / failed — the row falls back to the generic staff-chat label.
-  const [directNames, setDirectNames] = useState<Record<string, string | null>>({});
+  const [directNames, setDirectNames] = useState<Record<string, string>>({});
 
   // Admin-only "new chat" dialog (direct/staff chats, feedback round 2).
   const isAdminUser = hasRole("admin");
@@ -132,60 +132,52 @@ export default function ChatListPage() {
   }, [authLoading, user]);
 
   // req 13b — for every chat we don't yet have a status for, fetch the linked
-  // request's status once. Lightweight + idempotent; failures fail-open to
-  // "active" so a chat is never wrongly hidden.
+  // request's status once. The requested-id set lives in a ref, NOT in state:
+  // depending on `reqStatus` made each run's setState re-trigger the effect,
+  // whose cleanup flipped the previous run's alive flag and threw away every
+  // response. The .then handlers use functional updates, which are safe (a
+  // no-op) after unmount in React 18, so no alive flag is needed. Failures
+  // fail-open to "active" so a chat is never wrongly hidden.
+  const reqStatusRequested = useRef(new Set<string>());
   useEffect(() => {
     if (!user) return;
     const missing = chats
       .map((ch) => ch.requestId)
-      .filter((rid): rid is string => !!rid && !(rid in reqStatus));
-    if (missing.length === 0) return;
-
-    let alive = true;
-    // Mark as in-flight so we don't refetch on the next render.
-    setReqStatus((prev) => {
-      const next = { ...prev };
-      for (const rid of missing) next[rid] = next[rid] ?? null;
-      return next;
-    });
+      .filter((rid): rid is string => !!rid && !reqStatusRequested.current.has(rid));
 
     missing.forEach((rid) => {
+      reqStatusRequested.current.add(rid);
       apiJson<{ status?: string }>(`/api/requests/${rid}`)
         .then((data) => {
-          if (alive) setReqStatus((prev) => ({ ...prev, [rid]: data?.status ?? "" }));
+          setReqStatus((prev) => ({ ...prev, [rid]: data?.status ?? "" }));
         })
         .catch(() => {
-          // Permission/network error — leave as null (treated as active).
+          // Permission/network error — absent key is treated as active.
         });
     });
-
-    return () => { alive = false; };
-  }, [chats, user, reqStatus]);
+  }, [chats, user]);
 
   // Direct-chat labels — for every untitled direct chat we don't yet have
   // names for, fetch its participants once and cache the joined "other
-  // participant" names. Failures stay null (generic staff-chat label).
+  // participant" names. Same ref-based dedupe as the status fan-out above;
+  // failures stay absent (generic staff-chat label).
+  const directNamesRequested = useRef(new Set<string>());
   useEffect(() => {
     if (!user) return;
     const missing = chats
-      .filter((ch) => ch.kind === "direct" && !ch.title && !(ch.id in directNames))
+      .filter(
+        (ch) =>
+          ch.kind === "direct" && !ch.title && !directNamesRequested.current.has(ch.id),
+      )
       .map((ch) => ch.id);
-    if (missing.length === 0) return;
-
-    let alive = true;
-    // Mark as in-flight so we don't refetch on the next render.
-    setDirectNames((prev) => {
-      const next = { ...prev };
-      for (const id of missing) next[id] = next[id] ?? null;
-      return next;
-    });
 
     missing.forEach((id) => {
+      directNamesRequested.current.add(id);
       apiJson<{ uid: string; displayName: string | null }[]>(
         `/api/chats/${id}/participants`,
       )
         .then((list) => {
-          if (!alive || !Array.isArray(list)) return;
+          if (!Array.isArray(list)) return;
           const names = list
             .filter((p) => p && p.uid !== user.uid)
             .map(
@@ -199,9 +191,7 @@ export default function ChatListPage() {
           // Permission/network error — keep the generic label.
         });
     });
-
-    return () => { alive = false; };
-  }, [chats, user, directNames]);
+  }, [chats, user]);
 
   // req 13b — split active vs. past. A paused chat (active === false, set on
   // all request end states and by the admin toggle) is always "past"; direct

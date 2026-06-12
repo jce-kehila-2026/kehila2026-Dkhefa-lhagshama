@@ -342,8 +342,8 @@ export interface Suggestion {
   sourceUrl?: string | null;
   /**
    * Directory organization type: 'ngo' (עמותה) vs admin-added 'partner'
-   * (שותף). Docs created before the field existed count as 'ngo' (the API
-   * applies that default server-side).
+   * (שותף). /api/answers defaults pre-field docs to 'ngo' server-side;
+   * /api/suggestions omits the field entirely — treat absent as 'ngo'.
    */
   orgType?: OrgType | null;
   acceptsInAppRequest?: boolean;
@@ -486,24 +486,15 @@ export interface VolunteerMe {
  */
 export type ChatKind = 'request' | 'direct';
 
-/** A chat conversation thread (UC-04). */
-export interface ChatThread {
-  id: number | string;
-  title?: string;
-  participant?: string;
-  participantEn?: string;
-  lastMessage?: string;
-  unread?: number;
-  updatedAt?: string;
-  messages?: Message[];
-  /** Request-bound vs. direct staff chat; missing = `request` (legacy docs). */
-  kind?: ChatKind;
-  /**
-   * Live flag (feedback round 2): false on all request end states and when an
-   * admin pauses the chat. Inactive chat = read-only composer. Missing = true.
-   */
-  active?: boolean;
-  /** Uid of the creator; `system` for assignment-created chats. The direct-chat
-   * creator manages its participants (admins manage any chat). */
-  createdBy?: string;
+/**
+ * Compact consent-close handshake state as the admin endpoints project it
+ * (req 25). The admin list deliberately omits `proposedBy`, so every field is
+ * optional here — `CloseRequest` above is the full client-facing shape.
+ */
+export interface CloseRequestSummary {
+  proposedBy?: string | null;
+  proposedRole?: string | null;
+  proposedAt?: string | null;
+  volunteerApproved?: boolean;
+  beneficiaryApproved?: boolean;
 }

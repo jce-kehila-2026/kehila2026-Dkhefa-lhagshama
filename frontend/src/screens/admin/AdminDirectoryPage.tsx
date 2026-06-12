@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Building2, Store, Plus, Pencil, Trash2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
+import { useCategories } from '@/hooks/useCategories'
 import { apiJson } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog'
@@ -116,9 +117,13 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
   const answer = isAnswers ? (item as AnswerRow | null) : null
   const business = !isAnswers ? (item as BusinessRow | null) : null
 
-  // Category taxonomies reuse the live public-directory keys so the admin
-  // catalog can never drift from what the /directory filters understand.
-  const answerCats = Object.keys(dir.ngoAreas as Record<string, string>).filter((k) => k !== 'all')
+  // Answer categories come from the live admin-managed taxonomy — the same
+  // source as the /directory filter chips and the request-form tiles — so a
+  // category added in /admin/categories is immediately assignable here (and
+  // its chip / suggestions can actually be populated). Business categories
+  // stay the static enum, matching the backend zod enum.
+  const { categories: liveCategories, labelFor } = useCategories()
+  const answerCats = liveCategories.map((c) => c.id)
   const businessCats = Object.keys(dir.categories as Record<string, string>)
 
   // ── Answer fields ──────────────────────────────────────────────
@@ -147,6 +152,12 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
   const [category, setCategory] = useState(item?.category ?? (isAnswers ? answerCats[0] : businessCats[0]) ?? '')
   const [status, setStatus] = useState(item?.status ?? 'approved')
   const [formError, setFormError] = useState<string | null>(null)
+
+  // The live taxonomy may still be loading when the dialog mounts — backfill
+  // the default answer category once it arrives (create flow only).
+  useEffect(() => {
+    if (isAnswers && !category && answerCats.length > 0) setCategory(answerCats[0])
+  }, [isAnswers, category, answerCats])
 
   const dialogTitle = isAnswers
     ? (item ? dm.editAnswerTitle : dm.createAnswerTitle)
@@ -298,7 +309,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
                   disabled={busy}
                 >
                   {answerCats.map((k) => (
-                    <option key={k} value={k}>{(dir.ngoAreas as Record<string, string>)[k] || k}</option>
+                    <option key={k} value={k}>{labelFor(k)}</option>
                   ))}
                 </select>
               </div>
@@ -429,6 +440,9 @@ export default function AdminDirectoryPage() {
   const a = t.admin
   const dm = a.directoryMgmt
   const dir = t.directory
+  // Bilingual answer-category labels from the live taxonomy (legacy keys fall
+  // back to the static t-maps inside labelFor, then the raw id).
+  const { labelFor } = useCategories()
   const { toast } = useApp()
 
   const [tab, setTab] = useState<Catalog>('answers')
@@ -619,7 +633,7 @@ export default function AdminDirectoryPage() {
                               </span>
                             </td>
                             <td data-label={dm.colCategory}>
-                              {(dir.ngoAreas as Record<string, string>)[row.category || ''] || row.category || ''}
+                              {row.category ? labelFor(row.category) : ''}
                             </td>
                             <td data-label={dm.colStatus}>
                               <StatusBadge

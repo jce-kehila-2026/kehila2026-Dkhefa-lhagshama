@@ -7,8 +7,8 @@
  *   2. deadline pressure — least time left to the deadline first (no deadline last)
  *   3. previously taken  — requests a volunteer dropped earlier float up
  *
- * This is the single source of truth; the frontend mirrors the same order in
- * `frontend/src/lib/requestSort.ts`. Keep the two in sync.
+ * This is the single source of truth — clients receive the order server-side
+ * (e.g. GET /api/admin/requests?sort=priority); there is no frontend copy.
  */
 
 export const URGENCY_RANK: Record<string, number> = {

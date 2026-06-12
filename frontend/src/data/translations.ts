@@ -182,15 +182,21 @@ const base = {
         urgencyLow:  'רגיל, תוך שבועיים',
         urgencyMed:  'בינוני, תוך שבוע',
         urgencyHigh: 'דחוף, תוך 48 שעות',
+        // Optional per-tile hint line for the legacy slug ids. Tile LABELS come
+        // from the live taxonomy (useCategories labelFor), never from here.
         cats: {
-          education: { label: 'חינוך ולמידה', hint: 'מלגות, בגרויות, לימודים גבוהים' },
-          employment:{ label: 'תעסוקה וקריירה', hint: 'קורות חיים, ראיונות, הכשרות' },
-          legal:     { label: 'ייעוץ משפטי', hint: 'מעמד, אזרחות, זכויות' },
-          social:    { label: 'שילוב חברתי', hint: 'קהילה, רווחה, תמיכה' },
+          education: { hint: 'מלגות, בגרויות, לימודים גבוהים' },
+          employment:{ hint: 'קורות חיים, ראיונות, הכשרות' },
+          legal:     { hint: 'מעמד, אזרחות, זכויות' },
+          social:    { hint: 'קהילה, רווחה, תמיכה' },
         },
         // Matching organizations helper (feedback round 2) — pre-submit phrasing
         suggestHeading:  'ארגונים שיכולים לעזור',
         suggestSubtitle: 'עמותות מהמאגר שמטפלות בתחום הזה - אפשר לפנות אליהן גם ישירות.',
+        // Taxonomy load failure / stale-draft category (step 2)
+        catsLoadError: 'לא ניתן לטעון את הקטגוריות כרגע. בדקו את החיבור ונסו שוב.',
+        catsRetry:     'ניסיון חוזר',
+        catsInvalid:   'הקטגוריה שנבחרה אינה זמינה עוד. בחרו קטגוריה אחרת.',
       },
       step3: {
         title:         'העלאת מסמכים',
@@ -870,6 +876,7 @@ const base = {
       ok:         'הבנתי',
       notice:     'שימו לב',
       areYouSure: 'האם להמשיך?',
+      skipToContent: 'דילוג לתוכן',
     },
 
     // ── FOOTER ────────────────────────────────────────────────
@@ -1105,6 +1112,7 @@ const base = {
           assigned:         'הוקצה מטפל',
           status_changed:   'הסטטוס עודכן',
           note_added:       'הוסף הערה',
+          close_consent:    'עדכון סגירה בהסכמה',
           rated:            'דירוג נוסף',
         },
       },
@@ -1329,15 +1337,21 @@ const base = {
         urgencyLow:  'Normal, within 2 weeks',
         urgencyMed:  'Medium, within 1 week',
         urgencyHigh: 'Urgent, within 48 hours',
+        // Optional per-tile hint line for the legacy slug ids. Tile LABELS come
+        // from the live taxonomy (useCategories labelFor), never from here.
         cats: {
-          education: { label: 'Education & Learning', hint: 'Scholarships, exams, higher education' },
-          employment:{ label: 'Employment & Career',  hint: 'CV, interviews, training' },
-          legal:     { label: 'Legal Aid',            hint: 'Status, citizenship, rights' },
-          social:    { label: 'Social Integration',   hint: 'Community, welfare, support' },
+          education: { hint: 'Scholarships, exams, higher education' },
+          employment:{ hint: 'CV, interviews, training' },
+          legal:     { hint: 'Status, citizenship, rights' },
+          social:    { hint: 'Community, welfare, support' },
         },
         // Matching organizations helper (feedback round 2) — pre-submit phrasing
         suggestHeading:  'Organizations that can help',
         suggestSubtitle: 'Community organizations in our catalog that work in this area - you can also reach out to them directly.',
+        // Taxonomy load failure / stale-draft category (step 2)
+        catsLoadError: 'Could not load the categories right now. Check your connection and try again.',
+        catsRetry:     'Try again',
+        catsInvalid:   'The selected category is no longer available. Please pick another.',
       },
       step3: {
         title:         'Upload Documents',
@@ -2008,6 +2022,7 @@ const base = {
       ok:         'Got it',
       notice:     'Heads up',
       areYouSure: 'Continue?',
+      skipToContent: 'Skip to content',
     },
 
     footer: {
@@ -2241,6 +2256,7 @@ const base = {
           assigned:         'Handler assigned',
           status_changed:   'Status updated',
           note_added:       'Note added',
+          close_consent:    'Consent-close update',
           rated:            'Rating added',
         },
       },

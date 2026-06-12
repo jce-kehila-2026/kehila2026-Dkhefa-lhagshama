@@ -50,6 +50,9 @@ interface TimelineEvent {
 // the details do not outlive the offer.
 const SAVE_PROFILE_OFFER_KEY = "pff:saveProfileOffer";
 interface SaveProfileOffer {
+  /** Uid of the account that submitted — a stash from any other (or unknown)
+   * account is discarded on read, so PII never crosses an account switch. */
+  uid?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -565,12 +568,20 @@ export default function MyRequestsPage() {
   // Read the stash only when we arrived via ?new= (i.e., straight from a
   // submit). The stash stays in sessionStorage until the user acts on it.
   useEffect(() => {
-    if (!newId) return;
+    if (!newId || !user) return;
     try {
       const raw = window.sessionStorage?.getItem(SAVE_PROFILE_OFFER_KEY);
-      if (raw) setSaveOffer(JSON.parse(raw) as SaveProfileOffer);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as SaveProfileOffer;
+      // uid-bound: a stash written by a different (or unknown) account — e.g.
+      // a previous user on a shared computer — is dropped, never rendered.
+      if (parsed.uid !== user.uid) {
+        window.sessionStorage?.removeItem(SAVE_PROFILE_OFFER_KEY);
+        return;
+      }
+      setSaveOffer(parsed);
     } catch { /* corrupt stash — ignore, never block the page */ }
-  }, [newId]);
+  }, [newId, user]);
 
   // Either action (save or dismiss) clears the stash — PII hygiene: the
   // personal details live only until acted on.

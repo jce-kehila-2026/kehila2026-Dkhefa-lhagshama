@@ -28,7 +28,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson, apiFetch } from '@/lib/apiClient'
-import type { Attachment, RequestStatus } from '@/types'
+import type { Attachment, CloseRequestSummary, RequestStatus } from '@/types'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog'
 import { StatusBadge, ErrorState } from '@/components/admin/AdminUI'
@@ -101,13 +101,7 @@ interface RequestDetail {
   origin?: string
   requestType?: string
   // Pending consent-close handshake (req 25), null/absent when none.
-  closeRequest?: {
-    proposedBy?: string
-    proposedRole?: string
-    proposedAt?: string
-    volunteerApproved?: boolean
-    beneficiaryApproved?: boolean
-  } | null
+  closeRequest?: CloseRequestSummary | null
   [key: string]: unknown
 }
 
@@ -749,7 +743,7 @@ export default function AdminRequestDetailPage() {
                       request.closeRequest.proposedRole ||
                       EMPTY}
                     {' · '}
-                    {fmt(request.closeRequest.proposedAt)}
+                    {fmt(request.closeRequest.proposedAt ?? undefined)}
                   </p>
                   <p style={{ margin: 'var(--sp-1) 0 0', color: 'var(--gray-700)', lineHeight: 1.5 }}>
                     {(a.roleLabels as Record<string, string>).volunteer}:{' '}

@@ -25,7 +25,7 @@ import { writeRequestEvent } from '@/lib/requestEvents';
 import { authenticate, requireAnyRole } from '@/middleware/auth';
 import { sortByPriority, type SortableRequest } from '@/lib/requestSort';
 import { applyCloseConsent } from '@/lib/closeConsent';
-import { volunteerDisplayName } from '@/lib/volunteerName';
+import { volunteerDisplayName } from '@/lib/displayName';
 import { notifyBeneficiaryOfRequest } from '@/lib/notify';
 
 const router = Router();
@@ -485,6 +485,9 @@ router.post('/requests/:id/drop', async (req: Request, res: Response): Promise<v
         status: 'pending',
         poolStatus: 'available',
         wasPreviouslyTaken: true,
+        // Back to the pool resets any pending consent-close handshake — the
+        // proposing volunteer is gone, so nobody could resolve it (req 25).
+        closeRequest: null,
         dropReports: FieldValue.arrayUnion({
           volunteerId: uid,
           volunteerName,

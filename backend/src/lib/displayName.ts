@@ -9,9 +9,11 @@
  *   4. Firebase Auth email local part (e.g. "e2e.bene" from e2e.bene@pff.test)
  * Returns null when nothing resolves — callers pick their own fallback (uid).
  *
- * Used by the chat participants endpoint (rail + bubbles) and by the system
- * messages that denormalize the affected user's name at write time, so a
- * removed participant keeps a readable name in history.
+ * Used by the chat participants endpoint (rail + bubbles), the admin chats
+ * oversight list, and by the system messages that denormalize the affected
+ * user's name at write time, so a removed participant keeps a readable name
+ * in history. `volunteerDisplayName` below wraps the same chain for callers
+ * that denormalize a volunteer's name into request docs.
  */
 import { auth, db } from '@/lib/firebaseAdmin';
 
@@ -46,4 +48,14 @@ export async function resolveDisplayName(uid: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Best-effort display name for a volunteer, falling back to email/uid.
+ * Used where a volunteer's name is denormalized onto request docs (claim/drop
+ * notes, the admin list's `assignedVolunteerName`) so those flows resolve
+ * through the exact same chain as the chat rail and the admin chats list.
+ */
+export async function volunteerDisplayName(uid: string, email?: string): Promise<string> {
+  return (await resolveDisplayName(uid)) ?? email ?? uid;
 }

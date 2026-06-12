@@ -28,7 +28,7 @@ import { notifyBeneficiaryOfRequest } from '@/lib/notify';
 import { REQUEST_STATUSES, type RequestStatus } from '@/routes/requests';
 import { canTransition, canArchive } from '@/lib/requestTransitions';
 import { sortByPriority } from '@/lib/requestSort';
-import { volunteerDisplayName } from '@/lib/volunteerName';
+import { volunteerDisplayName } from '@/lib/displayName';
 import { ensureChatForRequest } from '@/lib/chatOnAssign';
 
 const router = Router();
@@ -374,9 +374,12 @@ router.post('/:id/status', async (req: Request, res: Response): Promise<void> =>
 
       tx.update(ref, {
         status: to,
-        // Closing resolves any pending consent-close handshake (req 25) so no
-        // stale proposal lingers on a request the admin already closed.
-        ...(to === 'closed' ? { closeRequest: null } : {}),
+        // Every end state resolves any pending consent-close handshake
+        // (req 25) so no stale, unresolvable proposal lingers on a request
+        // the admin already closed, rejected or referred.
+        ...(to === 'closed' || to === 'rejected' || to === 'referred'
+          ? { closeRequest: null }
+          : {}),
         updatedAt: FieldValue.serverTimestamp(),
       });
     });
@@ -500,6 +503,8 @@ router.post('/:id/refer', async (req: Request, res: Response): Promise<void> => 
       tx.update(ref, {
         status: 'referred',
         archived: true,
+        // Referral is terminal — clear any pending consent-close handshake.
+        closeRequest: null,
         referral: {
           answerId,
           partnerName,

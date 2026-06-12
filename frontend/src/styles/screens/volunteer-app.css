@@ -375,27 +375,6 @@
    stays untouched so Pool/Dashboard render unchanged. */
 .volapp-deadline-val { font-variant-numeric: tabular-nums; }
 
-.volapp-check {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  /* Comfortable hit target; label + box share one target (no dead zone). */
-  min-height: 44px;
-  font-size: 0.92rem;
-  color: var(--ink);
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  border-radius: var(--radius-sm);
-}
-
-.volapp-check input { accent-color: var(--ember); }
-
-.volapp-check:focus-within {
-  outline: 2px solid var(--ember);
-  outline-offset: 2px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* Keep the opacity fade (aids comprehension), drop the movement. */
   .volapp-edit-form { transition: opacity var(--dur-2) var(--ease-out); }
