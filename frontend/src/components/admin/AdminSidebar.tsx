@@ -6,6 +6,7 @@ import {
   HeartHandshake,
   Users,
   CheckSquare,
+  Library,
   BarChart3,
   Home,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/volunteers', key: 'volunteers', icon: HeartHandshake },
   { href: '/admin/users', key: 'users', icon: Users },
   { href: '/admin/approvals', key: 'approvals', icon: CheckSquare },
+  { href: '/admin/directory', key: 'directory', icon: Library },
   { href: '/admin/insights', key: 'insights', icon: BarChart3 },
 ]
 

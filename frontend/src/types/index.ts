@@ -327,9 +327,18 @@ export interface Suggestion {
   audience?: string | { he?: string; en?: string } | null;
   sourceName?: string | { he?: string; en?: string } | null;
   sourceUrl?: string | null;
+  /**
+   * Directory organization type: 'ngo' (עמותה) vs admin-added 'partner'
+   * (שותף). Docs created before the field existed count as 'ngo' (the API
+   * applies that default server-side).
+   */
+  orgType?: OrgType | null;
   acceptsInAppRequest?: boolean;
   createdAt?: string | null;
 }
+
+/** Organization type of a directory answer (see Suggestion.orgType). */
+export type OrgType = 'ngo' | 'partner';
 
 /** A platform user / account (admin user management). */
 export interface AdminUser {

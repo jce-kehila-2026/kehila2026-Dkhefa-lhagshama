@@ -97,6 +97,9 @@ const STATUS_TONE: Record<string, string> = {
   closed: 'badge-green',
   rejected: 'badge-red',
   referred: 'badge-ember',
+  // Directory catalog statuses (answers / businesses lifecycle).
+  approved: 'badge-green',
+  needs_changes: 'badge-amber',
   active: 'badge-green',
   inactive: 'badge-gray',
   admin: 'badge-ember',

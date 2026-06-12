@@ -1609,3 +1609,32 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-vol-catreq-item { transition: none; }
 }
+
+/* ── Directory management (/admin/directory) ─────────────────────────────
+   Create/edit dialog: wider than the task dialog so the HE / EN field pairs
+   fit side by side; tall forms scroll inside the box. */
+
+.admin-dir-dialog {
+  text-align: start;
+  max-width: 44rem;
+  width: min(44rem, 92vw);
+  max-height: min(86vh, 56rem);
+  overflow-y: auto;
+}
+
+.admin-dir-bi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+@media (max-width: 560px) {
+  .admin-dir-bi-grid { grid-template-columns: 1fr; }
+}
+
+/* Delete row action: danger-tinted ghost button (same cue as the approvals
+   reject action). */
+
+.admin-dir-delete { color: var(--danger); }
+
+.admin-dir-delete:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }

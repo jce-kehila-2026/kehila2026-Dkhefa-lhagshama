@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { CSSProperties, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { Search, Star, Phone, MapPin, Store, HeartHandshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle, Globe, LayoutGrid, Utensils, Wrench, HeartPulse, GraduationCap, Sparkles, Laptop, Briefcase, Scale, Users, Home } from 'lucide-react'
+import { Search, Star, Phone, MapPin, Store, HeartHandshake, Handshake, ArrowRight, ArrowLeft, Plus, X, AlertTriangle, Globe, LayoutGrid, Utensils, Wrench, HeartPulse, GraduationCap, Sparkles, Laptop, Briefcase, Scale, Users, Home } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useRouter } from 'next/router'
 import Pagination from '@/components/data-display/Pagination'
@@ -12,6 +12,11 @@ import { apiJson } from '../lib/apiClient'
 import type { CaughtError, TNode, Lang } from '@/types'
 
 const PER_PAGE = 6
+
+// Directory tabs: businesses, then the two organization types. 'ngo'
+// (עמותות) and 'partner' (שותפים) both render the answers catalog, scoped by
+// the server-side ?orgType= filter.
+const TAB_ORDER = ['business', 'ngo', 'partner']
 
 // Lucide icon per business category / NGO area. `all` uses a neutral grid.
 // Shared by the filter chips and the business-card banners.
@@ -160,6 +165,10 @@ export default function DirectoryPage() {
   }, [L, d, openModal, closeModal, router, ArrowIcon])
 
   const [activeTab, setActiveTab] = useState('business')
+  // Both organization tabs share the answers state; only the orgType scope
+  // differs. While the business tab is active the last org scope ('ngo' by
+  // default) stays loaded, so flipping business <-> ngo never refetches.
+  const answerOrgType = activeTab === 'partner' ? 'partner' : 'ngo'
   const [bizSearch, setBizSearch] = useState('')
   const [bizCat, setBizCat] = useState('all')
   const [bizPage, setBizPage] = useState(1)
@@ -260,10 +269,12 @@ export default function DirectoryPage() {
     setAnswersLoading(true)
     setAnswersError(null)
     try {
-      // `category` is an enum key the API can still filter on server-side.
+      // `category` is an enum key the API can still filter on server-side, and
+      // `orgType` scopes the catalog to the active tab (ngo vs partner).
       // region/audience are bilingual objects and are filtered client-side.
       const query = new URLSearchParams()
       if (answerCategory !== 'all') query.set('category', answerCategory)
+      query.set('orgType', answerOrgType)
       const queryString = query.toString()
       const path = `/api/answers${queryString ? `?${queryString}` : ''}`
       const data = await apiJson(path) as { items?: DirRecord[] }
@@ -277,7 +288,16 @@ export default function DirectoryPage() {
     } finally {
       if (live.current) setAnswersLoading(false)
     }
-  }, [answerCategory])
+  }, [answerCategory, answerOrgType])
+
+  // Tab switch helper: any tab change restarts the answers pagination,
+  // because moving between ngo/partner (directly or via the business tab)
+  // swaps the orgType scope and refetches a differently-sized result set.
+  const selectTab = (tab: string) => {
+    if (tab === activeTab) return
+    setActiveTab(tab)
+    setAnswerPage(1)
+  }
 
   // Escape closes the registration modal — standard dialog keyboard affordance.
   useEffect(() => {
@@ -319,7 +339,7 @@ export default function DirectoryPage() {
   // jump to the ends. Direction-aware so RTL arrows feel natural. This only
   // moves the active tab (same effect as a click) — no data logic changes.
   const onTablistKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const order = ['business', 'ngo']
+    const order = TAB_ORDER
     const fwd = isRTL ? 'ArrowLeft' : 'ArrowRight'
     const back = isRTL ? 'ArrowRight' : 'ArrowLeft'
     const idx = order.indexOf(activeTab)
@@ -330,7 +350,7 @@ export default function DirectoryPage() {
     else if (e.key === 'End') next = order.length - 1
     else return
     e.preventDefault()
-    setActiveTab(order[next])
+    selectTab(order[next])
   }
 
   const updateRegisterField = (field: string, value: string) => {
@@ -466,7 +486,7 @@ export default function DirectoryPage() {
               tabIndex={activeTab === 'business' ? 0 : -1}
               className="dir-tab"
               style={tabStyle(activeTab === 'business')}
-              onClick={() => setActiveTab('business')}
+              onClick={() => selectTab('business')}
             >
               <Store size={15} aria-hidden="true" />
               {d.tabBusiness}
@@ -479,10 +499,23 @@ export default function DirectoryPage() {
               tabIndex={activeTab === 'ngo' ? 0 : -1}
               className="dir-tab"
               style={tabStyle(activeTab === 'ngo')}
-              onClick={() => setActiveTab('ngo')}
+              onClick={() => selectTab('ngo')}
             >
               <HeartHandshake size={15} aria-hidden="true" />
               {d.tabNGO}
+            </button>
+            <button
+              role="tab"
+              id="dir-tab-partner"
+              aria-selected={activeTab === 'partner'}
+              aria-controls="dir-panel"
+              tabIndex={activeTab === 'partner' ? 0 : -1}
+              className="dir-tab"
+              style={tabStyle(activeTab === 'partner')}
+              onClick={() => selectTab('partner')}
+            >
+              <Handshake size={15} aria-hidden="true" />
+              {d.tabPartner}
             </button>
           </div>
         </div>
@@ -494,7 +527,7 @@ export default function DirectoryPage() {
           className="dir-controls"
           id="dir-panel"
           role="tabpanel"
-          aria-labelledby={activeTab === 'business' ? 'dir-tab-business' : 'dir-tab-ngo'}
+          aria-labelledby={`dir-tab-${activeTab}`}
         >
         {/* ── SEARCH (always visible, above fold) ────────────────────── */}
         <div className="dir-search">
@@ -684,8 +717,8 @@ export default function DirectoryPage() {
           </>
         )}
 
-        {/* ── ANSWER RESULTS ────────────────────────────────────────── */}
-        {!loading && !error && activeTab === 'ngo' && (
+        {/* ── ANSWER RESULTS (ngo + partner tabs share this panel) ───── */}
+        {!loading && !error && activeTab !== 'business' && (
           <>
             {answerPageData.length > 0 ? (
               <div className="dir-grid">
@@ -733,9 +766,13 @@ export default function DirectoryPage() {
             ) : (
               <div className="dir-state">
                 <span className="dir-state-icon">
-                  <HeartHandshake size={26} aria-hidden="true" />
+                  {activeTab === 'partner'
+                    ? <Handshake size={26} aria-hidden="true" />
+                    : <HeartHandshake size={26} aria-hidden="true" />}
                 </span>
-                <h3 className="section-display dir-state-title">{d.emptyAnswers}</h3>
+                <h3 className="section-display dir-state-title">
+                  {activeTab === 'partner' ? d.emptyPartners : d.emptyAnswers}
+                </h3>
                 <p className="dir-state-hint">{d.noResultsHint}</p>
               </div>
             )}
