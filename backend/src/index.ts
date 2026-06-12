@@ -16,6 +16,7 @@ import adminRouter from '@/routes/admin';
 import adminCategoriesRouter from '@/routes/adminCategories';
 import adminDirectoryRouter from '@/routes/adminDirectory';
 import adminVolunteersRouter from '@/routes/adminVolunteers';
+import adminChatsRouter from '@/routes/adminChats';
 import adminRequestsRouter from '@/routes/adminRequests';
 import adminUsersRouter from '@/routes/adminUsers';
 import adminStatsRouter from '@/routes/adminStats';
@@ -128,6 +129,7 @@ app.use('/api/suggestions', suggestionsRouter); // UC-01 A1: public, no limiter
 // backstop, and every route enforces requireRole('admin') internally.
 app.use('/api/admin/volunteers', adminVolunteersRouter);
 app.use('/api/admin/categories', adminCategoriesRouter);
+app.use('/api/admin/chats',      adminChatsRouter);
 app.use('/api/admin/requests',   adminRequestsRouter);
 app.use('/api/admin/users',      adminUsersRouter);
 app.use('/api/admin/stats',      adminStatsRouter);

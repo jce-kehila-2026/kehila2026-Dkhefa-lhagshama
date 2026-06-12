@@ -86,19 +86,26 @@ service cloud.firestore {
     }
 
     // ── /chats — UC-04 ───────────────────────────────────────────────────
-    // Read allowed only if the caller's uid is in participants[].
-    // Writes are server-only (Express + Admin SDK).
-    // Mitigates wiki Risk-#5 (Chat Abuse).
+    // Read allowed if the caller's uid is in participants[], or for admins
+    // (read-only oversight — admins post only after joining as a participant
+    // via the Express participant endpoint). Writes are server-only
+    // (Express + Admin SDK). Mitigates wiki Risk-#5 (Chat Abuse).
     match /chats/{chatId} {
-      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow read: if isSignedIn() && (
+        request.auth.uid in resource.data.participants
+        || isAdmin()
+      );
       allow create, update, delete: if false;
     }
 
     // ── /messages — UC-04 ────────────────────────────────────────────────
-    // A message is readable only if the caller participates in its parent chat.
+    // A message is readable if the caller participates in its parent chat,
+    // or by an admin (same oversight carve-out as /chats).
     match /messages/{messageId} {
-      allow read: if isSignedIn() &&
-        request.auth.uid in get(/databases/$(database)/documents/chats/$(resource.data.chatId)).data.participants;
+      allow read: if isSignedIn() && (
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(resource.data.chatId)).data.participants
+        || isAdmin()
+      );
       allow create, update, delete: if false;
     }
 

@@ -131,6 +131,36 @@ Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
 - [ ] **`requests` entity** — change the `category` attribute note from a fixed enum to `+ category: string (FK → categories.id, raw key kept for history)`.
 - [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki Architecture & Design page.
 
+## Round 2 — direct chats + admin chat oversight (2026-06-12)
+
+Chats gain a kind (request-bound vs admin-created direct/staff chats), a creator, an optional title, and a *meaningful* `active` flag. Still **additive** — no existing field changed type or meaning; old chat docs missing the new fields are read tolerantly everywhere (missing `kind` = `request`, missing `active` = `true`).
+
+### New / changed fields by collection
+
+| Collection | Field | Type | Purpose |
+|---|---|---|---|
+| `chats` | `kind` | enum(`request`, `direct`) | `request` = bound to a request (assignment-created); `direct` = admin-created staff/group chat with no request. **Absent = `request`**. |
+| `chats` | `createdBy` | string (uid or `'system'`) | Who created the chat. `'system'` for assignment-created chats; the admin's uid for `POST /api/chats/direct`. On direct chats the creator manages participants (admins manage participants on any chat). |
+| `chats` | `title` | string \| null | Optional display title — direct chats only (request chats store `null`). Max 120 chars. |
+| `chats` | `requestId` | string \| **null** | Now nullable: direct chats carry `requestId: null`. (Previously always a request id.) |
+| `chats` | `active` | boolean (default `true`) | **Semantics upgraded** (field itself existed since round-2 close-consent): now set `false` on ALL request end states (`closed`, `rejected`, `referred`) — not just mutual-consent close — set back `true` on admin reopen (`closed → in_progress`), and toggleable by an admin via `PATCH /api/admin/chats/:id`. Inactive chat = read-only composer (server rejects message/attachment posts with 409 `chat_inactive`). **Absent = `true`**. |
+| `messages` | `targetUid` | string (optional) | On participant add/remove system messages: the uid of the affected user, so the UI can name them. |
+
+### Behavioral notes (no schema change)
+
+- System messages keep the chat-on-assign convention (`senderId: 'system'`, `isSystem: true`, content prefixed `[SYSTEM] `) and now carry machine-readable markers the frontend translates: `chat_created`, `participant_added`, `participant_removed`, `chat_paused`, `chat_resumed`.
+- Firestore rules: `/chats` and `/messages` reads gain an `isAdmin()` carve-out (read-only oversight). All client writes stay denied; admins may **post** only after joining as a participant (`POST /api/chats/:id/participants`).
+- On `request`-kind chats, the linked request's `beneficiaryId` and current `assignedVolunteerId` cannot be removed from participants (409 `protected_participant`).
+- No new Firestore composite index: `GET /api/admin/chats` is a full-collection get with in-memory sort/limit, and the existing `chats(participants CONTAINS, lastMessageAt DESC)` index keeps covering the client chat list (direct chats appear there through the same `participants array-contains` query).
+
+### TODO — edit `db-design.drawio` then re-export (human step)
+
+Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
+
+- [ ] **`chats` entity** — add `+ kind: enum(request,direct)`, `+ createdBy: string (uid | 'system')`, `+ title: string | null`; change `requestId` to `+ requestId: string | null (null = direct chat)`; annotate `active` as "false on closed/rejected/referred + admin toggle".
+- [ ] **`messages` entity** — add `+ targetUid: string (system messages only)`.
+- [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki Architecture & Design page.
+
 ## Notes
 
 - No schema change here requires a new Firestore composite index — the volunteer pool, assigned, and admin request lists use single-field queries plus in-memory sort/filter (`lib/requestSort.ts`).

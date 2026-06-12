@@ -56,6 +56,10 @@ export async function ensureChatForRequest({
     await chatRef.set({
       requestId,
       participants: [beneficiaryId, volunteerId],
+      kind: 'request',
+      createdBy: 'system',
+      title: null,
+      active: true,
       lastMessageAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
     });

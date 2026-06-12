@@ -195,9 +195,23 @@ describe('/chats', () => {
     await assertFails(getDoc(doc(asUser('carol'), 'chats/chat1')));
   });
 
+  test('admin can read a chat they are not a participant of (oversight)', async () => {
+    await assertSucceeds(getDoc(doc(asAdmin(), 'chats/chat1')));
+  });
+
+  test('volunteer non-participant still cannot read chat', async () => {
+    await assertFails(getDoc(doc(asVolunteer(), 'chats/chat1')));
+  });
+
   test('client write is denied', async () => {
     await assertFails(
       setDoc(doc(asUser('alice'), 'chats/chat2'), { participants: ['alice'] }),
+    );
+  });
+
+  test('client write is denied even for admin', async () => {
+    await assertFails(
+      setDoc(doc(asAdmin(), 'chats/chat1'), { participants: ['alice', 'bob', 'admin1'] }),
     );
   });
 });
@@ -223,9 +237,23 @@ describe('/messages', () => {
     await assertFails(getDoc(doc(asUser('carol'), 'messages/msg1')));
   });
 
+  test('admin can read a message in a chat they are not in (oversight)', async () => {
+    await assertSucceeds(getDoc(doc(asAdmin(), 'messages/msg1')));
+  });
+
+  test('volunteer non-participant still cannot read message', async () => {
+    await assertFails(getDoc(doc(asVolunteer(), 'messages/msg1')));
+  });
+
   test('client write is denied', async () => {
     await assertFails(
       setDoc(doc(asUser('alice'), 'messages/msg2'), { chatId: 'chat1' }),
+    );
+  });
+
+  test('client write is denied even for admin', async () => {
+    await assertFails(
+      setDoc(doc(asAdmin(), 'messages/msg3'), { chatId: 'chat1', text: 'hi' }),
     );
   });
 });

@@ -34,6 +34,25 @@ import { ensureChatForRequest } from '@/lib/chatOnAssign';
 const router = Router();
 router.use(authenticate, requireRole('admin'));
 
+// ── Chat lifecycle consistency ─────────────────────────────────────────────
+// `chats.active` must be false on ALL request end states (closed, rejected,
+// referred), not just the mutual-consent close. Mirrors closeConsent.ts:
+// best-effort update of every chat linked to the request, never fatal.
+const CHAT_END_STATES = new Set<RequestStatus>(['closed', 'rejected', 'referred']);
+
+async function setChatsActiveForRequest(requestId: string, active: boolean): Promise<void> {
+  try {
+    const chats = await db().collection('chats').where('requestId', '==', requestId).get();
+    await Promise.all(
+      chats.docs.map((c) =>
+        c.ref.update({ active, updatedAt: FieldValue.serverTimestamp() }),
+      ),
+    );
+  } catch {
+    /* non-fatal: the request write committed; the chat flag is best-effort */
+  }
+}
+
 // ── GET /api/admin/requests ───────────────────────────────────────────────
 // Optional query params: status, category, urgency, volunteerId, sort
 // ('newest' default | 'priority'), limit (default 50)
@@ -401,6 +420,14 @@ router.post('/:id/status', async (req: Request, res: Response): Promise<void> =>
     console.error('[adminRequests] POST /:id/status side-effects:', err);
   }
 
+  // Keep chats.active in sync with the request lifecycle: every end state
+  // pauses the chat; an admin reopen (closed → in_progress) resumes it.
+  if (CHAT_END_STATES.has(to)) {
+    await setChatsActiveForRequest(requestId, false);
+  } else if (to === 'in_progress' && prevStatus === 'closed') {
+    await setChatsActiveForRequest(requestId, true);
+  }
+
   // Notify the beneficiary when their request is closed (req 27).
   // Fire-and-forget: never let a notification failure break the response.
   if (to === 'closed') {
@@ -516,6 +543,9 @@ router.post('/:id/refer', async (req: Request, res: Response): Promise<void> => 
   } catch (err) {
     console.error('[adminRequests] POST /:id/refer side-effects:', err);
   }
+
+  // `referred` is a request end state — pause the linked chat(s).
+  await setChatsActiveForRequest(requestId, false);
 
   res.json({ ok: true, status: 'referred', referral: { answerId, partnerName, note: note ?? '' } });
 });
