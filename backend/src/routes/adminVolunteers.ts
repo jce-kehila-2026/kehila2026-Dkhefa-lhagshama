@@ -13,19 +13,22 @@
  *   3. Sets custom claim: { role: 'volunteer' } via Firebase Auth Admin SDK
  *   4. Writes audit log
  *
- * Assumptions about volunteerApplications doc shape (Stream 3 defines this):
- *   {
- *     uid: string,           // applicant's Firebase uid
- *     status: 'pending' | 'approved' | 'rejected',
- *     fullName: string,
- *     email: string,
- *     profession?: string,
- *     languages?: string[],  // e.g. ['he', 'am', 'en']
- *     areas?: string[],      // volunteering area tags
- *     availability?: string, // e.g. '2-4h/week'
- *     submittedAt: Timestamp,
- *   }
- *   If a field is absent, code reads defensively and falls back to null.
+ * volunteerApplications doc shape — TWO shapes coexist and both are tolerated:
+ *   Legacy/admin shape:          Apply-endpoint shape (volunteers.ts):
+ *   {                            {
+ *     uid: string,                 uid: string,
+ *     status: 'pending' | ...,     status: 'pending' | ...,
+ *     fullName: string,            firstName: string, lastName: string,
+ *     email: string,               email: string,
+ *     profession?: string,         profession?: string,
+ *     languages?: string[],        languages?: string[],
+ *     areas?: string[],            areasOfHelp?: string[],
+ *     availability?: string,       availability?: string,
+ *     submittedAt: Timestamp,      createdAt: Timestamp,
+ *   }                            }
+ *   Readers resolve fullName ?? firstName+lastName, areas ?? areasOfHelp, and
+ *   submittedAt ?? createdAt (Timestamp or ISO string). Absent fields fall
+ *   back to null.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { Router, type Request, type Response } from 'express';
@@ -59,20 +62,27 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
     const pending = pendingSnap.docs.map((d) => {
       const data = d.data();
+      // Apply (volunteers.ts) writes firstName/lastName/areasOfHelp/createdAt;
+      // older docs may carry fullName/areas/submittedAt. Tolerate both shapes.
+      const composedName = [data.firstName, data.lastName].filter(Boolean).join(' ');
+      const submittedAtRaw = data.submittedAt ?? data.createdAt;
       return {
         id: d.id,
         uid: data.uid ?? d.id,
-        fullName: data.fullName ?? null,
+        fullName: data.fullName ?? (composedName || null),
         email: data.email ?? null,
         profession: data.profession ?? null,
         languages: data.languages ?? [],
-        areas: data.areas ?? [],
+        areas: data.areas ?? data.areasOfHelp ?? [],
         availability: data.availability ?? null,
         status: data.status,
-        submittedAt: data.submittedAt?.toDate?.()?.toISOString?.() ?? null,
+        submittedAt:
+          submittedAtRaw?.toDate?.()?.toISOString?.() ??
+          (typeof submittedAtRaw === 'string' ? submittedAtRaw : null),
       };
     });
-    // Newest applications first (replaces Firestore orderBy).
+    // Newest applications first (replaces Firestore orderBy); sorts on the
+    // resolved submittedAt (submittedAt ?? createdAt) mapped above.
     pending.sort((a, b) => (b.submittedAt ?? '').localeCompare(a.submittedAt ?? ''));
 
     const active = activeSnap.docs.map((d) => {
@@ -148,17 +158,20 @@ router.post('/:id/approve', async (req: Request, res: Response): Promise<void> =
     });
 
     // 2. Create/update volunteers/{uid} doc
+    // Resolve dual application shapes (see doc-shape comment at top) so the
+    // roster gets a real name instead of a null fullName falling back to uid.
+    const composedName = [appData.firstName, appData.lastName].filter(Boolean).join(' ');
     await db()
       .collection('volunteers')
       .doc(volunteerUid)
       .set(
         {
           uid: volunteerUid,
-          fullName: appData.fullName ?? null,
+          fullName: appData.fullName ?? (composedName || null),
           email: appData.email ?? null,
           profession: appData.profession ?? null,
           languages: appData.languages ?? [],
-          areas: appData.areas ?? [],
+          areas: appData.areas ?? appData.areasOfHelp ?? [],
           availability: appData.availability ?? null,
           active: true,
           approvedBy: actorId,
