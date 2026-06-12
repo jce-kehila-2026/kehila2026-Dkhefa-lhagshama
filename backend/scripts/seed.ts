@@ -420,11 +420,16 @@ const BUSINESSES: BusinessSeed[] = [
 async function seedTaxonomy(
   collectionName: string,
   entries: TaxonomyEntry[],
+  extraFields: Record<string, unknown> = {},
 ): Promise<void> {
   const batch = firestore.batch();
   for (const entry of entries) {
     const ref = firestore.collection(collectionName).doc(entry.id);
-    batch.set(ref, { nameHe: entry.nameHe, nameEn: entry.nameEn }, { merge: true });
+    batch.set(
+      ref,
+      { nameHe: entry.nameHe, nameEn: entry.nameEn, ...extraFields },
+      { merge: true },
+    );
   }
   await batch.commit();
   console.log(`  ✓ ${collectionName}: ${entries.length} documents seeded`);
@@ -475,7 +480,10 @@ async function seedBusinesses(): Promise<void> {
 
 async function main(): Promise<void> {
   console.log('Seeding Firestore taxonomy + directories...');
-  await seedTaxonomy('categories', CATEGORIES);
+  // Categories carry an explicit soft-archive flag (admin-managed taxonomy,
+  // feedback round 2). NOTE: re-seeding resets `archived: false` on the 10
+  // seeded ids — an admin who archived one of them will see it active again.
+  await seedTaxonomy('categories', CATEGORIES, { archived: false });
   await seedTaxonomy('regions', REGIONS);
   await seedAnswers();
   await seedBusinesses();

@@ -18,6 +18,7 @@ import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
 import { writeAuditLog } from '@/lib/audit';
+import { isAllowedCategory } from '@/lib/categoriesCache';
 import { writeRequestEvent } from '@/lib/requestEvents';
 import { authenticate } from '@/middleware/auth';
 import { canTransition, REQUEST_STATUSES, type RequestStatus } from '@/lib/requestTransitions';
@@ -59,8 +60,11 @@ const createRequestSchema = z
     age:       z.coerce.number().int().min(0).max(120),
     gender:    z.enum(['male', 'female', 'other', '']).default(''),
 
-    // Request body
-    category:    z.enum(['education', 'employment', 'legal', 'social']),
+    // Request body. `category` is validated against the live admin-managed
+    // taxonomy (Firestore `categories` collection) in the async superRefine
+    // below — no more static enum. Fail-open if the taxonomy is unseeded
+    // (see lib/categoriesCache).
+    category:    z.string().trim().min(1).max(80),
     description: z.string().trim().min(10).max(4000),
     urgency:     z.enum(['low', 'medium', 'high']).default('low'),
 
@@ -90,13 +94,23 @@ const createRequestSchema = z
       })
       .optional(),
   })
-  .superRefine((data, ctx) => {
+  .superRefine(async (data, ctx) => {
     // An Israeli ID number is mandatory only when idType is israeli_id (#66).
     if (data.idType === 'israeli_id' && data.idNumber.trim().length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['idNumber'],
         message: 'idNumber is required when idType is israeli_id',
+      });
+    }
+
+    // Category must be an ACTIVE (non-archived) taxonomy id. Async because the
+    // id set lives in Firestore (cached ~60s) — hence safeParseAsync below.
+    if (!(await isAllowedCategory(data.category, 'active'))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['category'],
+        message: 'unknown category',
       });
     }
   });
@@ -133,7 +147,8 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     return;
   }
 
-  const parsed = createRequestSchema.safeParse(req.body);
+  // safeParseAsync: the schema's superRefine awaits the category taxonomy.
+  const parsed = await createRequestSchema.safeParseAsync(req.body);
   if (!parsed.success) {
     res.status(400).json({
       error: 'validation',

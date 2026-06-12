@@ -37,6 +37,7 @@ import { z } from 'zod';
 import { db, auth as adminAuth } from '@/lib/firebaseAdmin';
 import { authenticate, requireRole } from '@/middleware/auth';
 import { writeAuditLog } from '@/lib/audit';
+import { isAllowedCategory } from '@/lib/categoriesCache';
 
 const router = Router();
 router.use(authenticate, requireRole('admin'));
@@ -277,13 +278,28 @@ router.post('/:uid/deactivate', async (req: Request, res: Response): Promise<voi
 // Approve or reject a volunteer's category-permission request (req 15).
 // Category permissions are INFORMATIONAL (they don't gate the pool) — approving
 // records the category on the volunteer's profile and resolves the pending entry.
-const categoryDecisionSchema = z.object({
-  category: z.string().trim().min(1).max(80),
-  action: z.enum(['approve', 'reject']),
-});
+const categoryDecisionSchema = z
+  .object({
+    category: z.string().trim().min(1).max(80),
+    action: z.enum(['approve', 'reject']),
+  })
+  .superRefine(async (d, ctx) => {
+    // Validate against ALL taxonomy ids (archived included): the volunteer may
+    // have requested the category before an admin archived it, and approving /
+    // rejecting that historical entry must keep working. Fail-open if the
+    // taxonomy is unseeded — see lib/categoriesCache.
+    if (!(await isAllowedCategory(d.category, 'all'))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['category'],
+        message: 'unknown category',
+      });
+    }
+  });
 
 router.post('/:uid/categories', async (req: Request, res: Response): Promise<void> => {
-  const parsed = categoryDecisionSchema.safeParse(req.body);
+  // safeParseAsync: the schema's superRefine awaits the category taxonomy.
+  const parsed = await categoryDecisionSchema.safeParseAsync(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
     return;

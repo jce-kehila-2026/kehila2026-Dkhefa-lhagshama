@@ -13,6 +13,7 @@ import helmet from 'helmet'; // #83
 
 import { initializeFirebaseAdmin } from '@/lib/firebaseAdmin';
 import adminRouter from '@/routes/admin';
+import adminCategoriesRouter from '@/routes/adminCategories';
 import adminDirectoryRouter from '@/routes/adminDirectory';
 import adminVolunteersRouter from '@/routes/adminVolunteers';
 import adminRequestsRouter from '@/routes/adminRequests';
@@ -22,6 +23,7 @@ import adminInsightsRouter from '@/routes/adminInsights';
 import answersRouter from '@/routes/answers';
 import authRouter from '@/routes/auth';
 import businessesRouter from '@/routes/businesses';
+import categoriesRouter from '@/routes/categories';
 import chatsRouter from '@/routes/chats';
 import profileRouter from '@/routes/profile';
 import ratingsRouter from '@/routes/ratings';
@@ -108,6 +110,11 @@ app.use('/api/users',      authWriteLimiter, usersRouter);
 app.use('/api/ratings',    authWriteLimiter, ratingsRouter); // #80
 app.use('/api/businesses', businessesRouter);
 app.use('/api/answers',    answersRouter);
+// Public taxonomy read. Deliberately NOT behind authWriteLimiter (like
+// /api/answers): it's a read-only GET fetched on page load by pickers and
+// label resolution, so the strict 30 req/15 min write limiter would throttle
+// normal browsing. globalLimiter still applies as the abuse backstop.
+app.use('/api/categories', categoriesRouter);
 app.use('/api/suggestions', suggestionsRouter); // UC-01 A1: public, no limiter
 // Admin sub-routers (Stream 4: #73 #74 #75 #76 #77). Each enforces
 // authenticate + requireRole('admin') internally. Mount BEFORE the generic
@@ -120,6 +127,7 @@ app.use('/api/suggestions', suggestionsRouter); // UC-01 A1: public, no limiter
 // pass through the app-wide globalLimiter (300 req/15 min) as a coarse abuse
 // backstop, and every route enforces requireRole('admin') internally.
 app.use('/api/admin/volunteers', adminVolunteersRouter);
+app.use('/api/admin/categories', adminCategoriesRouter);
 app.use('/api/admin/requests',   adminRequestsRouter);
 app.use('/api/admin/users',      adminUsersRouter);
 app.use('/api/admin/stats',      adminStatsRouter);

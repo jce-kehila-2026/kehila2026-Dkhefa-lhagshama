@@ -3,7 +3,8 @@
  *
  * Covers every collection declared in `firestore.rules`:
  *   requests, users, requestEvents, chats, messages,
- *   auditLogs, answers, businesses, organizations, and the catch-all.
+ *   auditLogs, answers, businesses, organizations, categories,
+ *   and the catch-all.
  *
  * The client SDK is read-mostly: all trusted writes go through the Express
  * backend (Admin SDK, which bypasses these rules). So most write assertions
@@ -396,6 +397,37 @@ describe('/organizations', () => {
     await assertFails(
       setDoc(doc(asAdmin(), 'organizations/new1'), { status: 'pending' }),
     );
+  });
+});
+
+// ── /categories — admin-managed request taxonomy ────────────────────────────
+describe('/categories', () => {
+  beforeEach(() =>
+    seed((db) =>
+      setDoc(doc(db, 'categories/education'), {
+        nameHe: 'השכלה',
+        nameEn: 'Education',
+        archived: false,
+      }),
+    ),
+  );
+
+  test('public reads a category unauthenticated', async () => {
+    await assertSucceeds(getDoc(doc(anon(), 'categories/education')));
+  });
+
+  test('client write is denied even for admin', async () => {
+    await assertFails(
+      setDoc(doc(asAdmin(), 'categories/newcat'), {
+        nameHe: 'חדש',
+        nameEn: 'New',
+        archived: false,
+      }),
+    );
+  });
+
+  test('client delete is denied even for admin', async () => {
+    await assertFails(deleteDoc(doc(asAdmin(), 'categories/education')));
   });
 });
 

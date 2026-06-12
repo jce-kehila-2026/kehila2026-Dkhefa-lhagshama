@@ -20,6 +20,7 @@ import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
 import { writeAuditLog } from '@/lib/audit';
+import { isAllowedCategory } from '@/lib/categoriesCache';
 import { writeRequestEvent } from '@/lib/requestEvents';
 import { authenticate, requireAnyRole } from '@/middleware/auth';
 import { sortByPriority, type SortableRequest } from '@/lib/requestSort';
@@ -143,10 +144,23 @@ const patchMeSchema = z
   })
   .refine((d) => d.workStatus !== undefined || d.requestCategory !== undefined, {
     message: 'workStatus or requestCategory is required',
+  })
+  .superRefine(async (d, ctx) => {
+    // A volunteer may only request permission for an ACTIVE id from the
+    // admin-managed taxonomy (no more free text). Fail-open if the taxonomy
+    // is unseeded — see lib/categoriesCache.
+    if (d.requestCategory && !(await isAllowedCategory(d.requestCategory.category, 'active'))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['requestCategory', 'category'],
+        message: 'unknown category',
+      });
+    }
   });
 
 router.patch('/me', async (req: Request, res: Response): Promise<void> => {
-  const parsed = patchMeSchema.safeParse(req.body);
+  // safeParseAsync: the schema's superRefine awaits the category taxonomy.
+  const parsed = await patchMeSchema.safeParseAsync(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
     return;

@@ -105,6 +105,32 @@ Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
 - [ ] **`businesses` entity** — add `+ createdBy: string` and note `ownerId` is now nullable (admin-created docs).
 - [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki Architecture & Design page.
 
+## Round 2 — admin-managed categories (2026-06-12)
+
+Request categories move from a hardcoded 4-key enum to the (already seeded) Firestore `categories` collection, managed by admins via `/api/admin/categories` and read publicly via `GET /api/categories` + a new public-read rules block. Still **additive** — no existing field changed type or meaning.
+
+### New / changed fields by collection
+
+| Collection | Field | Type | Purpose |
+|---|---|---|---|
+| `categories` | `archived` | boolean (default `false`) | Soft archive. `true` hides the category from pickers and from new-input validation, but the doc (and its `nameHe`/`nameEn` labels) stays readable so historical requests/answers keep resolving labels. **Absent = `false`** — seeded docs created before the flag count as active. |
+| `categories` | `createdAt` / `updatedAt` | timestamp | Set by the admin CRUD endpoints (`POST`/`PATCH /api/admin/categories`). Seeded docs may lack them. |
+
+### Behavioral notes (no schema change)
+
+- `requests.category` (and the task-create / volunteer category-permission inputs) are now validated **dynamically** against the live `categories` collection instead of a static zod enum: new input must match an **active** (non-archived) id; the admin category-permission decision endpoint accepts **any** id (archived ok — historical). Validation **fails open** (accepts with a server warning) when the collection is empty/unreadable, so an unseeded environment never hard-fails.
+- Old request docs keep their raw `category` string keys; every label lookup falls back to the raw key, so no data migration is required.
+- Category labels come from the doc's `nameHe`/`nameEn` (bilingual field contract), **never** from `translations.ts`.
+- Hard delete of a category is refused (409 `category_in_use`) while any request or answer references the id — checked with two single-field `where ... limit 1` queries (no composite index).
+
+### TODO — edit `db-design.drawio` then re-export (human step)
+
+Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
+
+- [ ] **`categories` entity** — the diagram already lists `categories` as a taxonomy entity; add `+ archived: boolean` (and `+ createdAt/updatedAt: timestamp` if the entity shows timestamps), matching the existing `+ name: type` style.
+- [ ] **`requests` entity** — change the `category` attribute note from a fixed enum to `+ category: string (FK → categories.id, raw key kept for history)`.
+- [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki Architecture & Design page.
+
 ## Notes
 
 - No schema change here requires a new Firestore composite index — the volunteer pool, assigned, and admin request lists use single-field queries plus in-memory sort/filter (`lib/requestSort.ts`).

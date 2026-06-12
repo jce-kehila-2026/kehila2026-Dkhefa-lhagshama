@@ -22,6 +22,7 @@ import { z } from 'zod';
 import { db } from '@/lib/firebaseAdmin';
 import { authenticate, requireRole } from '@/middleware/auth';
 import { writeAuditLog } from '@/lib/audit';
+import { isAllowedCategory } from '@/lib/categoriesCache';
 import { writeRequestEvent } from '@/lib/requestEvents';
 import { notifyBeneficiaryOfRequest } from '@/lib/notify';
 import { REQUEST_STATUSES, type RequestStatus } from '@/routes/requests';
@@ -650,7 +651,7 @@ router.post('/:id/note', async (req: Request, res: Response): Promise<void> => {
 //   { title, description, category, urgency?, deadline?, attachments? }
 //   - title:       required, 1-200 chars
 //   - description: required, 1-4000 chars
-//   - category:    required, non-empty
+//   - category:    required, an ACTIVE category id from the admin-managed taxonomy
 //   - urgency:     'low' | 'medium' | 'high' (default 'medium')
 //   - deadline:    ISO date/datetime string, or null (default null)
 //   - attachments: optional array of { name, path, type, size, volunteerVisible? }
@@ -665,22 +666,36 @@ const taskAttachmentSchema = z.object({
   volunteerVisible: z.boolean().optional().default(false),
 });
 
-const taskSchema = z.object({
-  title:       z.string().trim().min(1).max(200),
-  description: z.string().trim().min(1).max(4000),
-  category:    z.string().trim().min(1).max(200),
-  urgency:     z.enum(['low', 'medium', 'high']).default('medium'),
-  deadline: z
-    .string()
-    .trim()
-    .refine((s) => !Number.isNaN(Date.parse(s)), 'deadline must be a valid date')
-    .nullable()
-    .optional(),
-  attachments: z.array(taskAttachmentSchema).max(20).optional().default([]),
-});
+const taskSchema = z
+  .object({
+    title:       z.string().trim().min(1).max(200),
+    description: z.string().trim().min(1).max(4000),
+    category:    z.string().trim().min(1).max(80),
+    urgency:     z.enum(['low', 'medium', 'high']).default('medium'),
+    deadline: z
+      .string()
+      .trim()
+      .refine((s) => !Number.isNaN(Date.parse(s)), 'deadline must be a valid date')
+      .nullable()
+      .optional(),
+    attachments: z.array(taskAttachmentSchema).max(20).optional().default([]),
+  })
+  .superRefine(async (data, ctx) => {
+    // No more free-text task categories: must be an ACTIVE id from the
+    // admin-managed taxonomy (Firestore `categories`, cached ~60s). Fail-open
+    // if the taxonomy is unseeded — see lib/categoriesCache.
+    if (!(await isAllowedCategory(data.category, 'active'))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['category'],
+        message: 'unknown category',
+      });
+    }
+  });
 
 router.post('/task', async (req: Request, res: Response): Promise<void> => {
-  const parsed = taskSchema.safeParse(req.body);
+  // safeParseAsync: the schema's superRefine awaits the category taxonomy.
+  const parsed = await taskSchema.safeParseAsync(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
     return;

@@ -140,6 +140,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── /categories — admin-managed request taxonomy ──────────────────────
+    // Public read: pickers and label resolution need the bilingual
+    // { nameHe, nameEn } docs, archived ones included (old requests keep
+    // their raw keys and still resolve labels). All mutations go through
+    // /api/admin/categories (Express + Admin SDK) — never the client.
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // ── /ratings — UC experience ratings (#80) ──────────────────────────────
     // One rating per request (doc id == requestId). The owning beneficiary can
     // read their own rating; admins read all. Writes are server-only: POST
