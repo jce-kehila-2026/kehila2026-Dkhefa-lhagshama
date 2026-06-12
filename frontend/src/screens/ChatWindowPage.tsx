@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,6 +19,9 @@ import {
   Download,
   XCircle,
   Clock,
+  UserPlus,
+  X,
+  Eye,
 } from "lucide-react";
 
 import { useApp } from "../contexts/AppContext";
@@ -30,7 +33,9 @@ import { useMessages } from "../hooks/useMessages";
 import type { ChatMessage } from "../hooks/useMessages";
 import { getIdToken } from "../lib/auth";
 import Reveal from "../components/motion/Reveal";
-import type { RequestStatus, CloseRequest } from "../types";
+import ConfirmDialog from "../components/feedback/ConfirmDialog";
+import UserPickerDialog from "../components/chat/UserPickerDialog";
+import type { RequestStatus, CloseRequest, ChatKind } from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
 
@@ -58,6 +63,20 @@ interface ChatParticipant {
   uid: string;
   displayName: string | null;
   avatarUrl: string | null;
+}
+
+/**
+ * Live projection of the chat document (feedback round 2): kind/title/active
+ * drive group semantics and the read-only composer; createdBy + participants
+ * drive participant management and the admin "join to write" state. Tolerant
+ * reads — legacy docs count as live request chats.
+ */
+interface ChatMeta {
+  kind: ChatKind;
+  title: string | null;
+  active: boolean;
+  createdBy: string | null;
+  participantUids: string[];
 }
 
 /**
@@ -104,11 +123,59 @@ export default function ChatWindowPage() {
   const listenChatId = !authLoading && user && typeof chatId === "string" ? chatId : null;
   const { messages, loading: msgsLoading, error: msgsError } = useMessages(listenChatId);
 
+  // ── Live chat-doc projection (kind / title / active / membership) ──────
+  // onSnapshot (not a one-shot read) so an admin pause, a participant change
+  // or a request end state flips the UI live. Admins can read any chat doc
+  // (rules carve-out); a removed participant just stops receiving updates.
+  const [chatMeta, setChatMeta] = useState<ChatMeta | null>(null);
+
+  // Note 6 — the linked request (status + assigned handler) powers the
+  // volunteer's "Mark as done" control + the close-consent strip. The chat-doc
+  // listener mirrors `requestId` here; the fetch effect below re-runs only
+  // when the id value actually changes.
+  const [linkedRequest, setLinkedRequest] = useState<LinkedRequest | null>(null);
+  const [markingDone, setMarkingDone] = useState(false);
+  const [linkedRequestId, setLinkedRequestId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!listenChatId) {
+      setChatMeta(null);
+      setLinkedRequestId(null);
+      return;
+    }
+    const unsub = onSnapshot(
+      doc(firebaseDb, "chats", listenChatId),
+      (snap) => {
+        if (!snap.exists()) return;
+        const d = snap.data();
+        setChatMeta({
+          kind: d.kind === "direct" ? "direct" : "request",
+          title: typeof d.title === "string" && d.title.trim() ? d.title : null,
+          active: d.active !== false,
+          createdBy: typeof d.createdBy === "string" ? d.createdBy : null,
+          participantUids: Array.isArray(d.participants)
+            ? d.participants.filter((p): p is string => typeof p === "string")
+            : [],
+        });
+        setLinkedRequestId(
+          typeof d.requestId === "string" && d.requestId ? d.requestId : null,
+        );
+      },
+      () => {
+        // Permission/network error — the message feed surfaces its own state.
+        setChatMeta(null);
+      },
+    );
+    return unsub;
+  }, [listenChatId]);
+
   // ── Note 11 — participant identity (photo + name) ──────────────────────
-  // Fetch the chat's participants ONCE on open (authenticated, participant-
-  // only). Build a senderId → { displayName, avatarUrl } map used to render
-  // a real name + photo for both sides; initials fallback when no photo.
+  // Fetch the chat's participants (authenticated; participant-only with an
+  // admin read bypass). Build a senderId → { displayName, avatarUrl } map used
+  // to render a real name + photo per sender; initials fallback when no photo.
+  // Re-runs when membership changes (join / add / remove via the live doc).
   const [participants, setParticipants] = useState<Record<string, ChatParticipant>>({});
+  const participantsKey = chatMeta ? chatMeta.participantUids.join(",") : "";
 
   useEffect(() => {
     if (!listenChatId) {
@@ -134,18 +201,7 @@ export default function ChatWindowPage() {
     return () => {
       cancelled = true;
     };
-  }, [listenChatId]);
-
-  // ── Note 6 — linked request (status + assigned handler) ────────────────
-  // Read the chat's `requestId` once (the chat doc is participant-readable per
-  // firestore.rules), then fetch the request through Express to learn its
-  // status and who's assigned. This powers the assigned volunteer's
-  // "Mark as done" control without touching message fetching or auth.
-  const [linkedRequest, setLinkedRequest] = useState<LinkedRequest | null>(null);
-  const [markingDone, setMarkingDone] = useState(false);
-  // Remember the resolved requestId so the close-consent flow can refetch the
-  // request after each handshake action without re-reading the chat doc.
-  const [linkedRequestId, setLinkedRequestId] = useState<string | null>(null);
+  }, [listenChatId, participantsKey]);
 
   // Map a GET /api/requests/:id payload onto our minimal LinkedRequest.
   function projectLinkedRequest(
@@ -177,23 +233,19 @@ export default function ChatWindowPage() {
     }
   }
 
+  // The chat-doc listener mirrors requestId into linkedRequestId; this effect
+  // re-runs only when the id value actually changes (the chat doc itself
+  // updates on every message via lastMessageAt, but setState with an
+  // identical string bails out).
   useEffect(() => {
-    if (!listenChatId) {
+    if (!linkedRequestId) {
       setLinkedRequest(null);
-      setLinkedRequestId(null);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const chatSnap = await getDoc(doc(firebaseDb, "chats", listenChatId));
-        const requestId = chatSnap.exists()
-          ? (chatSnap.data()?.requestId as string | undefined)
-          : undefined;
-        if (cancelled || !requestId) return;
-        if (!cancelled) setLinkedRequestId(requestId);
-
-        const res = await apiFetch(`/api/requests/${requestId}`);
+        const res = await apiFetch(`/api/requests/${linkedRequestId}`);
         if (!res.ok) return; // 403/other — silently skip the lifecycle control
         const data = (await res.json()) as Partial<LinkedRequest> & { id?: string };
         if (cancelled) return;
@@ -206,7 +258,7 @@ export default function ChatWindowPage() {
     return () => {
       cancelled = true;
     };
-  }, [listenChatId]);
+  }, [linkedRequestId]);
 
   // Guard: show "Mark as done" only when the signed-in user is the request's
   // assigned volunteer/handler (admin is a superset of volunteer via hasRole)
@@ -313,18 +365,142 @@ export default function ChatWindowPage() {
     }
   }
 
-  // The "other" participant (everyone who isn't the signed-in user) — used to
-  // headline the conversation with a human name + face.
+  // ── Membership / group semantics (feedback round 2) ────────────────────
+  // membershipKnown gates the staff-view UI so participants never see a
+  // "join" flash while the chat doc resolves.
+  const membershipKnown = chatMeta !== null;
+  const isMember =
+    !!user && !!chatMeta && chatMeta.participantUids.includes(user.uid);
+  // Admin viewing a chat they're not in: rules allow reading; the composer is
+  // replaced by a "join to write" control.
+  const isStaffViewer = membershipKnown && !isMember && hasRole("admin");
+
+  const participantCount =
+    chatMeta?.participantUids.length ?? Object.keys(participants).length;
+  const isGroup = chatMeta?.kind === "direct" || participantCount >= 3;
+
+  // Participant management: any admin manages any chat; the creator manages
+  // their own direct chats. (Backend enforces the same guard.)
+  const canManageParticipants =
+    !!user &&
+    (hasRole("admin") ||
+      (chatMeta?.kind === "direct" && chatMeta.createdBy === user.uid));
+
+  // The "other" participant (the one who isn't the signed-in user) — used to
+  // headline two-person conversations with a human name + face.
   const otherParticipant =
     Object.values(participants).find((p) => p.uid !== user?.uid) ?? null;
   const otherName =
     (otherParticipant?.displayName && otherParticipant.displayName.trim()) ||
     c.participantFallback;
 
-  // req 25 — the other party's display name for the "X asked to close" copy.
+  // Headline for group/direct chats: title, else the other participants'
+  // names, else the generic fallback.
+  const groupName =
+    chatMeta?.title ||
+    Object.values(participants)
+      .filter((p) => p.uid !== user?.uid)
+      .map((p) => (p.displayName && p.displayName.trim()) || p.uid.slice(0, 6))
+      .join(", ") ||
+    (chatMeta?.kind === "direct" ? c.directChatFallback : c.titleFallback);
+
+  // req 25 — who asked to close, attributed from closeRequest.proposedBy
+  // (NOT "the first other participant", which misnames the proposer in
+  // 3+-person chats). Falls back to the proposer's role, then a generic label.
+  const closeProposer = closeReq?.proposedBy
+    ? participants[closeReq.proposedBy]
+    : undefined;
   const closeProposerName =
-    (otherParticipant?.displayName && otherParticipant.displayName.trim()) ||
-    c.otherPartyFallback;
+    (closeProposer?.displayName && closeProposer.displayName.trim()) ||
+    (closeReq
+      ? closeReq.proposedRole === "beneficiary"
+        ? c.proposerBeneficiary
+        : c.proposerVolunteer
+      : c.otherPartyFallback);
+
+  // ── Participant management + admin join (feedback round 2) ─────────────
+  const [joinBusy, setJoinBusy] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<ChatParticipant | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
+
+  // Admin self-join: POST own uid; the live chat-doc listener flips
+  // membership (and re-fetches the participant map) once the write lands.
+  async function handleJoin() {
+    if (!user || typeof chatId !== "string" || joinBusy) return;
+    setJoinBusy(true);
+    try {
+      const res = await apiFetch(`/api/chats/${chatId}/participants`, {
+        method: "POST",
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      if (!res.ok) toast(c.joinError, "error");
+    } catch {
+      toast(c.joinError, "error");
+    } finally {
+      setJoinBusy(false);
+    }
+  }
+
+  // Add the picked users one by one (the endpoint takes a single uid).
+  async function handleAddPeople(uids: string[]) {
+    if (typeof chatId !== "string" || addBusy) return;
+    setAddBusy(true);
+    setAddError(null);
+    try {
+      for (const uid of uids) {
+        const res = await apiFetch(`/api/chats/${chatId}/participants`, {
+          method: "POST",
+          body: JSON.stringify({ uid }),
+        });
+        if (!res.ok) {
+          setAddError(c.addPersonError);
+          return;
+        }
+      }
+      setAddOpen(false);
+    } catch {
+      setAddError(c.addPersonError);
+    } finally {
+      setAddBusy(false);
+    }
+  }
+
+  // Remove a participant (confirmed via dialog). A 409 means the backend is
+  // protecting the request's beneficiary / assigned volunteer.
+  async function handleRemoveParticipant() {
+    if (!removeTarget || typeof chatId !== "string" || removeBusy) return;
+    setRemoveBusy(true);
+    try {
+      const res = await apiFetch(
+        `/api/chats/${chatId}/participants/${encodeURIComponent(removeTarget.uid)}`,
+        { method: "DELETE" },
+      );
+      if (res.status === 409) {
+        toast(c.protectedParticipant, "error");
+      } else if (!res.ok) {
+        toast(c.removePersonError, "error");
+      }
+      setRemoveTarget(null);
+    } catch {
+      toast(c.removePersonError, "error");
+    } finally {
+      setRemoveBusy(false);
+    }
+  }
+
+  // ── Read-only composer states ───────────────────────────────────────────
+  // A paused chat (admin toggle / request end state) and an ended linked
+  // request both lock the composer; the server enforces this too (409).
+  const chatPaused = !!chatMeta && !chatMeta.active;
+  const requestEnded =
+    !!linkedRequest &&
+    (linkedRequest.status === "closed" ||
+      linkedRequest.status === "rejected" ||
+      linkedRequest.status === "referred");
+  const composerLocked = chatPaused || requestEnded;
 
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
@@ -498,6 +674,36 @@ export default function ChatWindowPage() {
     );
   }
 
+  // Server system notes carry '[SYSTEM] <marker>' content. Map the known
+  // machine-readable markers to localized copy (naming the affected user when
+  // we can resolve them); unknown content renders as-is, prefix stripped.
+  function systemMessageText(msg: ChatMessage): string {
+    const raw = msg.content.startsWith("[SYSTEM]")
+      ? msg.content.slice("[SYSTEM]".length).trim()
+      : msg.content.trim();
+    const targetName = msg.targetUid
+      ? participants[msg.targetUid]?.displayName?.trim() ||
+        msg.targetUid.slice(0, 6)
+      : null;
+    switch (raw) {
+      case "chat_created":
+        return c.system.chatCreated;
+      case "participant_added":
+        return c.system.participantAdded(targetName ?? c.participantFallback);
+      case "participant_removed":
+        return c.system.participantRemoved(targetName ?? c.participantFallback);
+      case "chat_paused":
+        return c.system.chatPaused;
+      case "chat_resumed":
+        return c.system.chatResumed;
+      default:
+        // Legacy assignment note posted by chat-on-assign.
+        if (raw.startsWith("A volunteer has been assigned"))
+          return c.system.volunteerAssigned;
+        return raw;
+    }
+  }
+
   // ── Shared centred-state shell (loading / empty / error / permission) ──
   // Reuses the cross-screen `.chat-state` vocabulary; here it sits centred
   // inside the scrolling message feed.
@@ -624,6 +830,14 @@ export default function ChatWindowPage() {
                   })}
 
                 {messages.map((msg) => {
+                  // System notes render as a centered muted line, not a bubble.
+                  if (msg.isSystem) {
+                    return (
+                      <div key={msg.id} className="chat-sysmsg">
+                        {systemMessageText(msg)}
+                      </div>
+                    );
+                  }
                   const isMine = msg.senderId === user?.uid;
                   // Incoming rows show the sender's avatar (photo or initials),
                   // keyed by senderId, so the beneficiary sees the volunteer's
@@ -647,6 +861,11 @@ export default function ChatWindowPage() {
                         </span>
                       )}
                       <div className={`chat-msg-col${isMine ? " chat-msg-col--mine" : ""}`}>
+                        {/* Group chats: name the sender above incoming bubbles
+                            so two avatar-less senders stay distinguishable. */}
+                        {!isMine && isGroup && (
+                          <span className="chat-sender-name">{senderName}</span>
+                        )}
                         {msg.attachment ? (
                           // req 26 — downloadable file bubble (mine + incoming).
                           <button
@@ -695,7 +914,42 @@ export default function ChatWindowPage() {
                 })}
               </div>
 
-              {/* Composer — sticks to the bottom of the panel */}
+              {/* Composer — sticks to the bottom of the panel. Read-only when
+                  the chat is paused / its request ended; admins who are not
+                  participants get a "join to write" control instead. */}
+              {composerLocked ? (
+                <div
+                  className="chat-composer-note"
+                  role="status"
+                  style={{ direction: isRtl ? "rtl" : "ltr" }}
+                >
+                  <Lock size={16} aria-hidden="true" />
+                  <span>{chatPaused ? c.chatPausedNote : c.chatEndedNote}</span>
+                </div>
+              ) : isStaffViewer ? (
+                <div
+                  className="chat-composer-note"
+                  role="status"
+                  style={{ direction: isRtl ? "rtl" : "ltr" }}
+                >
+                  <Eye size={16} aria-hidden="true" />
+                  <span>{c.staffViewNote}</span>
+                  <button
+                    type="button"
+                    className="btn btn-ember btn-sm"
+                    onClick={handleJoin}
+                    disabled={joinBusy}
+                    aria-busy={joinBusy}
+                  >
+                    {joinBusy ? (
+                      <Loader2 size={15} className="chat-action-spin" aria-hidden="true" />
+                    ) : (
+                      <UserPlus size={15} aria-hidden="true" />
+                    )}
+                    {joinBusy ? c.joining : c.joinChat}
+                  </button>
+                </div>
+              ) : (
               <form
                 onSubmit={handleSend}
                 className="chat-composer"
@@ -750,6 +1004,7 @@ export default function ChatWindowPage() {
                   <Send size={15} style={{ transform: isRTL ? "scaleX(-1)" : "none" }} />
                 </button>
               </form>
+              )}
             </div>
           </Reveal>
 
@@ -768,33 +1023,95 @@ export default function ChatWindowPage() {
         {/* ── Context rail (offset inline-end): identity + status + actions ── */}
         <aside className="chat-window-rail">
           <Reveal>
-            {/* Identity — the single place the participant's name appears */}
-            <div className="chat-rail-identity">
-              {otherParticipant ? (
-                renderAvatar(otherName, otherParticipant.avatarUrl, "lg")
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="chat-avatar chat-avatar--lg"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--ember)",
-                  }}
-                >
-                  <MessageCircle size={24} />
-                </span>
-              )}
-              <h1 className="chat-rail-name">
-                {otherParticipant ? otherName : c.titleFallback}
-              </h1>
-              {linkedRequestId && (
-                <p className="chat-rail-sub">
-                  {c.request} {linkedRequestId}
-                </p>
-              )}
-            </div>
+            {/* Identity — two-person chats keep the single-face headline;
+                groups / direct chats (and managers) get a participants list
+                with per-person remove + an add control when permitted. */}
+            {isGroup || canManageParticipants ? (
+              <div className="chat-rail-identity">
+                <h1 className="chat-rail-name">{groupName}</h1>
+                {linkedRequestId && (
+                  <p className="chat-rail-sub">
+                    {c.request} {linkedRequestId}
+                  </p>
+                )}
+                <p className="chat-rail-people-label">{c.participantsTitle}</p>
+                <ul className="chat-rail-people">
+                  {Object.values(participants).map((p) => {
+                    const name =
+                      (p.displayName && p.displayName.trim()) ||
+                      p.uid.slice(0, 6);
+                    const isSelf = p.uid === user?.uid;
+                    return (
+                      <li key={p.uid} className="chat-rail-person">
+                        {renderAvatar(name, p.avatarUrl, "sm")}
+                        <span className="chat-rail-person__name">
+                          {name}
+                          {isSelf && (
+                            <span className="chat-rail-person__you">
+                              {" "}
+                              ({c.youTag})
+                            </span>
+                          )}
+                        </span>
+                        {canManageParticipants && !isSelf && (
+                          <button
+                            type="button"
+                            className="chat-rail-person__remove"
+                            onClick={() => setRemoveTarget(p)}
+                            aria-label={`${c.removePerson}: ${name}`}
+                            title={c.removePerson}
+                          >
+                            <X size={15} aria-hidden="true" />
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {/* Add control: admin-only (the picker reads the admin user
+                    roster; non-admin direct-chat creators have no source). */}
+                {canManageParticipants && hasRole("admin") && (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => {
+                      setAddError(null);
+                      setAddOpen(true);
+                    }}
+                  >
+                    <UserPlus size={15} aria-hidden="true" />
+                    {c.addPerson}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="chat-rail-identity">
+                {otherParticipant ? (
+                  renderAvatar(otherName, otherParticipant.avatarUrl, "lg")
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="chat-avatar chat-avatar--lg"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--ember)",
+                    }}
+                  >
+                    <MessageCircle size={24} />
+                  </span>
+                )}
+                <h1 className="chat-rail-name">
+                  {otherParticipant ? otherName : c.titleFallback}
+                </h1>
+                {linkedRequestId && (
+                  <p className="chat-rail-sub">
+                    {c.request} {linkedRequestId}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* ── Note 6 / req 25 — linked-request status + lifecycle actions ── */}
             {linkedRequest && (
@@ -920,6 +1237,45 @@ export default function ChatWindowPage() {
           </Reveal>
         </aside>
       </div>
+
+      {/* Remove-participant confirmation (409 = protected core pair). */}
+      <ConfirmDialog
+        open={!!removeTarget}
+        variant="danger"
+        title={c.removeConfirmTitle}
+        message={
+          removeTarget
+            ? c.removeConfirmBody(
+                (removeTarget.displayName && removeTarget.displayName.trim()) ||
+                  removeTarget.uid.slice(0, 6),
+              )
+            : ""
+        }
+        confirmLabel={c.removePerson}
+        cancelLabel={t.common.cancel}
+        busy={removeBusy}
+        onConfirm={handleRemoveParticipant}
+        onCancel={() => {
+          if (!removeBusy) setRemoveTarget(null);
+        }}
+      />
+
+      {/* Add-participant picker (admin-only data source). */}
+      {hasRole("admin") && (
+        <UserPickerDialog
+          open={addOpen}
+          heading={c.addPerson}
+          confirmLabel={c.addPerson}
+          busyLabel={c.addingPerson}
+          busy={addBusy}
+          error={addError}
+          excludeUids={chatMeta?.participantUids ?? []}
+          onConfirm={(uids) => handleAddPeople(uids)}
+          onClose={() => {
+            if (!addBusy) setAddOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

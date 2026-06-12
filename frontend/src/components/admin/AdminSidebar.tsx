@@ -10,6 +10,7 @@ import {
   Tags,
   BarChart3,
   Home,
+  MessagesSquare,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -26,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/requests', key: 'requests', icon: Inbox },
   { href: '/admin/volunteers', key: 'volunteers', icon: HeartHandshake },
   { href: '/admin/users', key: 'users', icon: Users },
+  { href: '/admin/chats', key: 'chats', icon: MessagesSquare },
   { href: '/admin/approvals', key: 'approvals', icon: CheckSquare },
   { href: '/admin/directory', key: 'directory', icon: Library },
   { href: '/admin/categories', key: 'categories', icon: Tags },

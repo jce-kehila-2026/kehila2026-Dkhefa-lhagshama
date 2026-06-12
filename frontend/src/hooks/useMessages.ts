@@ -31,6 +31,11 @@ export interface ChatMessage {
   status: string;
   /** Optional file attachment on the message (req 26); null for text-only. */
   attachment: ChatAttachment | null;
+  /** True for server-posted system notes (senderId 'system'); rendered as a
+   * centered note, not a bubble (feedback round 2). */
+  isSystem: boolean;
+  /** Uid the system note is about (participant added/removed), when any. */
+  targetUid: string | null;
 }
 
 interface UseMessagesResult {
@@ -47,6 +52,8 @@ interface RawMessageDoc {
   timestamp?: Timestamp | null;
   status?: string;
   attachment?: ChatAttachment | null;
+  isSystem?: boolean;
+  targetUid?: string;
 }
 
 /** Normalize a raw `attachment` map into a ChatAttachment, or null if absent. */
@@ -102,6 +109,8 @@ export function useMessages(chatId: string | null): UseMessagesResult {
             timestamp: d.timestamp?.toDate() ?? null,
             status: d.status ?? 'sent',
             attachment: toAttachment(d.attachment),
+            isSystem: d.isSystem === true || d.senderId === 'system',
+            targetUid: typeof d.targetUid === 'string' ? d.targetUid : null,
           };
         });
         setMessages(msgs);

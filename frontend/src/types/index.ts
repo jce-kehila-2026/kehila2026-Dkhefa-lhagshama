@@ -479,6 +479,13 @@ export interface VolunteerMe {
   requestedCategories: CategoryRequest[];
 }
 
+/**
+ * Kind of a chat document (feedback round 2). `request` chats are bound to a
+ * request via `requestId`; `direct` chats are admin-created staff/group chats
+ * with no request. Docs created before the field existed count as `request`.
+ */
+export type ChatKind = 'request' | 'direct';
+
 /** A chat conversation thread (UC-04). */
 export interface ChatThread {
   id: number | string;
@@ -489,4 +496,14 @@ export interface ChatThread {
   unread?: number;
   updatedAt?: string;
   messages?: Message[];
+  /** Request-bound vs. direct staff chat; missing = `request` (legacy docs). */
+  kind?: ChatKind;
+  /**
+   * Live flag (feedback round 2): false on all request end states and when an
+   * admin pauses the chat. Inactive chat = read-only composer. Missing = true.
+   */
+  active?: boolean;
+  /** Uid of the creator; `system` for assignment-created chats. The direct-chat
+   * creator manages its participants (admins manage any chat). */
+  createdBy?: string;
 }

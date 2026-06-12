@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   collection,
@@ -19,14 +19,17 @@ import {
   ChevronLeft,
   Users,
   Clock,
+  Plus,
 } from "lucide-react";
 
 import Reveal from "../components/motion/Reveal";
+import UserPickerDialog from "../components/chat/UserPickerDialog";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { firebaseDb } from "../lib/firebase";
-import { apiJson } from "../lib/apiClient";
+import { apiJson, apiFetch } from "../lib/apiClient";
 import { formatDate } from "../utils/helpers";
+import type { ChatKind } from "../types";
 
 // A chat row as projected from the Firestore `chats` collection for this list.
 interface ChatListItem {
@@ -34,6 +37,12 @@ interface ChatListItem {
   requestId: string;
   participants: string[];
   lastMessageAt: string | null;
+  /** Request-bound vs. direct staff chat (legacy docs count as `request`). */
+  kind: ChatKind;
+  /** Optional direct-chat title. */
+  title: string | null;
+  /** False when the chat was paused / its request ended (read-only). */
+  active: boolean;
 }
 
 // req 13b — a chat counts as "past" when its linked request is closed/rejected
@@ -42,7 +51,7 @@ const PAST_STATUSES = new Set(["closed", "rejected"]);
 
 export default function ChatListPage() {
   const { t, lang } = useLanguage();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, hasRole } = useAuth();
   const router = useRouter();
   const c = t.chat;
 
@@ -55,6 +64,17 @@ export default function ChatListPage() {
   // toward visibility). Drives the active/past split + tab.
   const [reqStatus, setReqStatus] = useState<Record<string, string | null>>({});
   const [tab, setTab] = useState<"active" | "past">("active");
+
+  // Direct-chat row labels: comma-joined other-participant names, fetched
+  // lazily per chat (mirrors the request-status fan-out). `null` while in
+  // flight / failed — the row falls back to the generic staff-chat label.
+  const [directNames, setDirectNames] = useState<Record<string, string | null>>({});
+
+  // Admin-only "new chat" dialog (direct/staff chats, feedback round 2).
+  const isAdminUser = hasRole("admin");
+  const [newChatOpen, setNewChatOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // req 13b / req 3 — ?requestId=<id> arrives from a my-requests card's chat
   // shortcut; we highlight (and, if it's the only match, auto-open) that chat.
@@ -90,6 +110,12 @@ export default function ChatListPage() {
             requestId: d.requestId ?? "",
             participants: d.participants ?? [],
             lastMessageAt: d.lastMessageAt?.toDate?.()?.toISOString?.() ?? null,
+            // Tolerant reads: docs created before the direct-chat feature
+            // carry no kind/title/active — treat them as live request chats.
+            kind: (d.kind === "direct" ? "direct" : "request") as ChatKind,
+            title:
+              typeof d.title === "string" && d.title.trim() ? d.title : null,
+            active: d.active !== false,
           };
         });
         setChats(items);
@@ -136,11 +162,59 @@ export default function ChatListPage() {
     return () => { alive = false; };
   }, [chats, user, reqStatus]);
 
-  // req 13b — split active vs. past from the resolved request statuses.
-  const isPastChat = (chat: ChatListItem) => {
-    const s = chat.requestId ? reqStatus[chat.requestId] : null;
-    return typeof s === "string" && PAST_STATUSES.has(s);
-  };
+  // Direct-chat labels — for every untitled direct chat we don't yet have
+  // names for, fetch its participants once and cache the joined "other
+  // participant" names. Failures stay null (generic staff-chat label).
+  useEffect(() => {
+    if (!user) return;
+    const missing = chats
+      .filter((ch) => ch.kind === "direct" && !ch.title && !(ch.id in directNames))
+      .map((ch) => ch.id);
+    if (missing.length === 0) return;
+
+    let alive = true;
+    // Mark as in-flight so we don't refetch on the next render.
+    setDirectNames((prev) => {
+      const next = { ...prev };
+      for (const id of missing) next[id] = next[id] ?? null;
+      return next;
+    });
+
+    missing.forEach((id) => {
+      apiJson<{ uid: string; displayName: string | null }[]>(
+        `/api/chats/${id}/participants`,
+      )
+        .then((list) => {
+          if (!alive || !Array.isArray(list)) return;
+          const names = list
+            .filter((p) => p && p.uid !== user.uid)
+            .map(
+              (p) =>
+                (p.displayName && p.displayName.trim()) || p.uid.slice(0, 6),
+            )
+            .join(", ");
+          if (names) setDirectNames((prev) => ({ ...prev, [id]: names }));
+        })
+        .catch(() => {
+          // Permission/network error — keep the generic label.
+        });
+    });
+
+    return () => { alive = false; };
+  }, [chats, user, directNames]);
+
+  // req 13b — split active vs. past. A paused chat (active === false, set on
+  // all request end states and by the admin toggle) is always "past"; direct
+  // chats have no request, so that flag is their only signal.
+  const isPastChat = useCallback(
+    (chat: ChatListItem) => {
+      if (!chat.active) return true;
+      if (chat.kind === "direct") return false;
+      const s = chat.requestId ? reqStatus[chat.requestId] : null;
+      return typeof s === "string" && PAST_STATUSES.has(s);
+    },
+    [reqStatus],
+  );
   const activeChats = chats.filter((ch) => !isPastChat(ch));
   const pastChats = chats.filter((ch) => isPastChat(ch));
   const visibleChats = tab === "active" ? activeChats : pastChats;
@@ -158,7 +232,37 @@ export default function ChatListPage() {
     }
     // Multiple matches — reveal the tab holding them and let highlight guide.
     setTab(isPastChat(matches[0]) ? "past" : "active");
-  }, [focusRequestId, loading, chats, reqStatus, router]);
+  }, [focusRequestId, loading, chats, isPastChat, router]);
+
+  // Create a direct (staff/group) chat, then jump straight into it.
+  async function handleCreateDirect(uids: string[], title: string) {
+    if (creating) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await apiFetch("/api/chats/direct", {
+        method: "POST",
+        body: JSON.stringify({
+          participantUids: uids,
+          ...(title ? { title } : {}),
+        }),
+      });
+      if (!res.ok) {
+        setCreateError(c.newChatError);
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as { id?: string } | null;
+      if (data?.id) {
+        router.push(`/chats/${data.id}`);
+        return;
+      }
+      setCreateError(c.newChatError);
+    } catch {
+      setCreateError(c.newChatError);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   // Conversation count is only meaningful once the list has resolved.
   const showCount = !authLoading && !!user && !loading && !error;
@@ -293,21 +397,37 @@ export default function ChatListPage() {
           {visibleChats.map((chat) => {
             const highlighted =
               !!focusRequestId && chat.requestId === focusRequestId;
+            const isDirect = chat.kind === "direct";
+            // Direct rows: title, else the other participants' names, else a
+            // generic staff-chat label while names load.
+            const directLabel =
+              chat.title || directNames[chat.id] || c.directChatFallback;
+            const RowIcon = isDirect ? Users : MessageCircle;
             return (
               <li key={chat.id}>
                 <Link
                   href={`/chats/${chat.id}`}
-                  aria-label={`${c.request} ${chat.requestId}`}
+                  aria-label={
+                    isDirect ? directLabel : `${c.request} ${chat.requestId}`
+                  }
                   className={`chat-row${highlighted ? " chat-row--focus" : ""}`}
                 >
                   <div className="chat-row__lead">
                     <span className="chat-row__icon" aria-hidden="true">
-                      <MessageCircle size={21} strokeWidth={1.9} />
+                      <RowIcon size={21} strokeWidth={1.9} />
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div className="chat-row__title">
-                        {c.request}{" "}
-                        <span className="chat-row__id">{chat.requestId}</span>
+                        {isDirect ? (
+                          directLabel
+                        ) : (
+                          <>
+                            {c.request}{" "}
+                            <span className="chat-row__id">
+                              {chat.requestId}
+                            </span>
+                          </>
+                        )}
                       </div>
                       <div className="chat-row__meta">
                         <Users size={14} strokeWidth={1.9} aria-hidden="true" />
@@ -358,6 +478,21 @@ export default function ChatListPage() {
               </p>
             )}
 
+            {/* Admin-only: start a direct (staff/group) chat. */}
+            {isAdminUser && !authLoading && !!user && (
+              <button
+                type="button"
+                className="btn btn-ember btn-sm chat-newchat-btn"
+                onClick={() => {
+                  setCreateError(null);
+                  setNewChatOpen(true);
+                }}
+              >
+                <Plus size={15} aria-hidden="true" />
+                {c.newChat}
+              </button>
+            )}
+
             {showTabs && (
               <div
                 className="chat-filter"
@@ -394,6 +529,21 @@ export default function ChatListPage() {
           <Reveal>{renderBody()}</Reveal>
         </div>
       </div>
+
+      {isAdminUser && (
+        <UserPickerDialog
+          open={newChatOpen}
+          heading={c.newChatTitle}
+          confirmLabel={c.newChatCreate}
+          busyLabel={c.newChatCreating}
+          busy={creating}
+          error={createError}
+          excludeUids={user ? [user.uid] : []}
+          withTitleField
+          onConfirm={handleCreateDirect}
+          onClose={() => setNewChatOpen(false)}
+        />
+      )}
     </div>
   );
 }
