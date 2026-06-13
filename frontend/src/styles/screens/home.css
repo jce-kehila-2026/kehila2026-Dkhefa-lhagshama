@@ -145,7 +145,15 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-block-size: clamp(520px, 72vh, 720px);
+  /* Height is a FIXED viewport measure, not a min, so the photo reads the same
+     size in both languages on every screen. With min-block-size the taller
+     English copy (heavier title wrap + longer stat labels) could still push the
+     hero past the floor on shorter/narrower windows while the compact Hebrew
+     copy stayed at the floor — so the photo looked shrunk in Hebrew. A fixed
+     block-size makes the height purely viewport-driven and identical per
+     language; the copy (~370-460px) is far shorter than this height, so
+     overflow:hidden never clips. Mobile reverts to min-block-size below. */
+  block-size: clamp(560px, 82vh, 820px);
   display: flex;
   align-items: center;
   background: var(--ink); /* fallback while the photo loads */
@@ -241,7 +249,9 @@
 }
 
 @media (max-width: 720px) {
-  .hero-bg { min-block-size: clamp(480px, 86vh, 640px); }
+  /* Mobile: copy stacks tall on a narrow column, so let it grow (min, not
+     fixed) and revert the desktop fixed height. */
+  .hero-bg { block-size: auto; min-block-size: clamp(480px, 86vh, 640px); }
 }
 
 /* ── Areas of activity — four evenly-weighted icon explainers ───────────── */
