@@ -272,10 +272,14 @@ router.get('/mine', authenticate, async (req: Request, res: Response) => {
 
     const items = snap.docs.map((d) => {
       const data = d.data();
-      // Beneficiary-facing referral view (Note 8): partner name + note + when.
+      // Beneficiary-facing referral view (Note 8): partner name + contact
+      // (phone/email/website, snapshotted at referral time) + note + when.
       const referral = data.referral
         ? {
             partnerName: data.referral.partnerName ?? '',
+            phone: data.referral.phone ?? null,
+            email: data.referral.email ?? null,
+            website: data.referral.website ?? null,
             note: data.referral.note ?? '',
             referredAt:
               data.referral.referredAt?.toDate?.()?.toISOString?.() ??
@@ -668,10 +672,25 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
     // owner/admin (F2-B), so staff always arrive through this projected path.
     //   - national ID (idNumber/idNote): owner + admin only
     //   - internal staff notes:          staff (handler/volunteer) + admin only
+    //   - staff-only arrays/handshakes:   admin + staff only, NEVER the owner
     const projected: Record<string, unknown> = { id: snap.id, ...data };
     if (!isAdmin) {
       if (isOwner) {
+        // The owner sees their own request but none of the internal staff
+        // working data: free-text staff notes, volunteer hand-off drop reports
+        // (written "for staff eyes"), the claims roster (other volunteers'
+        // identities + claim notes), the close-consent handshake internals, and
+        // staff routing/identity fields. These were spread in via `...data`, so
+        // strip them explicitly to keep them off the beneficiary surface.
         delete projected.notes;
+        delete projected.dropReports;
+        delete projected.claims;
+        delete projected.closeRequest;
+        delete projected.handler;
+        delete projected.assignedVolunteerId;
+        delete projected.assignedVolunteerName;
+        delete projected.submittedBy;
+        delete projected.submittedByRole;
       } else {
         delete projected.idNumber;
         delete projected.idNote;

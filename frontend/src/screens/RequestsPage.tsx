@@ -724,6 +724,8 @@ export default function RequestsPage() {
                   heading={rq.step2.suggestHeading}
                   subtitle={rq.step2.suggestSubtitle}
                   openLabel={t.myRequests.suggest.open}
+                  callLabel={t.directory.modal.call}
+                  emailLabel={t.directory.modal.email}
                   dismissLabel={t.myRequests.suggest.dismiss}
                   onDismiss={() => setOrgSuggestionsDismissed(true)}
                 />

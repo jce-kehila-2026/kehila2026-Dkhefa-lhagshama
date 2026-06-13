@@ -175,6 +175,12 @@ export interface Referral {
   answerId: string;
   /** Resolved display name of the partner (snapshotted from the answer). */
   partnerName: string;
+  /** Partner phone, snapshotted from the answer at referral time (tel: action). */
+  phone?: string | null;
+  /** Partner email, snapshotted from the answer (mailto: action). */
+  email?: string | null;
+  /** Partner website (from the answer's `sourceUrl`), snapshotted at referral. */
+  website?: string | null;
   /** Optional free-text note from the admin to the beneficiary. */
   note?: string;
   /** ISO timestamp the referral was made (server-stamped). */

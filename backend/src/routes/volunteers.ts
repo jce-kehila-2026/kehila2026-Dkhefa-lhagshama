@@ -76,6 +76,22 @@ router.post('/apply', authenticate, async (req: Request, res: Response) => {
   const input: ApplyInput = parsed.data;
 
   try {
+    // Guard against duplicate submissions: one open (pending) application per
+    // user. Without this an authenticated user can POST the form repeatedly and
+    // flood the admin queue with rows for the same person, and approving one
+    // leaves the rest stranded as pending forever (approve keys off the doc id,
+    // not the uid).
+    const existing = await db()
+      .collection('volunteerApplications')
+      .where('uid', '==', req.user.uid)
+      .where('status', '==', 'pending')
+      .limit(1)
+      .get();
+    if (!existing.empty) {
+      res.status(409).json({ error: 'already_applied' });
+      return;
+    }
+
     const docRef = await db().collection('volunteerApplications').add({
       // Who applied
       uid:       req.user.uid,

@@ -3,7 +3,7 @@
  *
  * Covers every collection declared in `firestore.rules`:
  *   requests, users, requestEvents, chats, messages,
- *   auditLogs, answers, businesses, organizations, categories,
+ *   auditLogs, answers, businesses, categories,
  *   and the catch-all.
  *
  * The client SDK is read-mostly: all trusted writes go through the Express
@@ -323,12 +323,24 @@ describe('/answers', () => {
     await assertSucceeds(getDoc(doc(asAdmin(), 'answers/pending1')));
   });
 
-  test('owner can edit own pending answer (stays pending)', async () => {
+  test('owner can edit own pending answer (content field, stays pending)', async () => {
     await assertSucceeds(
       setDoc(doc(asUser('owner1'), 'answers/pending1'), {
         status: 'pending',
         ownerId: 'owner1',
-        name: 'Updated',
+        // `title` is an allowlisted content field; `name` is not (answers use
+        // the bilingual `title`, not `name`).
+        title: 'Updated',
+      }),
+    );
+  });
+
+  test('owner cannot change a non-allowlisted field on own pending answer', async () => {
+    await assertFails(
+      setDoc(doc(asUser('owner1'), 'answers/pending1'), {
+        status: 'pending',
+        ownerId: 'owner1',
+        featured: true,
       }),
     );
   });
@@ -372,6 +384,10 @@ describe('/businesses', () => {
       await setDoc(doc(db, 'businesses/pending1'), {
         status: 'pending',
         ownerId: 'owner1',
+        name: 'Original',
+        rating: 0,
+        reviews: 0,
+        featured: false,
       });
     }),
   );
@@ -388,12 +404,16 @@ describe('/businesses', () => {
     await assertSucceeds(getDoc(doc(asAdmin(), 'businesses/pending1')));
   });
 
-  test('owner can edit own pending business', async () => {
+  test('owner can edit own pending business (content fields only)', async () => {
     await assertSucceeds(
       setDoc(doc(asUser('owner1'), 'businesses/pending1'), {
         status: 'pending',
         ownerId: 'owner1',
         name: 'Updated',
+        // rating/reviews/featured carried through unchanged (no self-inflation).
+        rating: 0,
+        reviews: 0,
+        featured: false,
       }),
     );
   });
@@ -403,6 +423,19 @@ describe('/businesses', () => {
       setDoc(doc(asUser('owner1'), 'businesses/pending1'), {
         status: 'approved',
         ownerId: 'owner1',
+      }),
+    );
+  });
+
+  test('owner cannot inflate rating/reviews/featured on own pending business', async () => {
+    await assertFails(
+      setDoc(doc(asUser('owner1'), 'businesses/pending1'), {
+        status: 'pending',
+        ownerId: 'owner1',
+        name: 'Original',
+        rating: 5,
+        reviews: 999,
+        featured: true,
       }),
     );
   });

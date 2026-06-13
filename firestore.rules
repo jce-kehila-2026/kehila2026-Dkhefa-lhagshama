@@ -121,22 +121,41 @@ service cloud.firestore {
     // while still pending. Create/delete are server-only.
     match /answers/{answerId} {
       allow read: if resource.data.status == 'approved' || isAdmin();
+      // Owner may edit only content fields while still pending. The field
+      // allowlist (hasOnly) blocks self-inflating prominence/social-proof
+      // (rating/reviews/featured) or flipping status/ownerId — those move only
+      // via the Admin SDK (server). Anything not listed denies the whole write.
       allow update: if isSignedIn()
         && resource.data.ownerId == request.auth.uid
         && resource.data.status == 'pending'
         && request.resource.data.status == 'pending'
-        && request.resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title', 'body', 'category', 'region', 'audience', 'phone', 'email',
+          'sourceName', 'sourceUrl', 'tags', 'updatedAt'
+        ]);
       allow create, delete: if false;
     }
 
     // ── /businesses — UC-03 community business directory ─────────────────
     match /businesses/{businessId} {
       allow read: if resource.data.status == 'approved' || isAdmin();
+      // Owner may edit only content fields while still pending. The field
+      // allowlist (hasOnly) plus the explicit equality asserts below block an
+      // owner from self-inflating rating/reviews or granting themselves the
+      // 'featured' badge on the public directory — those are server-only.
       allow update: if isSignedIn()
         && resource.data.ownerId == request.auth.uid
         && resource.data.status == 'pending'
         && request.resource.data.status == 'pending'
-        && request.resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'ownerName', 'phone', 'category', 'city', 'description',
+          'website', 'tags', 'updatedAt'
+        ])
+        && request.resource.data.rating == resource.data.rating
+        && request.resource.data.reviews == resource.data.reviews
+        && request.resource.data.featured == resource.data.featured;
       allow create, delete: if false;
     }
 

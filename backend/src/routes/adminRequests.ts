@@ -489,6 +489,9 @@ router.post('/:id/refer', async (req: Request, res: Response): Promise<void> => 
     const answer = answerSnap.data() as {
       title?: { he?: string; en?: string } | string;
       sourceName?: string;
+      phone?: string;
+      email?: string;
+      sourceUrl?: string;
     };
     // `title` is bilingual { he, en } on answers; fall back across shapes.
     if (typeof answer.title === 'string') {
@@ -496,6 +499,13 @@ router.post('/:id/refer', async (req: Request, res: Response): Promise<void> => 
     } else {
       partnerName = answer.title?.he ?? answer.title?.en ?? answer.sourceName ?? '';
     }
+    // Snapshot the partner's contact details onto the referral so the
+    // beneficiary's referral panel can actually show how to reach them. Stored
+    // at referral time (not looked up live) so it survives later edits to the
+    // answer doc. `website` maps from the answer's `sourceUrl` field.
+    const partnerPhone   = answer.phone ?? null;
+    const partnerEmail   = answer.email ?? null;
+    const partnerWebsite = answer.sourceUrl ?? null;
 
     await db().runTransaction(async (tx) => {
       const snap = await tx.get(ref);
@@ -519,6 +529,9 @@ router.post('/:id/refer', async (req: Request, res: Response): Promise<void> => 
         referral: {
           answerId,
           partnerName,
+          phone: partnerPhone,
+          email: partnerEmail,
+          website: partnerWebsite,
           note: note ?? '',
           referredAt: FieldValue.serverTimestamp(),
           referredBy: actorId,

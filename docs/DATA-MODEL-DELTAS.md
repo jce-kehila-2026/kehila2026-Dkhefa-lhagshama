@@ -182,7 +182,10 @@ changed type or meaning; absent values read as `null` everywhere.
 - Idempotent upsert into `answers`, keyed by a deterministic slug of the org name
   (`org-<name>`), so re-running never duplicates. The source lists `טנא בריאות`
   twice; both map to the same slug → one doc.
-- Each org becomes `status: 'approved'`, `orgType: 'ngo'`, `createdBy: 'seed'`,
+- Each org becomes `status: 'approved'`, `createdBy: 'seed'`, and an
+  `orgType` of `'partner'` for the three named national/advocacy bodies in
+  `PARTNER_NAMES` (ENP, עמותת טבקה, האגודה לזכויות האזרח) so the public שותפים
+  tab is never empty, and `'ngo'` for every other imported org. It also sets
   `createdAt` server timestamp on first insert (preserved on update). `title`/`body`/
   `region` use the bilingual `{ he, en }` contract (EN falls back to HE). The full
   multi-service Hebrew `serviceType` string is preserved verbatim in `audience` so

@@ -1,4 +1,4 @@
-import { Sparkles, ExternalLink, X } from "lucide-react";
+import { Sparkles, ExternalLink, Phone, Mail, X } from "lucide-react";
 
 import type { CSSProperties } from "react";
 import type { Suggestion } from "@/types";
@@ -33,12 +33,14 @@ function pickLangValue(
   return value[lang as "he" | "en"] || value.he || value.en || "";
 }
 
-export default function SuggestCard({ items, lang, heading, subtitle, openLabel, dismissLabel, onDismiss }: {
+export default function SuggestCard({ items, lang, heading, subtitle, openLabel, callLabel, emailLabel, dismissLabel, onDismiss }: {
   items: Suggestion[];
   lang: string;
   heading: string;
   subtitle: string;
   openLabel: string;
+  callLabel: string;
+  emailLabel: string;
   dismissLabel: string;
   onDismiss: () => void;
 }) {
@@ -97,6 +99,11 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
           // safeHref gates the link to http(s) at render time (defense-in-depth
           // over the server-side scheme validation); non-http renders no link.
           const href = safeHref(item.sourceUrl);
+          // When the org has no website, fall back to phone/email so the
+          // beneficiary always has a way to act (mirrors the directory modal's
+          // Call/Email/Visit actions). Both are free strings on the answer.
+          const phone = item.phone ? String(item.phone) : "";
+          const email = item.email ? String(item.email) : "";
           return (
             <li
               key={item.id}
@@ -122,18 +129,41 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
                   </div>
                 )}
               </div>
-              {href && (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-ghost btn-sm"
-                  style={{ flexShrink: 0, gap: "6px" }}
-                >
-                  {openLabel}
-                  <ExternalLink size={14} aria-hidden="true" />
-                </a>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                {href && (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-ghost btn-sm"
+                    style={{ gap: "6px" }}
+                  >
+                    {openLabel}
+                    <ExternalLink size={14} aria-hidden="true" />
+                  </a>
+                )}
+                {/* Phone/email fallbacks for website-less orgs (tel:/mailto:). */}
+                {!href && phone && (
+                  <a
+                    href={`tel:${phone}`}
+                    className="btn btn-ghost btn-sm"
+                    style={{ gap: "6px" }}
+                  >
+                    {callLabel}
+                    <Phone size={14} aria-hidden="true" />
+                  </a>
+                )}
+                {!href && email && (
+                  <a
+                    href={`mailto:${email}`}
+                    className="btn btn-ghost btn-sm"
+                    style={{ gap: "6px" }}
+                  >
+                    {emailLabel}
+                    <Mail size={14} aria-hidden="true" />
+                  </a>
+                )}
+              </div>
             </li>
           );
         })}

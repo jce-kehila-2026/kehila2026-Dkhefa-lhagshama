@@ -35,6 +35,7 @@ import usersRouter from '@/routes/users';
 import volunteersRouter from '@/routes/volunteers';
 import volunteerAppRouter from '@/routes/volunteerApp';
 import { authenticate } from '@/middleware/auth';
+import { requireNotDisabled } from '@/middleware/requireNotDisabled';
 import { authWriteLimiter, globalLimiter } from '@/middleware/rateLimit'; // #82
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -102,13 +103,21 @@ app.get('/api/me', authenticate, (req: Request, res: Response) => {
 
 // Route mounts — uncomment as each vertical-slice UC lands.
 // Auth + write routes get the stricter 30 req/15 min limiter (#82).
+//
+// authenticate + requireNotDisabled run mount-wide on the authenticated
+// mutation routers so a soft-disabled account (users/{uid}.disabled == true)
+// gets a 403 server-side, not just the cosmetic client redirect. The per-route
+// `authenticate` inside each router stays (idempotent local JWT verify) so
+// routers remain self-contained. /api/auth is excluded — its routes run before
+// a user could be considered disabled and must stay reachable.
+const authedMutation = [authenticate, requireNotDisabled];
 app.use('/api/auth',       authWriteLimiter, authRouter);
-app.use('/api/chats',      authWriteLimiter, chatsRouter);
-app.use('/api/profile',    authWriteLimiter, profileRouter);
-app.use('/api/requests',   authWriteLimiter, requestsRouter);
-app.use('/api/uploads',    authWriteLimiter, uploadsRouter);
-app.use('/api/users',      authWriteLimiter, usersRouter);
-app.use('/api/ratings',    authWriteLimiter, ratingsRouter); // #80
+app.use('/api/chats',      authWriteLimiter, ...authedMutation, chatsRouter);
+app.use('/api/profile',    authWriteLimiter, ...authedMutation, profileRouter);
+app.use('/api/requests',   authWriteLimiter, ...authedMutation, requestsRouter);
+app.use('/api/uploads',    authWriteLimiter, ...authedMutation, uploadsRouter);
+app.use('/api/users',      authWriteLimiter, ...authedMutation, usersRouter);
+app.use('/api/ratings',    authWriteLimiter, ...authedMutation, ratingsRouter); // #80
 app.use('/api/businesses', businessesRouter);
 app.use('/api/answers',    answersRouter);
 // Public taxonomy read. Deliberately NOT behind authWriteLimiter (like
@@ -136,9 +145,9 @@ app.use('/api/admin/stats',      adminStatsRouter);
 app.use('/api/admin/insights',   adminInsightsRouter);
 app.use('/api/admin/directory',  adminDirectoryRouter);
 app.use('/api/admin',      adminRouter);
-app.use('/api/volunteers', authWriteLimiter, volunteersRouter);
+app.use('/api/volunteers', authWriteLimiter, ...authedMutation, volunteersRouter);
 // Volunteer operational app (reqs 14–19): own dashboard, pool, claims, drops.
-app.use('/api/volunteer', volunteerAppRouter);
+app.use('/api/volunteer', ...authedMutation, volunteerAppRouter);
 
 // Catch-all 404
 app.use((_req: Request, res: Response) => {

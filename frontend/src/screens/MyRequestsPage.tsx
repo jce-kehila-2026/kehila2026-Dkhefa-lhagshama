@@ -195,9 +195,9 @@ function ReferralPanel({ referral, t }: { referral: Referral; t: Translations })
   const rf = t.lifecycle.referral;
   const partner = referral.partnerName || "";
   const contact = [
-    (referral as { phone?: string }).phone,
-    (referral as { website?: string }).website,
-    (referral as { email?: string }).email,
+    referral.phone,
+    referral.website,
+    referral.email,
   ].filter(Boolean) as string[];
 
   return (
@@ -756,6 +756,8 @@ export default function MyRequestsPage() {
               heading={t.myRequests.suggest.heading}
               subtitle={t.myRequests.suggest.subtitle}
               openLabel={t.myRequests.suggest.open}
+              callLabel={String(t.directory.modal["call"])}
+              emailLabel={String(t.directory.modal["email"])}
               dismissLabel={t.myRequests.suggest.dismiss}
               onDismiss={() => setSuggestDismissed(true)}
             />

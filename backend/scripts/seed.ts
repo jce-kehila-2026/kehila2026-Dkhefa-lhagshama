@@ -13,7 +13,13 @@ interface TaxonomyEntry {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  TAXONOMY — categories + regions (read by the seed and the UI)
+//  TAXONOMY — categories (read by the seed and the UI via /api/categories)
+//
+//  No `regions` collection is seeded: nothing reads one. The directory region
+//  filter matches free text against the `region` field embedded on each
+//  `answers` doc (DirectoryPage), not a managed regions taxonomy. If a managed
+//  region taxonomy is ever wanted, add a public GET route + a rules read block
+//  and wire the filter to it before re-seeding the collection.
 // ─────────────────────────────────────────────────────────────
 const CATEGORIES: TaxonomyEntry[] = [
   { id: 'employment',  nameHe: 'תעסוקה',           nameEn: 'Employment' },
@@ -26,19 +32,6 @@ const CATEGORIES: TaxonomyEntry[] = [
   { id: 'absorption',  nameHe: 'קליטת עלייה',      nameEn: 'Immigration & Absorption' },
   { id: 'community',   nameHe: 'קהילה',            nameEn: 'Community' },
   { id: 'youth',       nameHe: 'נוער',             nameEn: 'Youth' },
-];
-
-const REGIONS: TaxonomyEntry[] = [
-  { id: 'jerusalem',   nameHe: 'ירושלים',          nameEn: 'Jerusalem' },
-  { id: 'north',       nameHe: 'צפון',             nameEn: 'North' },
-  { id: 'haifa',       nameHe: 'חיפה',             nameEn: 'Haifa' },
-  { id: 'tel-aviv',    nameHe: 'תל אביב',          nameEn: 'Tel Aviv' },
-  { id: 'center',      nameHe: 'מרכז',             nameEn: 'Center' },
-  { id: 'south',       nameHe: 'דרום',             nameEn: 'South' },
-  { id: 'negev',       nameHe: 'נגב',              nameEn: 'Negev' },
-  { id: 'galilee',     nameHe: 'גליל',             nameEn: 'Galilee' },
-  { id: 'sharon',      nameHe: 'שרון',             nameEn: 'Sharon' },
-  { id: 'shfela',      nameHe: 'שפלה',             nameEn: 'Lowlands' },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -485,7 +478,6 @@ async function main(): Promise<void> {
   // feedback round 2). NOTE: re-seeding resets `archived: false` on the 10
   // seeded ids — an admin who archived one of them will see it active again.
   await seedTaxonomy('categories', CATEGORIES, { archived: false });
-  await seedTaxonomy('regions', REGIONS);
   await seedAnswers();
   // The 18 real NPO organizations (idempotent upsert by slug) — shares the
   // transform/upsert logic in seedOrgs.ts so a fresh full seed and the
