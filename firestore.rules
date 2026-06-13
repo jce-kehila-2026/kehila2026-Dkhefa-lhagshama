@@ -132,7 +132,7 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'title', 'body', 'category', 'region', 'audience', 'phone', 'email',
-          'sourceName', 'sourceUrl', 'tags', 'updatedAt'
+          'sourceName', 'sourceUrl', 'updatedAt'
         ]);
       allow create, delete: if false;
     }

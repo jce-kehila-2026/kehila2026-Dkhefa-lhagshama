@@ -11,8 +11,9 @@
  * client-side.
  */
 import 'dotenv/config';
+import { FieldValue } from 'firebase-admin/firestore';
 
-import { initializeFirebaseAdmin, auth } from '@/lib/firebaseAdmin';
+import { initializeFirebaseAdmin, auth, db } from '@/lib/firebaseAdmin';
 
 async function main(): Promise<void> {
   const email = process.argv[2];
@@ -33,6 +34,22 @@ async function main(): Promise<void> {
   }
 
   await auth().setCustomUserClaims(user.uid, { role: 'volunteer' });
+
+  // Upsert volunteers/{uid} active:true (review r6) so the user is actually
+  // assignable: the assign guard + admin dropdown key off this doc, not the
+  // claim alone. Without it a script-promoted volunteer can never be assigned
+  // (409 volunteer_inactive) and never appears in the assign dropdown.
+  await db()
+    .collection('volunteers')
+    .doc(user.uid)
+    .set(
+      {
+        uid: user.uid,
+        active: true,
+        approvedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
 
   const updated = await auth().getUser(user.uid);
   console.log(`OK. ${email} (uid=${user.uid}) now has role:`, updated.customClaims?.role);

@@ -509,12 +509,15 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
         </span>
         {/* req 12 — chat link sits at the logical end (right in LTR) of the
             files indicator. Resolves the chat via ?requestId= (handled by
-            ChatListPage). A chat only exists once a volunteer is assigned, so
-            it is shown only for statuses that have one (in_progress /
-            awaiting_review / closed). For pending/rejected/referred there is no
-            chat, so the link is omitted instead of dead-ending on the chat
-            list. */}
-        {["in_progress", "awaiting_review", "closed"].includes(item.status) && (
+            ChatListPage). A chat exists once a volunteer is assigned — which can
+            happen while the request is still `pending` (admin /assign creates an
+            active chat + system message but does NOT move it out of pending;
+            "start" is a separate step). So `pending` is included here too
+            (review r6, finding 19): the card no longer hides an active
+            conversation. ChatListPage's focusNoChat message handles the case
+            where assignment hasn't happened yet, so a chatless pending request
+            doesn't dead-end. rejected/referred have no chat and are omitted. */}
+        {["pending", "in_progress", "awaiting_review", "closed"].includes(item.status) && (
           <Link
             href={`/chats?requestId=${encodeURIComponent(item.id)}`}
             className="btn btn-ghost btn-sm myreq-card-chat"

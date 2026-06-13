@@ -280,7 +280,9 @@ const base = {
       regionPH:    'אזור',
       audiencePH:  'קהל יעד',
       featured:    'מומלץ',
-      questionFallback: 'שאלה',
+      // Neutral fallback for a directory org/answer saved without a title. The
+      // directory lists organizations (not Q&A), so 'שאלה' would be misleading.
+      untitledOrg: 'ארגון',
       registerNew: '+ רישום עסק חדש',
       submitApproval: 'שלח לאישור',
       fillRequired: 'אנא מלא/י את כל השדות הנדרשים בשדה המקביל.',
@@ -396,6 +398,9 @@ const base = {
         rejected:        'נדחה',
         referred:        'הופנה',
         archived:        'בארכיון',
+        // Retired for new writes, but legacy request docs still carry it —
+        // mirror lifecycle.statusLabels so the admin badge never leaks the raw id.
+        resolved:        'נפתר',
       },
       volStatus: {
         pending:  'ממתין',
@@ -1462,7 +1467,9 @@ const base = {
       regionPH:    'Region',
       audiencePH:  'Audience',
       featured:    'Featured',
-      questionFallback: 'Question',
+      // Neutral fallback for a directory org/answer saved without a title. The
+      // directory lists organizations (not Q&A), so 'Question' would be misleading.
+      untitledOrg: 'Organization',
       registerNew: '+ Register New Business',
       submitApproval: 'Submit for Approval',
       fillRequired: 'Please fill in all required fields.',
@@ -1576,6 +1583,9 @@ const base = {
         rejected:        'Rejected',
         referred:        'Referred',
         archived:        'Archived',
+        // Retired for new writes, but legacy request docs still carry it —
+        // mirror lifecycle.statusLabels so the admin badge never leaks the raw id.
+        resolved:        'Resolved',
       },
       volStatus: {
         pending:  'Pending',

@@ -118,6 +118,12 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   const path = `requests/${requestId}/${filename}`;
   const bucketFile = storage().file(path);
 
+  // Per-file volunteer visibility (req 21): admins uploading to an admin task
+  // request can mark a file private (`?volunteerVisible=false`). Defaults to
+  // true so beneficiary uploads keep their existing "assigned volunteer sees
+  // it" behavior. The volunteer-facing projection honors this flag.
+  const volunteerVisible = req.query.volunteerVisible !== 'false';
+
   try {
     await bucketFile.save(req.body, {
       resumable: false,
@@ -127,6 +133,15 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
           uploadedBy: req.user.uid,
           requestId,
           uploadNonce: randomUUID(),
+          // Stamp the volunteer-visibility flag onto the STORAGE OBJECT (not
+          // just the Firestore array). UC-01 uploads happen in step 3, BEFORE
+          // the request doc exists, so the Firestore `update()` below throws
+          // NOT_FOUND and is swallowed — the only durable record of this flag
+          // is here. POST /api/requests reconstructs requests.attachments by
+          // listing these objects and reading this value back, so staff can
+          // list/open beneficiary uploads after submit. (String because custom
+          // object metadata values are always strings.)
+          volunteerVisible: String(volunteerVisible),
         },
       },
     });
@@ -136,11 +151,15 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
     // file belongs to the request. Embed metadata on requests.attachments so
     // the admin/volunteer doc viewer can list + re-mint signed URLs by name.
     // arrayUnion keeps this idempotent if the same file is re-uploaded.
-    // Per-file volunteer visibility (req 21): admins uploading to an admin task
-    // request can mark a file private (`?volunteerVisible=false`). Defaults to
-    // true so beneficiary uploads keep their existing "assigned volunteer sees
-    // it" behavior. The volunteer-facing projection honors this flag.
-    const volunteerVisible = req.query.volunteerVisible !== 'false';
+    //
+    // NOTE: in the UC-01 beneficiary flow this `update()` runs BEFORE the
+    // request doc exists (uploads are in step 3, the doc is created at the
+    // step-4 submit), so it throws NOT_FOUND and is swallowed below. That is
+    // expected — POST /api/requests then rebuilds `attachments` from the
+    // Storage objects (using the volunteerVisible flag stamped above). This
+    // write still matters for uploads to an ALREADY-EXISTING request (admin
+    // task attachments, late beneficiary additions): it keeps the array fresh
+    // without waiting for a re-list.
     try {
       await db().collection('requests').doc(requestId).update({
         attachments: FieldValue.arrayUnion({
@@ -155,7 +174,8 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
       });
     } catch (metaErr) {
       // Non-fatal: the file is stored. Log the metadata failure but still
-      // return success so the client doesn't re-upload.
+      // return success so the client doesn't re-upload. For pre-doc uploads
+      // this NOT_FOUND is expected (see note above) — create() reconciles it.
       // eslint-disable-next-line no-console
       console.error('[uploads.request] attachment metadata write failed:', metaErr);
     }

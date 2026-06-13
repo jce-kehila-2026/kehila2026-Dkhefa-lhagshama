@@ -156,7 +156,7 @@ export default function DirectoryPage() {
   }, [L, d, openModal])
 
   const openAnswerModal = useCallback((answer: DirRecord) => {
-    const title = L(answer.title) || String(d.questionFallback)
+    const title = L(answer.title) || String(d.untitledOrg)
     const region = L(answer.region)
     const audience = L(answer.audience)
     // Contact details now arrive on the answer (NGO data import): phone is a
@@ -345,6 +345,9 @@ export default function DirectoryPage() {
   // swaps the orgType scope and refetches a differently-sized result set.
   const selectTab = (tab: string) => {
     if (tab === activeTab) return
+    // Mark a real user interaction so an in-flight deep-link probe won't snap
+    // the tab back when its async count fetch resolves (review r6, finding 3).
+    userInteracted.current = true
     setActiveTab(tab)
     setAnswerPage(1)
   }
@@ -379,6 +382,13 @@ export default function DirectoryPage() {
   // or absent params are a silent no-op (keeps 'business' tab + 'all' filter).
   // Applied once so a later manual tab/filter change is never overridden.
   const deepLinkApplied = useRef(false)
+  // Set the moment the user touches the tabs or a category chip. The no-tab
+  // deep-link probe (below) fetches two answer counts asynchronously; if the
+  // user clicks a tab while that is in flight, the probe must NOT snap the
+  // tab/category back when it resolves. This ref is the cancellation signal the
+  // probe checks before applying. (selectTab + the chip onClick set it; the
+  // deep-link's own applyDeepLink writes state directly and does NOT.)
+  const userInteracted = useRef(false)
   // Read the deep-link params off `router.query` directly: depending on the
   // whole `router.query` object would re-run this effect on its identity churn
   // during Pages-Router query hydration, and because the one-shot guard short-
@@ -438,6 +448,9 @@ export default function DirectoryPage() {
       }
       const [ngoCount, partnerCount] = await Promise.all([countFor('ngo'), countFor('partner')])
       if (!alive) return
+      // If the user clicked a tab / chip while the counts were loading, respect
+      // their choice — do not snap the tab/category back (review r6, finding 3).
+      if (userInteracted.current) return
       // ngo wins unless it is empty and partner has matches.
       applyDeepLink(ngoCount === 0 && partnerCount > 0 ? 'partner' : 'ngo')
     }
@@ -727,7 +740,7 @@ export default function DirectoryPage() {
                     key={area}
                     className={`filter-chip dir-chip${answerCategory === area ? ' active' : ''}`}
                     aria-pressed={answerCategory === area}
-                    onClick={() => { setAnswerCategory(area); setAnswerPage(1) }}
+                    onClick={() => { userInteracted.current = true; setAnswerCategory(area); setAnswerPage(1) }}
                   >
                     <Icon size={15} aria-hidden="true" />
                     {area === 'all' ? d.filterAll : catLabel(area)}
@@ -892,7 +905,7 @@ export default function DirectoryPage() {
                       </span>
                     )}
                     <h3 className="dir-answer-title">
-                      {aTitle || d.questionFallback}
+                      {aTitle || d.untitledOrg}
                     </h3>
                     {(aRegion || aAudience) && (
                       <div className="dir-answer-sub">

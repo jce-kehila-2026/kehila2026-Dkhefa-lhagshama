@@ -77,6 +77,10 @@ interface ChatMeta {
   active: boolean;
   createdBy: string | null;
   participantUids: string[];
+  /** Chat-activity tick (lastMessageAt millis): a stable primitive that changes
+   *  on every new message / system message. Used to re-fetch the linked request
+   *  so the close-consent strip reflects the other party's decline/approve. */
+  activityTick: number;
 }
 
 /**
@@ -148,6 +152,16 @@ export default function ChatWindowPage() {
       (snap) => {
         if (!snap.exists()) return;
         const d = snap.data();
+        // Derive a stable activity tick from lastMessageAt (Timestamp | string).
+        // The close-consent write flips chat.active + posts a system message, so
+        // this changes whenever a close handshake resolves on the other side.
+        const lma = d.lastMessageAt as { toMillis?: () => number } | string | undefined;
+        const activityTick =
+          lma && typeof lma === "object" && typeof lma.toMillis === "function"
+            ? lma.toMillis()
+            : typeof lma === "string"
+              ? Date.parse(lma) || 0
+              : 0;
         setChatMeta({
           kind: d.kind === "direct" ? "direct" : "request",
           title: typeof d.title === "string" && d.title.trim() ? d.title : null,
@@ -156,6 +170,7 @@ export default function ChatWindowPage() {
           participantUids: Array.isArray(d.participants)
             ? d.participants.filter((p): p is string => typeof p === "string")
             : [],
+          activityTick,
         });
         setLinkedRequestId(
           typeof d.requestId === "string" && d.requestId ? d.requestId : null,
@@ -259,6 +274,46 @@ export default function ChatWindowPage() {
       cancelled = true;
     };
   }, [linkedRequestId]);
+
+  // Keep the close-consent strip in sync with server state (review r6, finding
+  // 20). `linkedRequest` is otherwise only re-fetched on id change or after THIS
+  // user's own close action — so when the OTHER party declines/approves, the
+  // strip (driven by linkedRequest.closeRequest / status) goes stale until a
+  // reload. The close write flips chat.active + posts a system message, which
+  // advances chatMeta.activityTick; re-fetch on that tick so the handshake
+  // reflects the server without the user having to act. Skip the very first
+  // tick (the id-change effect above already fetched).
+  const chatActivityTick = chatMeta?.activityTick ?? 0;
+  const lastSyncedTick = useRef<number | null>(null);
+  useEffect(() => {
+    if (!linkedRequestId) {
+      lastSyncedTick.current = null;
+      return;
+    }
+    if (lastSyncedTick.current === null) {
+      // First observation for this request — the id-change fetch covers it.
+      lastSyncedTick.current = chatActivityTick;
+      return;
+    }
+    if (chatActivityTick === lastSyncedTick.current) return;
+    lastSyncedTick.current = chatActivityTick;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch(`/api/requests/${linkedRequestId}`);
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as Partial<LinkedRequest> & { id?: string };
+        if (cancelled) return;
+        const next = projectLinkedRequest(data);
+        if (next) setLinkedRequest(next);
+      } catch {
+        // Leave the last-known state in place; the user can still act.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chatActivityTick, linkedRequestId]);
 
   // Guard: show "Mark as done" only when the signed-in user is the request's
   // assigned volunteer/handler (admin is a superset of volunteer via hasRole)

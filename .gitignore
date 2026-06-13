@@ -56,3 +56,6 @@ docs/superpowers/
 
 # Local test-account credentials (do not commit plaintext passwords)
 TEST-ACCOUNTS.md
+
+# Leftover `gh issue list` dumps (working artifacts, never a tracked source)
+open_issues.json

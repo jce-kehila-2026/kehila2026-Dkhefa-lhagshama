@@ -10,8 +10,9 @@
  * again to see their new role.
  */
 import 'dotenv/config';
+import { FieldValue } from 'firebase-admin/firestore';
 
-import { initializeFirebaseAdmin, auth } from '@/lib/firebaseAdmin';
+import { initializeFirebaseAdmin, auth, db } from '@/lib/firebaseAdmin';
 
 const VALID_ROLES = ['beneficiary', 'businessOwner', 'volunteer', 'admin'] as const;
 type Role = (typeof VALID_ROLES)[number];
@@ -51,6 +52,22 @@ async function main(): Promise<void> {
     try {
       const user = await auth().getUserByEmail(email);
       await auth().setCustomUserClaims(user.uid, { role });
+
+      // Keep volunteers/{uid}.active in sync with the role (review r6). The
+      // assign guard + admin dropdown key off this doc, not the claim — so a
+      // volunteer set here must get active:true to be assignable, and a user
+      // moved OFF volunteer must have any existing doc deactivated so a former
+      // volunteer can't still be assigned (PII exposure).
+      const volRef = db().collection('volunteers').doc(user.uid);
+      if (role === 'volunteer') {
+        await volRef.set(
+          { uid: user.uid, active: true, approvedAt: FieldValue.serverTimestamp() },
+          { merge: true },
+        );
+      } else if ((await volRef.get()).exists) {
+        await volRef.update({ active: false, deactivatedAt: FieldValue.serverTimestamp() });
+      }
+
       console.log(`OK  ${email} → ${role}`);
     } catch (err) {
       failures += 1;

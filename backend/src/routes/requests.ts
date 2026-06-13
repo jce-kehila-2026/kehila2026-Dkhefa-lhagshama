@@ -16,7 +16,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
-import { db } from '@/lib/firebaseAdmin';
+import { db, storage } from '@/lib/firebaseAdmin';
 import { writeAuditLog } from '@/lib/audit';
 import { isAllowedCategory } from '@/lib/categoriesCache';
 import { writeRequestEvent } from '@/lib/requestEvents';
@@ -116,6 +116,73 @@ const createRequestSchema = z
   });
 
 type CreateRequestInput = z.infer<typeof createRequestSchema>;
+
+/** Structured attachment metadata persisted on `requests.attachments`. */
+interface AttachmentMeta {
+  name: string;
+  path: string;
+  type: string | null;
+  size: number | null;
+  uploadedBy: string | null;
+  volunteerVisible: boolean;
+}
+
+/**
+ * Reconcile `requests.attachments` from the Storage objects under
+ * requests/{requestId}/ (Note 1 / review r6).
+ *
+ * In the UC-01 beneficiary flow, files are uploaded in step 3 BEFORE the
+ * request doc exists (the client generates `requestId` up front). The upload
+ * route's `attachments` write is an `.update()` that therefore throws
+ * NOT_FOUND and is swallowed — so a freshly-created doc has only
+ * `attachmentPaths` (raw path strings) and an empty `attachments` array, and
+ * every staff-facing viewer (admin doc panel, volunteer card, the
+ * GET /:id/attachments/:name signed-URL endpoint) reads `attachments` and
+ * shows nothing.
+ *
+ * After `create()`, list the uploaded objects and rebuild `attachments` from
+ * their Storage metadata (name/path/type/size/uploadedBy + the
+ * volunteerVisible flag the upload route stamps onto the object). Best-effort:
+ * a Storage failure leaves `attachmentPaths` intact, so the create still
+ * succeeds. Returns the count written (for logging / audit detail).
+ */
+async function reconcileAttachmentsFromStorage(requestId: string): Promise<number> {
+  const prefix = `requests/${requestId}/`;
+  const [files] = await storage().getFiles({ prefix });
+
+  const attachments: AttachmentMeta[] = files
+    // Skip any "directory placeholder" object equal to the prefix itself.
+    .filter((f) => f.name && f.name !== prefix)
+    .map((f) => {
+      const md = (f.metadata ?? {}) as {
+        contentType?: string;
+        size?: string | number;
+        metadata?: Record<string, string | undefined>;
+      };
+      const custom = md.metadata ?? {};
+      const sizeNum = typeof md.size === 'string' ? Number(md.size) : (md.size ?? null);
+      return {
+        // basename — mirrors how the upload route names attachments (so the
+        // GET /:id/attachments/:name lookup matches).
+        name: f.name.slice(prefix.length),
+        path: f.name,
+        type: md.contentType ?? null,
+        size: Number.isFinite(sizeNum as number) ? (sizeNum as number) : null,
+        uploadedBy: custom.uploadedBy ?? null,
+        // Default to visible when unset (pre-flag uploads); only an explicit
+        // "false" hides a file from the volunteer-facing task projection.
+        volunteerVisible: custom.volunteerVisible !== 'false',
+      };
+    });
+
+  if (attachments.length === 0) return 0;
+
+  await db().collection('requests').doc(requestId).update({
+    attachments,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  return attachments.length;
+}
 
 /** Thrown inside a transaction to bail out with a specific HTTP status. */
 class TransitionError extends Error {
@@ -217,6 +284,20 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     console.error('[requests.create] failed:', err);
     res.status(500).json({ error: 'internal' });
     return;
+  }
+
+  // ── Reconcile attachment metadata (Note 1 / review r6) ──────────────────
+  // Files uploaded in UC-01 step 3 (before this doc existed) only left raw
+  // paths in `attachmentPaths` — their structured `attachments` write 404'd at
+  // upload time. Now that the doc exists, rebuild `attachments` from the
+  // Storage objects so staff can list + open them. Awaited (not fire-and-
+  // forget) so the array is populated before the client navigates to a view
+  // that reads it; best-effort inside so a Storage hiccup never fails create.
+  try {
+    await reconcileAttachmentsFromStorage(input.requestId);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[requests.create] attachment reconcile failed:', err);
   }
 
   // Audit log — fire-and-forget. Don't block the response on it; surface in
@@ -737,6 +818,18 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       } else {
         delete projected.idNumber;
         delete projected.idNote;
+        // Task-aware attachment filter (review r6, finding 4): the staff branch
+        // (assigned volunteer/handler) must see the SAME attachment set the
+        // download endpoint will mint URLs for — otherwise it leaks the names +
+        // Storage paths of staff-only files an admin withheld from volunteers.
+        // On a `task` request, drop any attachment not flagged volunteerVisible,
+        // mirroring volunteerApp.ts projectAttachments and the per-attachment
+        // gate in GET /:id/attachments/:name. Non-task requests keep all.
+        const atts = (data.attachments as Array<{ volunteerVisible?: boolean }> | undefined) ?? [];
+        projected.attachments =
+          data.requestType === 'task'
+            ? atts.filter((a) => a?.volunteerVisible === true)
+            : atts;
       }
     }
     res.json(projected);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, ExternalLink, Phone, Mail, ArrowRight, X } from "lucide-react";
+import { Sparkles, ExternalLink, Phone, Mail, ArrowLeft, ArrowRight, X } from "lucide-react";
 
 import type { CSSProperties } from "react";
 import type { Suggestion } from "@/types";
@@ -48,6 +48,10 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
   dismissLabel: string;
   onDismiss: () => void;
 }) {
+  // Direction-aware forward arrow: in RTL (Hebrew) the reading direction runs
+  // right-to-left, so "forward" points left. Mirrors the convention used in
+  // DirectoryPage/RequestsPage (`isRTL ? ArrowLeft : ArrowRight`).
+  const DirArrow = lang === "he" ? ArrowLeft : ArrowRight;
   return (
     <div
       className="card"
@@ -187,7 +191,7 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
                     style={{ gap: "6px" }}
                   >
                     {directoryLabel}
-                    <ArrowRight size={14} aria-hidden="true" />
+                    <DirArrow size={14} aria-hidden="true" />
                   </Link>
                 )}
               </div>

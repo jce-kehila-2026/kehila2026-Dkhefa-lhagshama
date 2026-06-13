@@ -171,6 +171,40 @@ router.post('/:uid/promote', async (req: Request, res: Response): Promise<void> 
       { merge: true }
     );
 
+    // ── Keep the volunteers/{uid} doc in sync with the role (review r6) ──────
+    // The assign guard (adminRequests POST /assign) and the active-volunteer
+    // roster/dropdown (adminVolunteers GET /) both key off
+    // volunteers/{uid}.active === true, and that doc is otherwise only created
+    // by the volunteer-application approve flow. So a user promoted to
+    // volunteer HERE would be a functional volunteer (claim, can be assigned in
+    // theory) yet never appear in the dropdown AND 409 `volunteer_inactive` on
+    // assign. Upsert the doc on promote-to-volunteer (mirrors the approve
+    // step), and on promote AWAY from volunteer deactivate any existing doc so
+    // a former volunteer can't still be assigned (PII exposure — see demote).
+    if (role === 'volunteer') {
+      await db()
+        .collection('volunteers')
+        .doc(targetUid)
+        .set(
+          {
+            uid: targetUid,
+            active: true,
+            approvedBy: actorId,
+            approvedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+    } else {
+      const volRef = db().collection('volunteers').doc(targetUid);
+      if ((await volRef.get()).exists) {
+        await volRef.update({
+          active: false,
+          deactivatedBy: actorId,
+          deactivatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
     await writeAuditLog({
       actorId,
       action: 'user.promote',
@@ -219,6 +253,22 @@ router.post('/:uid/demote', async (req: Request, res: Response): Promise<void> =
       { merge: true }
     );
 
+    // ── Deactivate the volunteers/{uid} doc (review r6, finding 11) ──────────
+    // Demote reverts the claim to beneficiary, but the assign guard only checks
+    // volunteers/{uid}.active === true. Without this, a demoted ex-volunteer
+    // keeps active:true → still passes the guard and still shows in the assign
+    // dropdown, so an admin could assign them a sensitive request and the staff
+    // projection would serve the beneficiary's national ID + internal notes to
+    // someone no longer a volunteer. Mirror adminVolunteers /deactivate.
+    const volRef = db().collection('volunteers').doc(targetUid);
+    if ((await volRef.get()).exists) {
+      await volRef.update({
+        active: false,
+        deactivatedBy: actorId,
+        deactivatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     await writeAuditLog({
       actorId,
       action: 'user.demote',
@@ -264,6 +314,20 @@ router.post('/:uid/disable', async (req: Request, res: Response): Promise<void> 
         },
         { merge: true }
       );
+
+    // ── Deactivate any volunteers/{uid} doc (review r6, finding 11) ──────────
+    // A disabled volunteer must not stay assignable: the assign guard + dropdown
+    // key off volunteers/{uid}.active === true and don't read users.disabled, so
+    // leaving active:true would let an admin assign a disabled volunteer a
+    // sensitive request (PII exposure via the staff projection). Mirror demote.
+    const volRefDisable = db().collection('volunteers').doc(targetUid);
+    if ((await volRefDisable.get()).exists) {
+      await volRefDisable.update({
+        active: false,
+        deactivatedBy: actorId,
+        deactivatedAt: FieldValue.serverTimestamp(),
+      });
+    }
 
     await writeAuditLog({
       actorId,

@@ -87,14 +87,23 @@ const answerFieldsSchema = z.object({
 // label resolution; a category with no `categories/{id}` doc resolves only to
 // its raw id and never appears under any chip. So — like every other
 // category-bearing write (requests.ts, adminRequests.ts, volunteerApp.ts) —
-// reject a category that is not in the live ACTIVE taxonomy. Async (the id set
-// lives in Firestore, cached ~60s), so the handlers use safeParseAsync.
+// reject a category that is not in the taxonomy. Async (the id set lives in
+// Firestore, cached ~60s), so the handlers use safeParseAsync.
+//
+// `scope` differs by operation (review r6, finding 2):
+//   - create: 'active' — a NEW org must use a live, non-archived category.
+//   - update: 'all'    — an EXISTING org may keep an archived category. The
+//       admin edit form always resends `category` even when only an unrelated
+//       field changed, so validating against 'active' would 400 (and strand)
+//       any org whose category was later soft-archived. 'all' mirrors the
+//       categoriesCache scope used elsewhere for historical references.
 async function rejectUnknownCategory(
   category: string | undefined,
   ctx: z.RefinementCtx,
+  scope: 'active' | 'all',
 ): Promise<void> {
   if (category === undefined) return; // partial update without a category change
-  if (!(await isAllowedCategory(category, 'active'))) {
+  if (!(await isAllowedCategory(category, scope))) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['category'],
@@ -110,12 +119,12 @@ const createAnswerSchema = answerFieldsSchema
     audience: optionalBilingualSchema.optional(),
     sourceName: z.string().trim().max(160).optional(),
   })
-  .superRefine((data, ctx) => rejectUnknownCategory(data.category, ctx));
+  .superRefine((data, ctx) => rejectUnknownCategory(data.category, ctx, 'active'));
 
 const updateAnswerSchema = answerFieldsSchema
   .extend({ status: statusSchema })
   .partial()
-  .superRefine((data, ctx) => rejectUnknownCategory(data.category, ctx));
+  .superRefine((data, ctx) => rejectUnknownCategory(data.category, ctx, 'all'));
 
 // GET /api/admin/directory/answers — ALL answers regardless of status.
 // Whole-collection get + in-memory sort/limit (project convention: no new

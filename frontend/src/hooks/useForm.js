@@ -55,16 +55,3 @@ export function useForm(initialValues = {}) {
     isValid,
   }
 }
-
-export function useLocalStorage(key, initial) {
-  const [val, setVal] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(key)) ?? initial }
-    catch { return initial }
-  })
-  const update = useCallback((v) => {
-    const next = typeof v === 'function' ? v(val) : v
-    setVal(next)
-    localStorage.setItem(key, JSON.stringify(next))
-  }, [key, val])
-  return [val, update]
-}

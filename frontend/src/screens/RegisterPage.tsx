@@ -246,7 +246,11 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFieldErrors({})
-    if (password.length < 6) { setFieldErrors({ password: a.passwordTooShort }); passwordRef.current?.focus(); return }
+    // Same password policy as the beneficiary tab (review r6, finding 21):
+    // min 8 chars + >=1 digit. Both tabs hit the same Firebase createUser, so
+    // the strength rule must not be weaker on one path.
+    if (password.length < 8) { setFieldErrors({ password: a.passwordTooShort }); passwordRef.current?.focus(); return }
+    if (!/\d/.test(password)) { setFieldErrors({ password: a.passwordNoDigit }); passwordRef.current?.focus(); return }
     if (password !== confirm) { setFieldErrors({ confirm: a.passwordMismatch }); confirmRef.current?.focus(); return }
     onNext({ email, password })
   }
@@ -267,16 +271,22 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
       <div className="reg-field">
         <label htmlFor="vol-password">{a.password}</label>
         <input id="vol-password" ref={passwordRef} type="password" name="new-password"
-          autoComplete="new-password" spellCheck={false} required minLength={6}
+          autoComplete="new-password" spellCheck={false} required minLength={8}
           aria-invalid={fieldErrors.password ? true : undefined}
-          aria-describedby={fieldErrors.password ? 'vol-pw-err' : undefined}
+          aria-describedby={`vol-pw-checks${fieldErrors.password ? ' vol-pw-err' : ''}`}
           value={password} onChange={(e) => setPassword(e.target.value)} className={`form-input${fieldErrors.password ? ' error' : ''}`} />
+        {password.length > 0 && (
+          <div id="vol-pw-checks" className="pw-checks" role="status" aria-live="polite" style={{ marginBlockStart: 8 }}>
+            <PwCheck ok={password.length >= 8} label={a.pwRuleLength} />
+            <PwCheck ok={/\d/.test(password)} label={a.pwRuleDigit} />
+          </div>
+        )}
         <FieldError id="vol-pw-err" message={fieldErrors.password} />
       </div>
       <label className="reg-field" htmlFor="vol-confirm">
         {a.confirmPassword}
         <input id="vol-confirm" ref={confirmRef} type="password" name="confirm-password"
-          autoComplete="new-password" spellCheck={false} required minLength={6}
+          autoComplete="new-password" spellCheck={false} required minLength={8}
           aria-invalid={fieldErrors.confirm ? true : undefined}
           aria-describedby={fieldErrors.confirm ? 'vol-confirm-err' : undefined}
           value={confirm} onChange={(e) => setConfirm(e.target.value)} className={`form-input${fieldErrors.confirm ? ' error' : ''}`} />
