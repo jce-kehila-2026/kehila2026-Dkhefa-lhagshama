@@ -68,7 +68,14 @@ type Bilingual = string | { he?: TNode | string[]; en?: TNode | string[]; [k: st
 
 // API record shapes are loose (server returns dynamic JSON); narrow at use-site.
 type DirRecord = Record<string, TNode>
-type NoticeState = { message?: string; variant?: 'danger' | string } | null
+// A notice may optionally be ACTIONABLE: when `action` is set the dialog shows
+// a primary button (e.g. "Sign in") that runs `action.onConfirm`, plus a
+// Cancel. Plain notices stay single-button (OK).
+type NoticeState = {
+  message?: string
+  variant?: 'danger' | string
+  action?: { confirmLabel: string; onConfirm: () => void }
+} | null
 
 export default function DirectoryPage() {
   const { t, lang, isRTL } = useLanguage() as unknown as LangCtx
@@ -372,19 +379,30 @@ export default function DirectoryPage() {
   // or absent params are a silent no-op (keeps 'business' tab + 'all' filter).
   // Applied once so a later manual tab/filter change is never overridden.
   const deepLinkApplied = useRef(false)
+  // Read the deep-link params off `router.query` directly: depending on the
+  // whole `router.query` object would re-run this effect on its identity churn
+  // during Pages-Router query hydration, and because the one-shot guard short-
+  // circuits the re-run BEFORE a new cleanup is registered, React would then
+  // invoke the previous run's cleanup and cancel an in-flight probe (the
+  // deep-link would silently never apply). Keying on the stable primitive
+  // params instead means the only re-runs are real param changes.
+  const queryCategory = router.query.category
+  const queryTab = router.query.tab
   useEffect(() => {
     if (deepLinkApplied.current) return
     if (!router.isReady) return
     // Wait for the taxonomy so we can validate the category against live ids.
     if (ngoCategories.length === 0) return
-    deepLinkApplied.current = true
 
-    const rawCategory = router.query.category
-    const category = Array.isArray(rawCategory) ? rawCategory[0] : rawCategory
+    const category = Array.isArray(queryCategory) ? queryCategory[0] : queryCategory
     if (!category || !ngoCategories.some((c) => c.id === category)) return
 
-    const rawTab = router.query.tab
-    const tab = Array.isArray(rawTab) ? rawTab[0] : rawTab
+    const tab = Array.isArray(queryTab) ? queryTab[0] : queryTab
+
+    // Mark applied only once we have a valid, actionable deep-link in hand, so
+    // an early `return` above (no/invalid category) leaves the guard open for a
+    // later render where the params have settled.
+    deepLinkApplied.current = true
 
     const applyDeepLink = (nextTab: 'ngo' | 'partner') => {
       setActiveTab(nextTab)
@@ -425,7 +443,7 @@ export default function DirectoryPage() {
     }
     void probe()
     return () => { alive = false }
-  }, [router.isReady, router.query, ngoCategories])
+  }, [router.isReady, queryCategory, queryTab, ngoCategories])
 
   const BIZ_CATS = ['all', 'food', 'services', 'health', 'education', 'beauty', 'tech']
   // NGO area chips reflect REAL data, not the full taxonomy: the union of
@@ -536,8 +554,18 @@ export default function DirectoryPage() {
       }
       // 401 means no signed-in user — registering a business requires login so
       // the submission can be tied to an owner (firestore rules key off ownerId).
+      // Make the notice actionable: a "Sign in" button routes to login with a
+      // next= back to /directory so the user can authenticate and return,
+      // instead of dead-ending on an OK-only message with no path forward.
       if (err?.status === 401) {
-        setNotice({ message: d.loginRequired, variant: 'danger' })
+        setNotice({
+          message: d.loginRequired,
+          variant: 'danger',
+          action: {
+            confirmLabel: d.signIn,
+            onConfirm: () => router.push(`/login?next=${encodeURIComponent('/directory')}`),
+          },
+        })
         setRegisterSubmitting(false)
         return
       }
@@ -811,11 +839,17 @@ export default function DirectoryPage() {
                           <span key={tag} className="dir-tag">{tag}</span>
                         ))}
                       </div>
-                      <div className="dir-rating">
-                        <Star size={15} fill="var(--ember)" color="var(--ember)" aria-hidden="true" />
-                        <span className="dir-rating-value">{biz.rating}</span>
-                        <span className="dir-rating-count">({biz.reviews})</span>
-                      </div>
+                      {/* Rating only renders when the business actually has
+                          reviews. There is no review-submission feature yet, so
+                          a zero-review business shows no fabricated star/score
+                          (matches the seed's rating:0/reviews:0). */}
+                      {Number(biz.reviews) > 0 && (
+                        <div className="dir-rating">
+                          <Star size={15} fill="var(--ember)" color="var(--ember)" aria-hidden="true" />
+                          <span className="dir-rating-value">{biz.rating}</span>
+                          <span className="dir-rating-count">({biz.reviews})</span>
+                        </div>
+                      )}
                       <div className="dir-card-actions">
                         <a href={`tel:${biz.phone}`} className="btn btn-outline btn-sm dir-biz-call" aria-label={`${L(biz.name)} — ${biz.phone}`}>
                           <Phone size={14} aria-hidden="true" /> {biz.phone}
@@ -985,13 +1019,21 @@ export default function DirectoryPage() {
         </div>
       )}
 
-      {/* Branded notice (replaces native alert) — single OK button. */}
+      {/* Branded notice (replaces native alert). Single OK button by default;
+          when the notice carries an `action` (e.g. the 401 sign-in case) it
+          becomes a two-button dialog: the primary runs the action, Cancel
+          dismisses. */}
       <ConfirmDialog
         open={!!notice}
         title={notice?.variant === 'danger' ? t.common.notice : t.common.success}
         message={notice?.message}
-        confirmLabel={t.common.ok}
-        onConfirm={() => setNotice(null)}
+        confirmLabel={notice?.action ? notice.action.confirmLabel : t.common.ok}
+        cancelLabel={notice?.action ? t.common.cancel : undefined}
+        onConfirm={() => {
+          const action = notice?.action
+          setNotice(null)
+          action?.onConfirm()
+        }}
         onCancel={() => setNotice(null)}
       />
     </main>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useReducedMotion } from 'motion/react'
 
 interface StatCardProps {
   num: number
@@ -10,10 +11,19 @@ export default function StatCard({ num, suffix = '', delay = 0 }: StatCardProps)
   const [displayed, setDisplayed] = useState(0)
   const ref = useRef<HTMLDivElement | null>(null)
   const started = useRef(false)
+  // Honor prefers-reduced-motion (project hard constraint): when set, the
+  // count-up is skipped and the final value renders instantly, matching how
+  // Reveal/MagneticButton gate their motion.
+  const reduce = useReducedMotion()
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    // Reduced motion: show the final value immediately, no observer/interval.
+    if (reduce) {
+      setDisplayed(num)
+      return
+    }
     // Capture both timer ids so the cleanup can clear a count-up that is still
     // running when the home page unmounts mid-animation — otherwise the
     // interval keeps calling setDisplayed on an unmounted component (React
@@ -42,7 +52,7 @@ export default function StatCard({ num, suffix = '', delay = 0 }: StatCardProps)
       if (timeoutId) clearTimeout(timeoutId)
       if (intervalId) clearInterval(intervalId)
     }
-  }, [num, delay])
+  }, [num, delay, reduce])
 
   return (
     <div ref={ref} style={{ textAlign:'center' }}>

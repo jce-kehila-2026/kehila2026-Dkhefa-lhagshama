@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { db } from '@/lib/firebaseAdmin';
 import { authenticate, requireRole } from '@/middleware/auth';
 import { writeAuditLog } from '@/lib/audit';
+import { isAllowedCategory } from '@/lib/categoriesCache';
 
 const router = Router();
 
@@ -82,14 +83,39 @@ const answerFieldsSchema = z.object({
   sourceUrl: httpUrlSchema,
 });
 
-const createAnswerSchema = answerFieldsSchema.extend({
-  body: optionalBilingualSchema.default({ he: '', en: '' }),
-  region: optionalBilingualSchema.optional(),
-  audience: optionalBilingualSchema.optional(),
-  sourceName: z.string().trim().max(160).optional(),
-});
+// A directory answer's category drives the public NGO-area filter chips and
+// label resolution; a category with no `categories/{id}` doc resolves only to
+// its raw id and never appears under any chip. So — like every other
+// category-bearing write (requests.ts, adminRequests.ts, volunteerApp.ts) —
+// reject a category that is not in the live ACTIVE taxonomy. Async (the id set
+// lives in Firestore, cached ~60s), so the handlers use safeParseAsync.
+async function rejectUnknownCategory(
+  category: string | undefined,
+  ctx: z.RefinementCtx,
+): Promise<void> {
+  if (category === undefined) return; // partial update without a category change
+  if (!(await isAllowedCategory(category, 'active'))) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['category'],
+      message: 'unknown category',
+    });
+  }
+}
 
-const updateAnswerSchema = answerFieldsSchema.extend({ status: statusSchema }).partial();
+const createAnswerSchema = answerFieldsSchema
+  .extend({
+    body: optionalBilingualSchema.default({ he: '', en: '' }),
+    region: optionalBilingualSchema.optional(),
+    audience: optionalBilingualSchema.optional(),
+    sourceName: z.string().trim().max(160).optional(),
+  })
+  .superRefine((data, ctx) => rejectUnknownCategory(data.category, ctx));
+
+const updateAnswerSchema = answerFieldsSchema
+  .extend({ status: statusSchema })
+  .partial()
+  .superRefine((data, ctx) => rejectUnknownCategory(data.category, ctx));
 
 // GET /api/admin/directory/answers — ALL answers regardless of status.
 // Whole-collection get + in-memory sort/limit (project convention: no new
@@ -132,7 +158,7 @@ router.get('/answers', async (req: Request, res: Response): Promise<void> => {
 // POST /api/admin/directory/answers — create a partner organization entry.
 // Born `approved`: admin-created content is trusted, no approval round-trip.
 router.post('/answers', async (req: Request, res: Response): Promise<void> => {
-  const parsed = createAnswerSchema.safeParse(req.body);
+  const parsed = await createAnswerSchema.safeParseAsync(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
     return;
@@ -180,7 +206,7 @@ router.post('/answers', async (req: Request, res: Response): Promise<void> => {
 
 // PATCH /api/admin/directory/answers/:id — partial content/status update.
 router.patch('/answers/:id', async (req: Request, res: Response): Promise<void> => {
-  const parsed = updateAnswerSchema.safeParse(req.body);
+  const parsed = await updateAnswerSchema.safeParseAsync(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
     return;

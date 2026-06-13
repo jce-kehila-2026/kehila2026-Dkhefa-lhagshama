@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
   Tag,
   Calendar,
@@ -7,6 +8,7 @@ import {
   CheckCircle2,
   Pencil,
   LogOut,
+  MessageCircle,
 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
@@ -350,35 +352,62 @@ export default function VolunteerAssignedPage() {
 
               {/* ── Default actions ───────────────────────────── */}
               {!isEditing && !isDropping && (
-                <div className="volapp-card-actions">
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={() => openEdit(item)}
-                  >
-                    <Pencil size={15} aria-hidden="true" />
-                    {a.editTitle}
-                  </button>
-                  {item.status === 'in_progress' && (
+                <>
+                  {/* Once the request is awaiting_review the "Mark done" action is
+                      gone and the mutual-consent close lives in the request
+                      chat. Surface that here so the volunteer is not left on a
+                      card that looks stuck — they can finish the close from the
+                      same surface where they marked it done. */}
+                  {item.status === 'awaiting_review' && (
+                    <p className="volapp-panel-sub" role="status">
+                      {a.awaitingClose}
+                    </p>
+                  )}
+                  <div className="volapp-card-actions">
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm"
-                      disabled={isBusy}
-                      onClick={() => markDone(item.id)}
+                      className="btn btn-outline btn-sm"
+                      onClick={() => openEdit(item)}
                     >
-                      <CheckCircle2 size={15} aria-hidden="true" />
-                      {a.markDone}
+                      <Pencil size={15} aria-hidden="true" />
+                      {a.editTitle}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={() => openDrop(item)}
-                  >
-                    <LogOut size={15} aria-hidden="true" />
-                    {a.drop}
-                  </button>
-                </div>
+                    {item.status === 'in_progress' && (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={isBusy}
+                        onClick={() => markDone(item.id)}
+                      >
+                        <CheckCircle2 size={15} aria-hidden="true" />
+                        {a.markDone}
+                      </button>
+                    )}
+                    {/* Link into the request chat where the propose/approve-close
+                        handshake (and the beneficiary's close proposal) lives.
+                        Shown for the volunteer's actionable states; resolved via
+                        ?requestId= by ChatListPage (same convention as
+                        MyRequestsPage). */}
+                    {(item.status === 'in_progress' || item.status === 'awaiting_review') && (
+                      <Link
+                        href={`/chats?requestId=${encodeURIComponent(item.id)}`}
+                        className="btn btn-outline btn-sm"
+                        aria-label={a.openChat}
+                      >
+                        <MessageCircle size={15} aria-hidden="true" />
+                        {a.openChat}
+                      </Link>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={() => openDrop(item)}
+                    >
+                      <LogOut size={15} aria-hidden="true" />
+                      {a.drop}
+                    </button>
+                  </div>
+                </>
               )}
             </article>
           )

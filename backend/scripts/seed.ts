@@ -262,8 +262,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['מסעדה', 'אינג׳רה', 'אתיופי'], en: ['restaurant', 'injera', 'ethiopian'] },
     featured: true,
-    rating: 4.8,
-    reviews: 42,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-jimma-cafe',
@@ -278,8 +278,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['קפה', 'טקס קפה', 'מאפים'], en: ['coffee', 'ceremony', 'bakery'] },
     featured: false,
-    rating: 4.9,
-    reviews: 87,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-shlomo-barber',
@@ -294,8 +294,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['מספרה', 'תספורת', 'שיער'], en: ['barber', 'haircut', 'hair'] },
     featured: false,
-    rating: 4.9,
-    reviews: 78,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-alamo-renovations',
@@ -310,8 +310,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['שיפוצים', 'אינסטלציה', 'בנייה'], en: ['renovations', 'plumbing', 'construction'] },
     featured: false,
-    rating: 4.8,
-    reviews: 44,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-dr-lama-clinic',
@@ -326,8 +326,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['רופא', 'מרפאה', 'אמהרית'], en: ['doctor', 'clinic', 'amharic'] },
     featured: true,
-    rating: 4.7,
-    reviews: 55,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-tena-physio',
@@ -342,8 +342,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['פיזיותרפיה', 'שיקום', 'ספורט'], en: ['physiotherapy', 'rehab', 'sports'] },
     featured: false,
-    rating: 4.6,
-    reviews: 27,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-ethiopian-art-academy',
@@ -358,8 +358,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['אמנות', 'מוסיקה', 'ריקוד'], en: ['art', 'music', 'dance'] },
     featured: false,
-    rating: 4.6,
-    reviews: 31,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-bridge-tutoring',
@@ -374,8 +374,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['שיעורים פרטיים', 'בגרויות', 'חינוך'], en: ['tutoring', 'matriculation', 'education'] },
     featured: false,
-    rating: 4.7,
-    reviews: 38,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-wisa-beauty',
@@ -390,8 +390,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['יופי', 'קוסמטיקה', 'עור'], en: ['beauty', 'cosmetics', 'skincare'] },
     featured: false,
-    rating: 4.7,
-    reviews: 62,
+    rating: 0,
+    reviews: 0,
   },
   {
     id: 'biz-addis-digital',
@@ -406,8 +406,8 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['אתרים', 'אפליקציות', 'שיווק'], en: ['websites', 'apps', 'marketing'] },
     featured: true,
-    rating: 4.8,
-    reviews: 21,
+    rating: 0,
+    reviews: 0,
   },
 ];
 
@@ -459,6 +459,12 @@ async function seedBusinesses(): Promise<void> {
       ref,
       {
         ...data,
+        // No review-submission feature exists, so seeded businesses must NOT
+        // ship fabricated social proof. Force rating/reviews to 0 (the public
+        // card hides the rating block until reviews > 0) regardless of any
+        // legacy literal still on the seed object.
+        rating: 0,
+        reviews: 0,
         approved: true,
         status: 'approved',
         ownerId: `seed-owner-${id}`,

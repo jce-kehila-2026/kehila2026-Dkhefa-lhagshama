@@ -12,12 +12,3 @@ export const formatDate = (dateStr, lang = 'he') => {
 
 export const truncate = (str, n = 80) =>
   str.length <= n ? str : str.slice(0, n).trimEnd() + '…'
-
-export const getStatusColor = (status) => ({
-  pending:    'badge-pending',
-  review:     'badge-review',
-  approved:   'badge-approved',
-  rejected:   'badge-rejected',
-  inProgress: 'badge-review',
-  completed:  'badge-approved',
-}[status] || 'badge-pending')

@@ -128,6 +128,8 @@ export const overhaulVolunteerApp = {
         dropError: 'שחרור הבקשה נכשל.',
         dropNeedReport: 'נא למלא לפחות שדה אחד בדוח לפני השחרור.',
         previouslyTaken: 'נלקח בעבר',
+        openChat: 'פתיחת שיחה',
+        awaitingClose: 'ממתין לסגירה. השלמת הסגירה מתבצעת בשיחת הבקשה.',
       },
 
       // ── Insights (req 14b) ───────────────────────────────────
@@ -269,6 +271,8 @@ export const overhaulVolunteerApp = {
         dropError: 'Failed to drop the request.',
         dropNeedReport: 'Please fill in at least one report field before dropping.',
         previouslyTaken: 'Previously taken',
+        openChat: 'Open chat',
+        awaitingClose: 'Awaiting close. Finish the close from the request chat.',
       },
 
       // ── Insights (req 14b) ───────────────────────────────────

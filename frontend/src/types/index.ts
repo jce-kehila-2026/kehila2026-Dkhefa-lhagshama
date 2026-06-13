@@ -333,8 +333,8 @@ export interface Suggestion {
   email?: string | null;
   /**
    * Directory organization type: 'ngo' (עמותה) vs admin-added 'partner'
-   * (שותף). /api/answers defaults pre-field docs to 'ngo' server-side;
-   * /api/suggestions omits the field entirely — treat absent as 'ngo'.
+   * (שותף). Both /api/answers and /api/suggestions default pre-field docs to
+   * 'ngo' server-side; treat an absent value as 'ngo'.
    */
   orgType?: OrgType | null;
   acceptsInAppRequest?: boolean;

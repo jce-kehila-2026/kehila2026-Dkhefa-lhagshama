@@ -113,9 +113,6 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   const bucketFile = storage().file(path);
 
   try {
-    // eslint-disable-next-line no-console
-    console.log(`[uploads] saving file: path=${path}, size=${req.body.length}, contentType=${contentType}`);
-
     await bucketFile.save(req.body, {
       resumable: false,
       metadata: {
@@ -127,9 +124,6 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
         },
       },
     });
-
-    // eslint-disable-next-line no-console
-    console.log(`[uploads] file saved successfully: ${path}`);
 
     // ── Persist attachment metadata (Note 1) ────────────────────────────
     // The Storage object is otherwise invisible: nothing records that this

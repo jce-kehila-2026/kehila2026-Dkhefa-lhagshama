@@ -287,6 +287,7 @@ const base = {
       descTooShort: 'התיאור חייב לכלול לפחות 10 תווים.',
       submitSuccess: 'העסק נשלח לאישור. תודה!',
       loginRequired: 'יש להתחבר כדי לרשום עסק.',
+      signIn: 'התחברות',
       submitError: 'שגיאה בשליחת העסק.',
       fields: { business_name: 'שם העסק', owner_name: 'שם הבעלים', phone: 'טלפון', category: 'קטגוריה', city: 'עיר', desc: 'תיאור קצר' },
       // Note 2 — detail modal
@@ -1463,6 +1464,7 @@ const base = {
       descTooShort: 'The description must be at least 10 characters long.',
       submitSuccess: 'Business registration submitted for approval. Thank you!',
       loginRequired: 'Please sign in to register a business.',
+      signIn: 'Sign in',
       submitError: 'Failed to submit the business.',
       fields: { business_name: 'Business Name', owner_name: 'Owner Name', phone: 'Phone', category: 'Category', city: 'City', desc: 'Short Description' },
       // Note 2 — detail modal

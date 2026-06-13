@@ -83,6 +83,15 @@ export default function AdminChatsPage() {
         body: JSON.stringify({ active: !row.active }),
       })
       if (!res.ok) {
+        // A 409 'request_terminal' means resume was blocked because the linked
+        // request has ended (closed/rejected/referred). Show a dedicated reason
+        // instead of the generic toggle-error so the admin understands why and
+        // does not retry blindly.
+        if (res.status === 409) {
+          const body = (await res.json().catch(() => null)) as { error?: string } | null
+          setError(body?.error === 'request_terminal' ? cc.resumeTerminalError : cc.toggleError)
+          return
+        }
         setError(cc.toggleError)
         return
       }

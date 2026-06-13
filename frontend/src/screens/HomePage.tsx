@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import type { CSSProperties, ReactNode, KeyboardEvent } from 'react'
 import { useRouter } from 'next/router'
 import { ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, Star, Check, HeartHandshake } from 'lucide-react'
@@ -13,13 +13,16 @@ import type { AssetSlotKey } from '@/assets/manifest'
 import Reveal from '../components/motion/Reveal'
 import MagneticButton from '../components/motion/MagneticButton'
 
-// A partner org as rendered in the homepage marquee. Built from the real
+// A partner org as fetched for the homepage marquee. Built from the real
 // `answers` catalog (orgType=partner), the same source the /directory page uses
-// — no fabricated organizations.
+// — no fabricated organizations. The category id + region text are kept RAW
+// here; the human area label is resolved at render time (see `marqueePartners`)
+// so a category-taxonomy load does not re-trigger the fetch.
 interface MarqueePartner {
   id: string
   name: string
-  area: string
+  category: string | null
+  regionText: string
   mark: string
 }
 
@@ -58,6 +61,10 @@ export default function HomePage() {
   // none (or the fetch fails).
   const { labelFor } = useCategories()
   const [partners, setPartners] = useState<MarqueePartner[]>([])
+  // Fetch keyed on `[lang]` only — NOT on `labelFor`. `labelFor`'s identity
+  // changes when the category taxonomy resolves, which would otherwise fire a
+  // redundant second GET on every cold load (and briefly flash raw category
+  // ids). The area label is resolved at render instead (see `marqueePartners`).
   useEffect(() => {
     let alive = true
     apiJson<{ items?: Array<{ id: string; title?: BilingualValue; category?: string | null; region?: BilingualValue }> }>(
@@ -70,12 +77,12 @@ export default function HomePage() {
           .map((item) => {
             const name = pickLang(item.title, lang).trim()
             if (!name) return null
-            // Area: prefer the category label, fall back to the region text.
-            const area = item.category ? labelFor(item.category) : pickLang(item.region, lang)
             return {
               id: item.id,
               name,
-              area: area || '',
+              // Raw fields; the displayed area is resolved at render time.
+              category: item.category ?? null,
+              regionText: pickLang(item.region, lang),
               // Mark = first character of the name (no logo asset on answers).
               mark: Array.from(name)[0] ?? '·',
             }
@@ -85,7 +92,19 @@ export default function HomePage() {
       })
       .catch(() => { if (alive) setPartners([]) })
     return () => { alive = false }
-  }, [lang, labelFor])
+  }, [lang])
+
+  // Resolve the displayed area label here (not in the fetch effect): prefer the
+  // category label, fall back to the region text. Re-deriving on a `labelFor`
+  // identity change re-renders the existing data instead of re-fetching it.
+  const marqueePartners = useMemo(
+    () =>
+      partners.map((p) => ({
+        ...p,
+        area: (p.category ? labelFor(p.category) : p.regionText) || '',
+      })),
+    [partners, labelFor],
+  )
 
   // Success-stories gallery: one panel is the highlight at a time. It behaves
   // as an ARIA tablist — roving tabindex + arrow/Home/End keys (RTL-aware).
@@ -372,7 +391,7 @@ export default function HomePage() {
       </section>
 
       {/* ── PARTNERS — an auto-scrolling trail of real partner organisations ── */}
-      {partners.length > 0 && (
+      {marqueePartners.length > 0 && (
         <section style={{ background: 'var(--sky-2)', paddingBlock: 'clamp(48px, 6vw, 72px)', overflow: 'hidden' }}>
           <div className="page-container">
             <Reveal>
@@ -383,8 +402,8 @@ export default function HomePage() {
           </div>
           <div className="home-marquee" data-reduce={reduce ? 'true' : 'false'}>
             <div className="home-marquee-track">
-              {[...partners, ...partners].map((p, i) => (
-                <div key={`${p.id}-${i}`} className="home-partner" aria-hidden={i >= partners.length ? 'true' : undefined}>
+              {[...marqueePartners, ...marqueePartners].map((p, i) => (
+                <div key={`${p.id}-${i}`} className="home-partner" aria-hidden={i >= marqueePartners.length ? 'true' : undefined}>
                   <span className="home-partner-mark">{p.mark}</span>
                   <span>
                     <span className="home-partner-name">{p.name}</span>
