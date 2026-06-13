@@ -11,7 +11,10 @@ const router = Router();
 // All routes require a verified admin token
 router.use(authenticate, requireRole('admin'));
 
-const ENTITY_TYPES = ['businesses', 'organizations', 'answers'] as const;
+// Approvable collections. `organizations` was removed: nothing writes to that
+// collection — orgs live in `answers`, split by orgType (ngo / partner). The
+// z.enum below now rejects 'organizations' as an invalid entityType (400).
+const ENTITY_TYPES = ['businesses', 'answers'] as const;
 
 const actionSchema = z.object({
   entityType: z.enum(ENTITY_TYPES),

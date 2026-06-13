@@ -51,6 +51,11 @@ export default function VolunteerPoolPage() {
   const statusLabels = t.lifecycle.statusLabels as Record<string, string>
   // Bilingual category labels from the admin-managed taxonomy.
   const { labelFor } = useCategories()
+  // The pool groups uncategorized requests under a synthetic 'uncategorized'
+  // bucket. That id is not in the taxonomy, so labelFor would leak the raw
+  // English key — resolve it to a bilingual label instead.
+  const catLabel = (id: string): string =>
+    id === 'uncategorized' ? t.common.uncategorized : labelFor(id)
 
   const [data, setData] = useState<PoolResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -140,7 +145,7 @@ export default function VolunteerPoolPage() {
         {items.map((item) => (
           <article key={item.id} className="card volapp-req-card">
             <div className="volapp-req-head">
-              <h3 className="volapp-req-title">{item.title || labelFor(item.category)}</h3>
+              <h3 className="volapp-req-title">{item.title || (item.category ? catLabel(item.category) : '')}</h3>
               {item.status && (
                 <StatusBadge
                   status={item.status}
@@ -165,7 +170,7 @@ export default function VolunteerPoolPage() {
               {item.category && (
                 <span className="badge badge-blue">
                   <Tag size={13} aria-hidden="true" />
-                  {labelFor(item.category)}
+                  {catLabel(item.category)}
                 </span>
               )}
               {item.origin === 'admin' && (
@@ -288,7 +293,7 @@ export default function VolunteerPoolPage() {
               aria-pressed={activeCat === b.category}
               onClick={() => setActiveCat(b.category)}
             >
-              {labelFor(b.category)}
+              {catLabel(b.category)}
               <span className="volapp-count-num">{b.count}</span>
             </button>
           ))}

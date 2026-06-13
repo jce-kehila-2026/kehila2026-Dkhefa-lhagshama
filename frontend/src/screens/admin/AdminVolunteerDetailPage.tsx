@@ -448,7 +448,7 @@ export default function AdminVolunteerDetailPage() {
                           <td data-label={vd.colUrgency}>
                             <span className={r.urgency ? 'admin-reqlist-meta' : 'admin-reqlist-meta--empty'}>
                               {r.urgency
-                                ? (a.urgencyLabels as Record<string, string>)[r.urgency] || r.urgency
+                                ? (t.myRequests.urgencies as Record<string, string>)[r.urgency] || r.urgency
                                 : EMPTY}
                             </span>
                           </td>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import { CheckCircle, XCircle, MessageSquare, Store, Building2, Lightbulb, Layers, ClipboardCheck } from 'lucide-react'
+import { CheckCircle, XCircle, MessageSquare, Store, Lightbulb, Layers, ClipboardCheck } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
 import { apiJson, apiFetch } from '@/lib/apiClient'
@@ -10,13 +10,15 @@ import Reveal from '../../components/motion/Reveal'
 import { EmptyState, ErrorState, TableSkeleton, adminErrorMessage } from '@/components/admin/AdminUI'
 import type { Lang } from '@/types'
 
-const ENTITY_FILTERS = ['all', 'businesses', 'organizations', 'answers']
+// Orgs live in the answers collection now (split by orgType); nothing writes to
+// a separate organizations collection, so it is not an approval entity.
+const ENTITY_FILTERS = ['all', 'businesses', 'answers']
 
 // A translatable field as stored by the API: either a plain string or a
 // per-language object. Rendered through `L` so we never hand a raw object to React.
 type LocalizedField = string | { he?: string; en?: string; [key: string]: string | undefined } | undefined | null
 
-type EntityType = 'businesses' | 'organizations' | 'answers'
+type EntityType = 'businesses' | 'answers'
 
 interface ApprovalItem {
   id: string
@@ -46,7 +48,6 @@ const L = (v: LocalizedField, lang: Lang): string => {
 // Distinct badge tone per entity type so the queue is scannable at a glance.
 const ENTITY_TONE: Record<string, string> = {
   businesses: 'badge-amber',
-  organizations: 'badge-blue',
   answers: 'badge-green',
 }
 
@@ -59,10 +60,9 @@ interface EntityVisual {
 }
 
 const ENTITY_VISUAL: Record<string, EntityVisual> = {
-  businesses:    { Icon: Store,     fg: 'var(--warning)', bg: 'var(--warning-soft)' },
-  organizations: { Icon: Building2, fg: 'var(--info)',    bg: 'var(--sky-3)' },
-  answers:       { Icon: Lightbulb, fg: 'var(--success)', bg: 'var(--success-soft)' },
-  all:           { Icon: Layers,    fg: 'var(--ember)',   bg: 'var(--ember-soft)' },
+  businesses: { Icon: Store,     fg: 'var(--warning)', bg: 'var(--warning-soft)' },
+  answers:    { Icon: Lightbulb, fg: 'var(--success)', bg: 'var(--success-soft)' },
+  all:        { Icon: Layers,    fg: 'var(--ember)',   bg: 'var(--ember-soft)' },
 }
 
 /**
@@ -130,14 +130,12 @@ export default function AdminApprovalsPage() {
   const counts: Record<string, number> = {
     all: items.length,
     businesses: items.filter((i) => i.entityType === 'businesses').length,
-    organizations: items.filter((i) => i.entityType === 'organizations').length,
     answers: items.filter((i) => i.entityType === 'answers').length,
   }
   const filtered = filter === 'all' ? items : items.filter((i) => i.entityType === filter)
   const labels: Record<string, string> = {
     all: a.approvals.entityAll,
     businesses: a.approvals.entityBusinesses,
-    organizations: a.approvals.entityOrganizations,
     answers: a.approvals.entityAnswers,
   }
 

@@ -24,18 +24,24 @@ import { ErrorState, EmptyState } from '@/components/admin/AdminUI'
 
 // Editorial palette pulled from tokens.css — recharts needs literal color
 // strings (it cannot read CSS custom properties through SVG fills).
-const COLOR_INK_2 = '#2C3D52'
-const COLOR_EMBER = '#B9694E'
-const COLOR_SKY = '#BFD3E6'
-const COLOR_HAIR = 'rgba(15,30,45,0.10)'
+const COLOR_INK = '#0F1E2D' // --ink
+const COLOR_INK_2 = '#2C3D52' // --ink-2
+const COLOR_EMBER = '#B9694E' // --ember
+const COLOR_EMBER_700 = '#9C5440' // --ember-700
+const COLOR_SKY = '#BFD3E6' // --sky
+const COLOR_SKY_2 = '#DCE7F0' // --sky-2
+const COLOR_HAIR = 'rgba(15,30,45,0.10)' // --hair
 
+// One color per status — kept identical to AdminInsights so both dashboards
+// match and stay within the locked brand palette (no rainbow defaults). Falls
+// back to ink-2 for any status not in the map.
 const STATUS_COLORS: Record<string, string> = {
-  pending: '#C9923E',
-  in_progress: '#5B7FA6',
+  pending: COLOR_SKY,
+  in_progress: COLOR_INK_2,
   awaiting_review: COLOR_EMBER,
-  closed: COLOR_INK_2,
-  rejected: '#A24B3B',
-  referred: '#6E8C5A',
+  closed: COLOR_INK,
+  rejected: COLOR_EMBER_700,
+  referred: COLOR_SKY_2,
 }
 
 function makeTooltip(valueLabel: string) {

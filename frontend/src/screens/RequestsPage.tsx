@@ -17,7 +17,7 @@ interface RequestFormValues {
   consent: boolean;
 }
 
-import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles, Clock, Lock, Home, HeartPulse, HandHeart } from 'lucide-react'
+import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles, Clock, Lock, Home, HeartPulse, HeartHandshake, Globe, HandHeart } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Reveal from '../components/motion/Reveal'
 import SuggestCard from '@/components/SuggestCard'
@@ -48,6 +48,10 @@ const CAT_STYLE: Record<string, { Icon: LucideIcon; bg: string; color: string }>
   social:     { Icon: Users,         bg:'#F5EBF8', color:'#6D28D9' },
   housing:    { Icon: Home,          bg:'#EBF3FF', color:'#1A5EA0' },
   health:     { Icon: HeartPulse,    bg:'#E8F5EC', color:'#15803D' },
+  welfare:    { Icon: HeartHandshake,bg:'var(--ember-soft)', color:'var(--ember)' },
+  community:  { Icon: Users,         bg:'#F5EBF8', color:'#6D28D9' },
+  youth:      { Icon: Sparkles,      bg:'#FBF0C8', color:'#7C5F00' },
+  absorption: { Icon: Globe,         bg:'#EBF3FF', color:'#1A5EA0' },
 }
 const DEFAULT_CAT_STYLE = { Icon: HandHeart, bg: 'var(--ember-soft)', color: 'var(--ember)' }
 

@@ -882,6 +882,7 @@ const base = {
       notice:     'שימו לב',
       areYouSure: 'האם להמשיך?',
       skipToContent: 'דילוג לתוכן',
+      uncategorized: 'ללא קטגוריה',
     },
 
     // ── FOOTER ────────────────────────────────────────────────
@@ -2035,6 +2036,7 @@ const base = {
       notice:     'Heads up',
       areYouSure: 'Continue?',
       skipToContent: 'Skip to content',
+      uncategorized: 'Uncategorized',
     },
 
     footer: {

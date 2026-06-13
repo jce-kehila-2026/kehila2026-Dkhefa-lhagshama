@@ -38,6 +38,11 @@ const NGO_AREA_ICONS: Record<string, LucideIcon> = {
   legal: Scale,
   social: Users,
   housing: Home,
+  health: HeartPulse,
+  welfare: HeartHandshake,
+  community: Users,
+  youth: Sparkles,
+  absorption: Globe,
 }
 
 // Browser autofill hints for the registration form. Presentation metadata
@@ -378,9 +383,19 @@ export default function DirectoryPage() {
   }, [router.isReady, router.query, ngoCategories])
 
   const BIZ_CATS = ['all', 'food', 'services', 'health', 'education', 'beauty', 'tech']
-  // NGO areas come from the live taxonomy; ids without a dedicated icon fall
-  // back to LayoutGrid via the `|| LayoutGrid` lookup below.
-  const NGO_AREAS = ['all', ...ngoCategories.map((c) => c.id)]
+  // NGO area chips reflect REAL data, not the full taxonomy: the union of
+  // categories actually present in the loaded answers, ordered by the taxonomy,
+  // with a leading `all` chip. Before answers load (or when none match) only the
+  // `all` chip shows — no flash of dead chips for taxonomy ids that never match.
+  // Mirrors how the volunteer pool derives its byCategory chips.
+  const NGO_AREAS = useMemo(() => {
+    const present = new Set<string>()
+    for (const a of answers) {
+      if (typeof a.category === 'string' && a.category) present.add(a.category)
+    }
+    const ordered = ngoCategories.map((c) => c.id).filter((id) => present.has(id))
+    return ['all', ...ordered]
+  }, [answers, ngoCategories])
 
   // Segmented control: each tab is a self-contained pill inside a tinted track.
   const tabStyle = (active: boolean): CSSProperties => ({

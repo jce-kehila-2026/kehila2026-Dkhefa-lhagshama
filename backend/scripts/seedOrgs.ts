@@ -76,6 +76,25 @@ function categoryForServiceType(serviceType: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  Partner classification.
+//
+//  Most imported orgs are local service NGOs (orgType 'ngo'). A few are
+//  national/advocacy bodies that belong in the public partners (שותפים) tab
+//  rather than the NGO list, so the partners directory is never permanently
+//  empty. Matched by exact org name; everything else stays 'ngo'.
+// ─────────────────────────────────────────────────────────────
+const PARTNER_NAMES = new Set<string>([
+  'הפרויקט הלאומי לקהילה האתיופית (ENP)',
+  'עמותת טבקה',
+  'האגודה לזכויות האזרח',
+]);
+
+/** Partner bodies go in the שותפים tab; all other orgs are plain NGOs. */
+function orgTypeForName(name: string): 'ngo' | 'partner' {
+  return PARTNER_NAMES.has(name) ? 'partner' : 'ngo';
+}
+
+// ─────────────────────────────────────────────────────────────
 //  Deterministic doc id (slug) — so re-running upserts, never duplicates.
 //  Keeps Hebrew letters (Firestore doc ids allow them), collapses whitespace
 //  and strips characters that are illegal in a doc id ('/' and control chars).
@@ -135,7 +154,7 @@ export interface OrgAnswerDoc {
   title: Bilingual;
   body: Bilingual;
   category: string;
-  orgType: 'ngo';
+  orgType: 'ngo' | 'partner';
   region: Bilingual;
   audience: Bilingual;
   phone: string | null;
@@ -156,7 +175,7 @@ export function orgToAnswer(org: OrgSource): { id: string; doc: OrgAnswerDoc } {
       title: { he: name, en: name },
       body: { he: description, en: description },
       category: categoryForServiceType(serviceType),
-      orgType: 'ngo',
+      orgType: orgTypeForName(name),
       region: { he: region, en: region },
       // Preserve the original multi-service Hebrew string so nothing is lost.
       audience: { he: serviceType, en: serviceType },

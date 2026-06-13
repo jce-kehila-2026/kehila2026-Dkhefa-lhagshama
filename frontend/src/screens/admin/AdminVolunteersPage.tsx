@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { HeartHandshake, Clock, CheckCircle2, Check, X } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useCategories } from '@/hooks/useCategories'
 import { apiJson, apiFetch } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
 import Reveal from '../../components/motion/Reveal'
@@ -49,6 +50,8 @@ function initials(name: string | undefined | null): string {
 export default function AdminVolunteersPage() {
   const { t, lang } = useLanguage()
   const a = t.admin
+  // Bilingual category labels from the admin-managed taxonomy (permission badge).
+  const { labelFor } = useCategories()
   const [tab, setTab] = useState<VolunteerTab>('pending') // 'pending' | 'active'
   const [data, setData] = useState<{ pending: VolunteerRow[]; active: VolunteerRow[]; categoryRequests: CatReqRow[] }>({ pending: [], active: [], categoryRequests: [] })
   const [loading, setLoading] = useState(true)
@@ -150,7 +153,7 @@ export default function AdminVolunteersPage() {
                 return (
                   <div key={key} className="admin-vol-catreq-item">
                     <span className="admin-vol-catreq-name">{who}</span>
-                    <span className="badge badge-ember">{c.category}</span>
+                    <span className="badge badge-ember">{labelFor(c.category)}</span>
                     {c.note && (
                       <span className="admin-vol-catreq-note">“{c.note}”</span>
                     )}
@@ -159,7 +162,7 @@ export default function AdminVolunteersPage() {
                         type="button"
                         className="btn btn-primary btn-sm admin-vol-action"
                         disabled={busyCat === key}
-                        aria-label={`${a.vol.approve}: ${who}, ${c.category}`}
+                        aria-label={`${a.vol.approve}: ${who}, ${labelFor(c.category)}`}
                         onClick={() => actCategory(c.uid, c.category, 'approve')}
                       >
                         <Check size={15} aria-hidden="true" />
@@ -169,7 +172,7 @@ export default function AdminVolunteersPage() {
                         type="button"
                         className="btn btn-ghost btn-sm admin-vol-action"
                         disabled={busyCat === key}
-                        aria-label={`${a.vol.reject}: ${who}, ${c.category}`}
+                        aria-label={`${a.vol.reject}: ${who}, ${labelFor(c.category)}`}
                         onClick={() => actCategory(c.uid, c.category, 'reject')}
                       >
                         <X size={15} aria-hidden="true" />
