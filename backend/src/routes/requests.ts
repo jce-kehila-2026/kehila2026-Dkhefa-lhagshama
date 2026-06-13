@@ -536,7 +536,8 @@ router.get(
       const data = snap.data() as {
         handler?: string | null;
         assignedVolunteerId?: string | null;
-        attachments?: Array<{ name?: string; path?: string }>;
+        requestType?: string;
+        attachments?: Array<{ name?: string; path?: string; volunteerVisible?: boolean }>;
       };
 
       const isAdmin = req.user.role === 'admin';
@@ -549,6 +550,14 @@ router.get(
 
       const match = (data.attachments ?? []).find((a) => a?.name === name);
       if (!match?.path) {
+        res.status(404).json({ error: 'attachment_not_found' });
+        return;
+      }
+      // Mirror the volunteer-card projection (volunteerApp.ts projectAttachments):
+      // on task requests, an attachment not flagged volunteerVisible is staff-only.
+      // A non-admin caller (the assigned volunteer) must not mint a URL for it, so
+      // the download gate and the list gate can never diverge.
+      if (!isAdmin && data.requestType === 'task' && match.volunteerVisible !== true) {
         res.status(404).json({ error: 'attachment_not_found' });
         return;
       }

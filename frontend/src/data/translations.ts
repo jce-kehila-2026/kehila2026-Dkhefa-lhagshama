@@ -698,6 +698,11 @@ const base = {
         markDoneSuccess: 'הבקשה סומנה כבוצעה והועברה לבדיקה.',
         markDoneError:   'סימון הבקשה כבוצעה נכשל. נסה/י שוב.',
 
+        start:           'התחלת טיפול',
+        startConfirm:    'להתחיל בטיפול בבקשה ולהעבירה למצב "בטיפול"?',
+        startSuccess:    'הבקשה הועברה לטיפול.',
+        startError:      'העברת הבקשה לטיפול נכשלה. נסה/י שוב.',
+
         close:           'סגירת בקשה',
         closeConfirm:    'לסגור את הבקשה? הפונה יוכל לדרג את הטיפול.',
         closeSuccess:    'הבקשה נסגרה.',
@@ -1872,6 +1877,11 @@ const base = {
         markDoneConfirm: 'Mark this request as done and send it for admin review?',
         markDoneSuccess: 'Request marked as done and sent for review.',
         markDoneError:   'Could not mark the request as done. Please try again.',
+
+        start:           'Start handling',
+        startConfirm:    'Start handling this request and move it to in-progress?',
+        startSuccess:    'Request moved to in-progress.',
+        startError:      'Could not start handling the request. Please try again.',
 
         close:           'Close request',
         closeConfirm:    'Close this request? The beneficiary will be able to rate the support.',

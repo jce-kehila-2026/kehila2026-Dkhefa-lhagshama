@@ -45,9 +45,12 @@ interface ChatListItem {
   active: boolean;
 }
 
-// req 13b — a chat counts as "past" when its linked request is closed/rejected
-// or archived; everything else (incl. unknown status) stays "active".
-const PAST_STATUSES = new Set(["closed", "rejected"]);
+// req 13b — a chat counts as "past" when its linked request is in a terminal
+// state (closed/rejected/referred) or archived; everything else (incl. unknown
+// status) stays "active". These mirror the backend chat end-states
+// (adminRequests CHAT_END_STATES) so the status backstop covers all three even
+// if the best-effort chat.active flip never landed.
+const PAST_STATUSES = new Set(["closed", "rejected", "referred"]);
 
 export default function ChatListPage() {
   const { t, lang } = useLanguage();

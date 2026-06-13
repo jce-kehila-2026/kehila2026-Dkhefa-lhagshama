@@ -176,6 +176,9 @@ changed type or meaning; absent values read as `null` everywhere.
 |---|---|---|---|
 | `answers` | `phone` | string \| null | Free-form contact phone (covers Israeli formats and short codes like `3362*`). Rendered as a `tel:` action on the public directory org card. **Absent = `null`.** Backend create/edit accept it as `z.string().trim().max(40).optional()` (empty string clears it); the seed populates it from the xlsx, skipping placeholders that contain `XXXX`. |
 | `answers` | `email` | string \| null | Contact email. Rendered as a `mailto:` action on the org card. **Absent = `null`.** Backend create/edit validate it (`z.string().trim().email().optional()`, empty string clears it); the seed populates it only when the source value looks valid. |
+| `requests` | `referral.phone` | string \| null | Partner contact phone **snapshotted** from the answer at referral time (`POST /api/admin/requests/:id/refer`). Stored on the embedded `referral` object (not looked up live) so it survives later edits to the answer doc. Projected onto the beneficiary-visible referral panel by `GET /api/requests/mine` and `GET /api/requests/:id`. **Absent = `null`.** |
+| `requests` | `referral.email` | string \| null | Partner contact email, snapshotted from the answer's `email` at referral time. Same projection/lifetime as `referral.phone`. **Absent = `null`.** |
+| `requests` | `referral.website` | string \| null | Partner website, snapshotted from the answer's `sourceUrl` at referral time (note the field rename answer.`sourceUrl` → referral.`website`). Same projection/lifetime as `referral.phone`. **Absent = `null`.** |
 
 ### New script — `backend/scripts/seedOrgs.ts`
 
@@ -206,6 +209,10 @@ Apply these in app.diagrams.net, then export PNG/SVG and update the wiki.
 
 - [ ] **`answers` entity** — add `+ phone: string | null` and `+ email: string | null`,
   matching the existing `+ name: type` style.
+- [ ] **`requests` entity** — update the embedded `referral` object to add the
+  snapshotted contact fields: `+ referral.phone: string | null`,
+  `+ referral.email: string | null`, `+ referral.website: string | null`
+  (snapshotted from the answer's phone/email/sourceUrl at referral time).
 - [ ] **Re-export** — `File ▸ Export as` PNG and SVG, replace the images on the wiki
   Architecture & Design page.
 

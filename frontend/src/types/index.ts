@@ -379,26 +379,6 @@ export interface Story {
   image?: string;
 }
 
-/** An FAQ entry. */
-export interface FAQ {
-  id: number | string;
-  question: string;
-  questionEn?: string;
-  answer: string;
-  answerEn?: string;
-  category?: string;
-}
-
-/** A team / staff member. */
-export interface TeamMember {
-  id: number | string;
-  name: string;
-  nameEn?: string;
-  role?: string;
-  roleEn?: string;
-  initials?: string;
-}
-
 /** A single aggregate metric / KPI used by stat cards. */
 export interface Stat {
   label?: string;

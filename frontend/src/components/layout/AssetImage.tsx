@@ -8,7 +8,7 @@
  * pulled bilingually from the manifest.
  *
  * Usage:
- *   <AssetImage slot="hero" />
+ *   <AssetImage slot="heroBackground" />
  *   <AssetImage slot="authAside" rounded="50%" />
  */
 import type { CSSProperties } from 'react'

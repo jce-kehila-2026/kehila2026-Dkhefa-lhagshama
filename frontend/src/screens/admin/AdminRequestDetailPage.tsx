@@ -16,6 +16,7 @@ import {
   StickyNote,
   CheckCircle2,
   Handshake,
+  PlayCircle,
   RotateCcw,
   XCircle,
   Undo2,
@@ -244,7 +245,7 @@ const EYEBROW: CSSProperties = {
 // A pending lifecycle transition awaiting confirmation. `kind` selects the
 // confirm copy + the endpoint to call; `to` is the target status (omitted for
 // archive, which hits its own endpoint).
-type TransitionKind = 'close' | 'reopen' | 'reject' | 'sendBack' | 'archive'
+type TransitionKind = 'start' | 'close' | 'reopen' | 'reject' | 'sendBack' | 'archive'
 interface PendingTransition {
   kind: TransitionKind
   to?: RequestStatus
@@ -369,6 +370,7 @@ export default function AdminRequestDetailPage() {
     TransitionKind,
     { confirm: string; success: string; error: string; variant: 'default' | 'danger' }
   > = {
+    start:    { confirm: lc.actions.startConfirm,    success: lc.actions.startSuccess,    error: lc.actions.startError,    variant: 'default' },
     close:    { confirm: lc.actions.closeConfirm,    success: lc.actions.closeSuccess,    error: lc.actions.closeError,    variant: 'default' },
     reopen:   { confirm: lc.actions.reopenConfirm,   success: lc.actions.reopenSuccess,   error: lc.actions.reopenError,   variant: 'default' },
     reject:   { confirm: lc.actions.rejectConfirm,   success: lc.actions.rejectSuccess,   error: lc.actions.rejectError,   variant: 'danger'  },
@@ -500,6 +502,12 @@ export default function AdminRequestDetailPage() {
       pt: PendingTransition
       danger?: boolean
     }[] = []
+    // Start handling moves a pending request to in_progress so the rest of the
+    // lifecycle (volunteer Mark Done, chat links, mutual-consent close) becomes
+    // reachable — assigning a volunteer alone leaves the request in pending.
+    if (current === 'pending' && allowed.includes('in_progress')) {
+      controls.push({ key: 'start', label: lc.actions.start, Icon: PlayCircle, pt: { kind: 'start', to: 'in_progress' } })
+    }
     // Close is offered from awaiting_review AND in_progress (admin one-step
     // close, e.g. to resolve a one-sided consent-close handshake — req 25).
     if ((current === 'awaiting_review' || current === 'in_progress') && allowed.includes('closed')) {

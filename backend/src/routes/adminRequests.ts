@@ -505,10 +505,18 @@ router.post('/:id/refer', async (req: Request, res: Response): Promise<void> => 
     const answer = answerSnap.data() as {
       title?: { he?: string; en?: string } | string;
       sourceName?: string;
+      status?: string;
       phone?: string;
       email?: string;
       sourceUrl?: string;
     };
+    // Only approved partners may be snapshotted onto a referral — mirrors the
+    // public directory's approved-only contract. Guards against referring a
+    // beneficiary to a pending/rejected/archived org via the raw answerId.
+    if (answer.status !== 'approved') {
+      res.status(409).json({ error: 'partner_not_approved' });
+      return;
+    }
     // `title` is bilingual { he, en } on answers; fall back across shapes.
     if (typeof answer.title === 'string') {
       partnerName = answer.title;
