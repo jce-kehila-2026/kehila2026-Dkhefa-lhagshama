@@ -180,7 +180,10 @@ export function orgToAnswer(org: OrgSource): { id: string; doc: OrgAnswerDoc } {
       // Preserve the original multi-service Hebrew string so nothing is lost.
       audience: { he: serviceType, en: serviceType },
       phone: cleanPhone(org.phone),
-      email: cleanEmail(org.email),
+      // Two source rows (Hineni, Tebeka) carry their email in the `website`
+      // column with a placeholder phone, so fall back to a website that is
+      // actually an email address — otherwise these orgs lose all contact info.
+      email: cleanEmail(org.email) ?? cleanEmail(org.website),
       sourceUrl: cleanWebsite(org.website),
     },
   };

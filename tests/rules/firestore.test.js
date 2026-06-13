@@ -417,25 +417,23 @@ describe('/businesses', () => {
   });
 });
 
-// ── /organizations — UC-05 ──────────────────────────────────────────────────
-describe('/organizations', () => {
+// ── /organizations — removed (dead collection) ──────────────────────────────
+// Partner organizations live in `answers` (split by orgType); the dedicated
+// /organizations rules block was removed, so the collection now falls to the
+// catch-all deny: no client read or write, even for admins.
+describe('/organizations (removed, fully denied)', () => {
   beforeEach(() =>
     seed(async (db) => {
       await setDoc(doc(db, 'organizations/approved1'), { status: 'approved' });
-      await setDoc(doc(db, 'organizations/pending1'), { status: 'pending' });
     }),
   );
 
-  test('public reads approved organization', async () => {
-    await assertSucceeds(getDoc(doc(anon(), 'organizations/approved1')));
+  test('anon read is denied (catch-all)', async () => {
+    await assertFails(getDoc(doc(anon(), 'organizations/approved1')));
   });
 
-  test('public cannot read pending organization', async () => {
-    await assertFails(getDoc(doc(anon(), 'organizations/pending1')));
-  });
-
-  test('admin reads pending organization', async () => {
-    await assertSucceeds(getDoc(doc(asAdmin(), 'organizations/pending1')));
+  test('admin read is denied (catch-all)', async () => {
+    await assertFails(getDoc(doc(asAdmin(), 'organizations/approved1')));
   });
 
   test('client write is denied', async () => {

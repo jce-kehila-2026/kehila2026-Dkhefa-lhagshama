@@ -140,12 +140,9 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
-    // ── /organizations — UC-05 partner organizations ─────────────────────
-    // Public reads approved; admin-only sees pending. Writes are server-only.
-    match /organizations/{orgId} {
-      allow read: if resource.data.status == 'approved' || isAdmin();
-      allow write: if false;
-    }
+    // (Removed the dead /organizations rules block: partner organizations live
+    //  in the `answers` collection split by orgType — nothing reads or writes a
+    //  separate `organizations` collection. Takes effect on the next rules deploy.)
 
     // ── /categories — admin-managed request taxonomy ──────────────────────
     // Public read: pickers and label resolution need the bilingual
