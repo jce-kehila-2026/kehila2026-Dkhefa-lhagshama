@@ -37,7 +37,18 @@ router.get('/pending', async (req: Request, res: Response): Promise<void> => {
               // approvals UI doesn't use it, and it's an internal uid.
               const data = doc.data();
               delete data.ownerId;
-              return { id: doc.id, entityType, ...data };
+              // Convert Firestore Timestamps to ISO strings so `createdAt`
+              // (and `updatedAt`) match the contract every other answers/
+              // businesses/requests list endpoint emits — otherwise this
+              // payload carries `{_seconds,_nanoseconds}` objects, and any
+              // consumer doing `new Date(item.createdAt)` gets Invalid Date.
+              return {
+                id: doc.id,
+                entityType,
+                ...data,
+                createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
+                updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? null,
+              };
             })
           )
       )
@@ -46,12 +57,14 @@ router.get('/pending', async (req: Request, res: Response): Promise<void> => {
     // Newest-first by `createdAt` — the field both pending collections
     // (businesses, answers) actually write at creation (serverTimestamp). The
     // previous key `submittedAt` was never written, so every item scored 0 and
-    // the queue fell back to Firestore's arbitrary insertion order.
+    // the queue fell back to Firestore's arbitrary insertion order. createdAt is
+    // now an ISO string (converted in the mapper above), so sort lexically — ISO
+    // 8601 strings sort chronologically — with null/missing values sinking last.
     const items = (snapshots.flat() as Array<Record<string, unknown>>).sort(
       (a, b) => {
-        const aTime = (a.createdAt as { _seconds?: number })?._seconds ?? 0;
-        const bTime = (b.createdAt as { _seconds?: number })?._seconds ?? 0;
-        return bTime - aTime;
+        const aTime = typeof a.createdAt === 'string' ? a.createdAt : '';
+        const bTime = typeof b.createdAt === 'string' ? b.createdAt : '';
+        return bTime.localeCompare(aTime);
       }
     );
 

@@ -27,6 +27,7 @@ import { sortByPriority, type SortableRequest } from '@/lib/requestSort';
 import { applyCloseConsent } from '@/lib/closeConsent';
 import { volunteerDisplayName } from '@/lib/displayName';
 import { notifyBeneficiaryOfRequest } from '@/lib/notify';
+import { removeVolunteerFromRequestChat } from '@/lib/chatOnAssign';
 
 const router = Router();
 
@@ -512,6 +513,15 @@ router.post('/requests/:id/drop', async (req: Request, res: Response): Promise<v
     console.error('[volunteer] POST /requests/:id/drop:', err);
     res.status(500).json({ error: 'internal_error' });
     return;
+  }
+
+  // Drop the volunteer from the request chat so they lose read/write/attachment
+  // access to the beneficiary's conversation once they leave the case (req 13).
+  // Best-effort: never let a chat-cleanup failure fail the drop response.
+  try {
+    await removeVolunteerFromRequestChat(requestId, uid);
+  } catch (err) {
+    console.error('[volunteer] POST /requests/:id/drop chat cleanup:', err);
   }
 
   // visibility 'all' so the beneficiary sees their request returned to the queue.

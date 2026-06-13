@@ -388,8 +388,25 @@
   margin: 6px 0 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   font-size: 14px;
   color: var(--ink);
   font-weight: 500;
+}
+
+/* Tappable contact channels (tel:/mailto:/external) on the referral panel,
+   mirroring the directory modal's Call/Email/Visit actions. */
+.referral-panel-contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ember-700);
+  text-decoration: none;
+  border-block-end: 1px solid transparent;
+  transition: border-color var(--dur-2) var(--ease-out);
+}
+
+.referral-panel-contact-link:hover,
+.referral-panel-contact-link:focus-visible {
+  border-block-end-color: currentColor;
 }

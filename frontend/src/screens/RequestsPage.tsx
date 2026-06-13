@@ -726,6 +726,7 @@ export default function RequestsPage() {
                   openLabel={t.myRequests.suggest.open}
                   callLabel={t.directory.modal.call}
                   emailLabel={t.directory.modal.email}
+                  directoryLabel={t.myRequests.suggest.directory}
                   dismissLabel={t.myRequests.suggest.dismiss}
                   onDismiss={() => setOrgSuggestionsDismissed(true)}
                 />

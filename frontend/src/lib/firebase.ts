@@ -9,7 +9,6 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -23,4 +22,7 @@ const config = {
 export const firebaseApp: FirebaseApp = getApps().length === 0 ? initializeApp(config) : getApp();
 export const firebaseAuth: Auth = getAuth(firebaseApp);
 export const firebaseDb: Firestore = getFirestore(firebaseApp);
-export const firebaseStorage: FirebaseStorage = getStorage(firebaseApp);
+// Note: the client Storage SDK is intentionally NOT instantiated here. All
+// uploads go through the backend (Express + Admin SDK) — request attachments via
+// /api/uploads and avatars via /api/profile/avatar — so there is no client-side
+// Storage write path. Re-add getStorage() here only if a feature needs it.

@@ -253,6 +253,19 @@ router.post('/:id/assign', async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    // Verify the target is a real, active volunteer before granting it
+    // handler-level access. Downstream authorization keys off
+    // handler/assignedVolunteerId (the staff projection serves internal notes +
+    // national ID, and the chat participant guard lets that uid read/post the
+    // beneficiary's chat), so a fat-fingered or pasted-wrong uid (a
+    // beneficiary's, or a deactivated volunteer's) would otherwise silently
+    // expose one request's PII. Mirror the terminal-status guard's 409 shape.
+    const volSnap = await db().collection('volunteers').doc(volunteerId).get();
+    if (!volSnap.exists || volSnap.data()?.active !== true) {
+      res.status(409).json({ error: 'volunteer_inactive' });
+      return;
+    }
+
     const prevVolunteerId = data.assignedVolunteerId ?? null;
 
     // Denormalize the display name so list views never need an N+1 lookup
@@ -298,6 +311,9 @@ router.post('/:id/assign', async (req: Request, res: Response): Promise<void> =>
         requestId,
         beneficiaryId,
         volunteerId,
+        // Re-assign: drop the former volunteer from the chat so they lose
+        // read/write/attachment access to a case they no longer serve (req 13).
+        prevVolunteerId,
       });
     }
 

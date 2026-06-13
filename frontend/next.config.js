@@ -8,7 +8,6 @@ const nextConfig = {
   // via the machine's network IP doesn't trigger cross-origin blocks / refresh
   // loops. Covers private IPv4 ranges used on home/office networks.
   allowedDevOrigins: [
-    'strengths-experiences-kingston-purple.trycloudflare.com',
     '192.168.0.0/16',
     '10.0.0.0/8',
     '172.16.0.0/12',

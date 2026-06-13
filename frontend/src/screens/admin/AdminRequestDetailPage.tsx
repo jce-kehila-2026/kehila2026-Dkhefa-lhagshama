@@ -128,10 +128,18 @@ function normLang(v: unknown): string {
   return String(v ?? '').trim().toLowerCase()
 }
 
-function eventLabel(ev: RequestEvent, a: AdminCopy): string {
+function eventLabel(ev: RequestEvent, a: AdminCopy, volunteers: ActiveVolunteer[]): string {
   switch (ev.type) {
-    case 'assigned':
-      return `${a.reqDetail.assign}: ${ev.details && ev.details.volunteerId ? ev.details.volunteerId : ''}`
+    case 'assigned': {
+      // The 'assigned' event stores the raw volunteer uid; resolve it to a
+      // display name from the loaded active-volunteers list so the timeline
+      // shows a name (like the list page and the assigned label do), not a
+      // 28-char database id. Fall back to the uid if the volunteer is no longer
+      // in the active list (e.g. later deactivated).
+      const uid = ev.details && typeof ev.details.volunteerId === 'string' ? ev.details.volunteerId : ''
+      const name = volunteers.find((v) => v.uid === uid)?.fullName || uid
+      return `${a.reqDetail.assign}: ${name}`
+    }
     case 'status_changed':
       return `${a.reqDetail.changeStatus}: ${
         (ev.details && ev.details.to && a.statusLabels[ev.details.to]) || (ev.details && ev.details.to) || ''
@@ -944,7 +952,7 @@ export default function AdminRequestDetailPage() {
                           }}
                         >
                           <span style={{ fontWeight: 600, color: 'var(--ink)', lineHeight: 1.45 }}>
-                            {eventLabel(ev, a)}
+                            {eventLabel(ev, a, volunteers)}
                           </span>
                           <time
                             style={{

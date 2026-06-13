@@ -14,7 +14,7 @@ export function sanitizeFilename(name: string): string {
   // Split off extension (last dot-segment) before cleaning.
   const lastDot = name.lastIndexOf('.');
   const base = lastDot > 0 ? name.slice(0, lastDot) : name;
-  const ext  = lastDot > 0 ? name.slice(lastDot)    : '';
+  const rawExt = lastDot > 0 ? name.slice(lastDot + 1) : '';
 
   // Transliterate / strip: keep ASCII alphanumeric + dash + underscore.
   // Non-ASCII characters (Hebrew, accented Latin, etc.) are replaced with '_'.
@@ -22,6 +22,12 @@ export function sanitizeFilename(name: string): string {
     .replace(/[^a-zA-Z0-9._-]+/g, '_')   // keep safe chars
     .replace(/^_+|_+$/g, '')              // trim leading/trailing underscores
     .slice(0, 60) || 'file';             // cap length; fallback if blank
+
+  // Sanitize the extension too (kept in sync with the server): strip to
+  // alphanumerics, lowercase, and cap length so a crafted name like "a.b/c"
+  // can't smuggle a "/" or other path separator into the extension segment.
+  const cleanExt = rawExt.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase().slice(0, 10);
+  const ext = cleanExt ? `.${cleanExt}` : '';
 
   // 4-byte hex prefix for collision avoidance.
   const prefix = Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0');

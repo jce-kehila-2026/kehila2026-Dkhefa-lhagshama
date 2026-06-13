@@ -85,6 +85,17 @@ export default function VolunteerPoolPage() {
     load()
   }, [load])
 
+  // If the selected category is no longer in the freshly-loaded pool (e.g. its
+  // last request was assigned elsewhere), its chip disappears but activeCat
+  // still points to it — which would strand the volunteer on an empty list for a
+  // filter that no longer exists. Reset to "all" so they're never stranded.
+  useEffect(() => {
+    if (!data || !activeCat) return
+    if (!data.byCategory.some((b) => b.category === activeCat)) {
+      setActiveCat(null)
+    }
+  }, [data, activeCat])
+
   const items = useMemo(() => {
     const all = data?.items ?? []
     return activeCat ? all.filter((i) => i.category === activeCat) : all

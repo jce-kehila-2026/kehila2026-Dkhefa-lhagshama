@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
 import { authenticate } from '@/middleware/auth';
+import { requireNotDisabled } from '@/middleware/requireNotDisabled';
 import { writeAuditLog } from '@/lib/audit';
 
 const router = Router();
@@ -78,8 +79,11 @@ router.get('/', async (_req: Request, res: Response) => {
 // Server-only write (Firestore rules forbid client `create` on /businesses).
 // authenticate-gated: the signed-in user becomes the business `ownerId`, which
 // the firestore.rules `update` rule later keys off so the owner can edit their
-// own pending submission.
-router.post('/', authenticate, async (req: Request, res: Response) => {
+// own pending submission. requireNotDisabled is applied per-route (the router
+// is mounted without the mount-wide authedMutation guard because its GET is a
+// public read) so a soft-disabled account can't keep flooding the approval
+// queue — matching every other authenticated mutation path.
+router.post('/', authenticate, requireNotDisabled, async (req: Request, res: Response) => {
   const ownerId = req.user?.uid;
   if (!ownerId) {
     res.status(401).json({ error: 'not_authenticated' });

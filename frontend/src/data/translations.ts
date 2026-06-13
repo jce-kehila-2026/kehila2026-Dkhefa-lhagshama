@@ -1070,6 +1070,7 @@ const base = {
         heading:  'מומלץ עבורך',
         subtitle: 'בהתבסס על הבקשה שלך, ייתכן שגם המשאבים הקהילתיים האלה יעזרו.',
         open:     'פתח/י',
+        directory: 'במדריך הקהילה',
         dismiss:  'סגור/י',
       },
       // Note 3 — compact inline header (eyebrow + title + lede)
@@ -2235,6 +2236,7 @@ const base = {
         heading:  'Suggested for you',
         subtitle: 'Based on your request, these community resources may also help.',
         open:     'Open',
+        directory: 'In the directory',
         dismiss:  'Dismiss',
       },
       // Note 3 — compact inline header (eyebrow + title + lede)

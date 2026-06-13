@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { CheckCircle, ChevronDown, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, MessageCircle, UserCheck } from "lucide-react";
+import { CheckCircle, ChevronDown, AlertCircle, FileText, Paperclip, Calendar, Tag, Plus, MessageCircle, UserCheck, Phone, Mail, ExternalLink } from "lucide-react";
 
 import RatingForm from "@/components/forms/RatingForm";
 import SuggestCard from "@/components/SuggestCard";
@@ -11,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useCategories } from "../hooks/useCategories";
 import { apiJson } from "../lib/apiClient";
+import { safeHref } from "../lib/safeUrl";
 import { formatDate, truncate } from "../utils/helpers";
 import type { CSSProperties, ReactNode } from "react";
 import type { CaughtError, TNode, Referral, Suggestion } from "@/types";
@@ -194,11 +195,16 @@ function RequestTimeline({ requestId, t }: { requestId: string; t: Translations 
 function ReferralPanel({ referral, t }: { referral: Referral; t: Translations }) {
   const rf = t.lifecycle.referral;
   const partner = referral.partnerName || "";
-  const contact = [
-    referral.phone,
-    referral.website,
-    referral.email,
-  ].filter(Boolean) as string[];
+  // Render each contact channel as an actionable link (tel:/mailto:/external),
+  // mirroring SuggestCard and the directory modal, so the beneficiary can tap to
+  // call/email/open the partner directly. The website is gated through safeHref
+  // (defense-in-depth over the server's http(s) validation); any value that
+  // fails the guard falls back to inert plain text.
+  const phone = referral.phone ? String(referral.phone) : "";
+  const email = referral.email ? String(referral.email) : "";
+  const website = referral.website ? safeHref(referral.website) : undefined;
+  const websiteRaw = referral.website ? String(referral.website) : "";
+  const hasContact = Boolean(phone || email || website || websiteRaw);
 
   return (
     <div className="referral-panel" role="group" aria-label={rf.timelineTitle(partner)}>
@@ -211,13 +217,38 @@ function ReferralPanel({ referral, t }: { referral: Referral; t: Translations })
       )}
       <p className="referral-panel-line">{rf.contactLine}</p>
       {referral.note && <p className="referral-panel-note">{referral.note}</p>}
-      {contact.length > 0 && (
+      {hasContact && (
         <div className="referral-panel-contact">
           <div style={labelStyle}>{rf.contactLabel}</div>
           <ul className="referral-panel-contact-list">
-            {contact.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
+            {phone && (
+              <li>
+                <a href={`tel:${phone}`} className="referral-panel-contact-link">
+                  <Phone size={14} aria-hidden="true" /> {phone}
+                </a>
+              </li>
+            )}
+            {email && (
+              <li>
+                <a href={`mailto:${email}`} className="referral-panel-contact-link">
+                  <Mail size={14} aria-hidden="true" /> {email}
+                </a>
+              </li>
+            )}
+            {website && (
+              <li>
+                <a
+                  href={website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="referral-panel-contact-link"
+                >
+                  <ExternalLink size={14} aria-hidden="true" /> {websiteRaw}
+                </a>
+              </li>
+            )}
+            {/* Plain-text fallback for a website value that failed the http(s) guard. */}
+            {!website && websiteRaw && <li>{websiteRaw}</li>}
           </ul>
         </div>
       )}
@@ -758,6 +789,7 @@ export default function MyRequestsPage() {
               openLabel={t.myRequests.suggest.open}
               callLabel={String(t.directory.modal["call"])}
               emailLabel={String(t.directory.modal["email"])}
+              directoryLabel={String(t.myRequests.suggest.directory)}
               dismissLabel={t.myRequests.suggest.dismiss}
               onDismiss={() => setSuggestDismissed(true)}
             />

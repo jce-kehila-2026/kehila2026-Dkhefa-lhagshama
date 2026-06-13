@@ -679,18 +679,52 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
         // The owner sees their own request but none of the internal staff
         // working data: free-text staff notes, volunteer hand-off drop reports
         // (written "for staff eyes"), the claims roster (other volunteers'
-        // identities + claim notes), the close-consent handshake internals, and
-        // staff routing/identity fields. These were spread in via `...data`, so
-        // strip them explicitly to keep them off the beneficiary surface.
+        // identities + claim notes), and staff routing/identity fields. These
+        // were spread in via `...data`, so strip them explicitly to keep them
+        // off the beneficiary surface.
         delete projected.notes;
         delete projected.dropReports;
         delete projected.claims;
-        delete projected.closeRequest;
         delete projected.handler;
         delete projected.assignedVolunteerId;
         delete projected.assignedVolunteerName;
         delete projected.submittedBy;
         delete projected.submittedByRole;
+        // The close-consent handshake (req 25) MUST stay visible to the owner:
+        // the beneficiary drives the approve/decline of a volunteer-proposed
+        // close from ChatWindowPage, which reads `closeRequest` off this very
+        // endpoint. Don't strip it — but replace the full doc with a
+        // beneficiary-safe subset so no future staff-only fields leak through
+        // it. The kept fields are exactly what the UI needs (handshake state +
+        // proposer attribution); `proposedBy` is always a chat participant the
+        // beneficiary already sees, so it carries no new identity.
+        const cr = projected.closeRequest as Record<string, unknown> | null | undefined;
+        projected.closeRequest = cr
+          ? {
+              proposedBy: cr.proposedBy ?? null,
+              proposedRole: cr.proposedRole ?? null,
+              proposedAt: cr.proposedAt ?? null,
+              volunteerApproved: cr.volunteerApproved === true,
+              beneficiaryApproved: cr.beneficiaryApproved === true,
+            }
+          : null;
+        // Internal referral routing fields (the admin's uid + internal answer
+        // doc id) are not part of the owner's view — mirror the clean referral
+        // projection used by GET /api/requests/mine (Note 6 below).
+        const rf = projected.referral as Record<string, unknown> | null | undefined;
+        if (rf) {
+          projected.referral = {
+            partnerName: rf.partnerName ?? '',
+            phone: rf.phone ?? null,
+            email: rf.email ?? null,
+            website: rf.website ?? null,
+            note: rf.note ?? '',
+            referredAt:
+              (rf.referredAt as { toDate?: () => Date } | undefined)?.toDate?.()?.toISOString?.() ??
+              rf.referredAt ??
+              null,
+          };
+        }
       } else {
         delete projected.idNumber;
         delete projected.idNote;
