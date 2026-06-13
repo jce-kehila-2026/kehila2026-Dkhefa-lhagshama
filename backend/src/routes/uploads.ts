@@ -44,23 +44,29 @@ router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', lim
   // could inject attachments into the victim's request and burn their quota.
   // Mirror the read-side gate in requests.ts: owner, assigned handler/volunteer,
   // or admin only. Storage rules deliberately delegate write-auth to Express.
+  // UC-01 uploads happen in step 3 — BEFORE the request doc is created at the
+  // step-4 submit. The client generates `requestId` (a v4 UUID) up front and
+  // uses it as the storage path prefix, then POST /api/requests creates the doc
+  // with that same id and beneficiaryId = the uploader. So a *missing* doc means
+  // "a new request this authenticated user is assembling": allow it — the id is
+  // an unguessable v4 UUID, so there is no existing request to inject into. Once
+  // the doc EXISTS, enforce the same owner/handler/volunteer/admin gate as the
+  // read side (F1) so nobody can inject attachments into someone else's request.
   const requestSnap = await db().collection('requests').doc(requestId).get();
-  if (!requestSnap.exists) {
-    res.status(404).json({ error: 'request_not_found' });
-    return;
-  }
-  const reqData = requestSnap.data() as {
-    beneficiaryId?: string;
-    handler?: string | null;
-    assignedVolunteerId?: string | null;
-  };
-  const isOwner             = reqData.beneficiaryId === req.user.uid;
-  const isHandler           = reqData.handler === req.user.uid;
-  const isAssignedVolunteer = reqData.assignedVolunteerId === req.user.uid;
-  const isAdmin             = req.user.role === 'admin';
-  if (!isOwner && !isHandler && !isAssignedVolunteer && !isAdmin) {
-    res.status(403).json({ error: 'forbidden' });
-    return;
+  if (requestSnap.exists) {
+    const reqData = requestSnap.data() as {
+      beneficiaryId?: string;
+      handler?: string | null;
+      assignedVolunteerId?: string | null;
+    };
+    const isOwner             = reqData.beneficiaryId === req.user.uid;
+    const isHandler           = reqData.handler === req.user.uid;
+    const isAssignedVolunteer = reqData.assignedVolunteerId === req.user.uid;
+    const isAdmin             = req.user.role === 'admin';
+    if (!isOwner && !isHandler && !isAssignedVolunteer && !isAdmin) {
+      res.status(403).json({ error: 'forbidden' });
+      return;
+    }
   }
 
   const filenameParam = typeof req.query.filename === 'string' ? req.query.filename : 'upload.bin';
