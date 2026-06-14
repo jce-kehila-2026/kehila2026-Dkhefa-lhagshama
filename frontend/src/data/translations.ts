@@ -552,7 +552,7 @@ const base = {
         // WS-6 — ranked volunteer matching surface
         matching: {
           heading:        'מתנדבים מומלצים',
-          subtitle:       'מדורגים לפי התאמה לבקשה — שקוף, מבוסס כללים.',
+          subtitle:       'מדורגים לפי התאמה לבקשה: שקוף, מבוסס כללים.',
           score:          'ציון התאמה',
           why:            'למה מתאים',
           showAll:        'הצגת כל המתנדבים',
@@ -1823,7 +1823,7 @@ const base = {
         // WS-6 — ranked volunteer matching surface
         matching: {
           heading:        'Recommended volunteers',
-          subtitle:       'Ranked by fit for this request — transparent, rule-based.',
+          subtitle:       'Ranked by fit for this request. Transparent and rule-based.',
           score:          'Match score',
           why:            'Why a match',
           showAll:        'Show all volunteers',
