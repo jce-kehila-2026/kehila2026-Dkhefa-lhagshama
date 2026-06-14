@@ -14,6 +14,7 @@ interface RequestFormValues {
   city: string; age: string; gender: string;
   category: string; description: string; urgency: string;
   deadline: string;
+  preferredLanguage: string;
   consent: boolean;
 }
 
@@ -148,6 +149,7 @@ export default function RequestsPage() {
     city:'', age:'', gender:'',
     category:'', description:'', urgency:'low',
     deadline: '',
+    preferredLanguage: '',
     consent: false,
     ...(draft || {}),
   }) as unknown as {
@@ -335,6 +337,7 @@ export default function RequestsPage() {
         urgency:   values.urgency,
         consent:   true,
         deadline:  values.deadline || undefined,
+        preferredLanguage: values.preferredLanguage || null,
         attachmentPaths: [idPath, supportPath].filter(Boolean),
         onBehalf:  role === 'volunteer',
       }
@@ -790,6 +793,24 @@ export default function RequestsPage() {
                   hint={s2.deadline.hint}
                 />
               </FormGroup>
+              {/* WS-6 — preferred language; drives the volunteer matcher */}
+              <FormGroup>
+                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <Label htmlFor="preferredLanguage">{rq.step2.prefLang}</Label>
+                  <HelpTooltip text={rq.step2.prefLangHint} label={rq.step2.prefLang} />
+                </span>
+                <Select
+                  id="preferredLanguage"
+                  name="preferredLanguage"
+                  value={values.preferredLanguage}
+                  onChange={handleChange}
+                >
+                  <option value="">{rq.step2.prefLangNone}</option>
+                  <option value="he">{rq.step2.prefLangHe}</option>
+                  <option value="am">{rq.step2.prefLangAm}</option>
+                  <option value="en">{rq.step2.prefLangEn}</option>
+                </Select>
+              </FormGroup>
             </FormRow>
           </div>
         )}
@@ -850,6 +871,9 @@ export default function RequestsPage() {
                   [rq.step4.category,  values.category ? labelFor(values.category) : '—'],
                   [rq.step4.urgency,   values.urgency === 'high' ? rq.step2.urgencyHigh : values.urgency === 'medium' ? rq.step2.urgencyMed : rq.step2.urgencyLow],
                   ...(values.deadline ? [[t.myRequests.table.deadline, values.deadline]] : []),
+                  ...(values.preferredLanguage
+                    ? [[rq.step2.prefLang, ({ he: rq.step2.prefLangHe, am: rq.step2.prefLangAm, en: rq.step2.prefLangEn } as Record<string, string>)[values.preferredLanguage] ?? values.preferredLanguage]]
+                    : []),
                 ].map(([label, val]) => (
                   <div key={label} className="review-item">
                     <dt>{label}</dt>
