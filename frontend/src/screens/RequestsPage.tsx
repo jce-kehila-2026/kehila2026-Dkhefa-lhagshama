@@ -478,7 +478,7 @@ export default function RequestsPage() {
     <>
       {/* ── COMPACT INLINE HEADER — eyebrow → serif title → lede + step indicator (start-aligned) ── */}
       <section className="req-header">
-        <div className="page-container req-header-container">
+        <div className="page-container req-header-container req-header-container-compact">
           <Reveal>
             <div className="req-header-inner">
               <span className="eyebrow req-header-eyebrow">{rq.inlineHeader.eyebrow}</span>
@@ -492,7 +492,7 @@ export default function RequestsPage() {
         </div>
       </section>
 
-      <div className="page-container req-shell">
+      <div className="page-container req-shell-compact">
         {/* #86 — email-not-verified banner; shown only when user is signed in but unverified */}
         {!emailVerified && (
           <div className="form-banner form-banner-info req-banner" role="status">
