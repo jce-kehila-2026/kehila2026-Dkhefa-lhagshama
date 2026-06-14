@@ -230,6 +230,7 @@ export default function ChatWindowPage() {
     if (typeof data?.id !== "string" || typeof data.status !== "string") return null;
     return {
       id: data.id,
+      displayId: data.displayId ?? null,
       status: data.status,
       handler: data.handler ?? null,
       assignedVolunteerId: data.assignedVolunteerId ?? null,
