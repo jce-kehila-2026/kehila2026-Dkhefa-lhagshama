@@ -385,6 +385,7 @@ const base = {
         actions:  'פעולות',
         loading:  'טוען…',
         retry:    'נסה שוב',
+        roleMismatchToast: 'האזור הזה מיועד למנהלים בלבד.',
       },
       dash: {
         title:      'לוח בקרה',
@@ -1655,6 +1656,7 @@ const base = {
         actions:  'Actions',
         loading:  'Loading…',
         retry:    'Retry',
+        roleMismatchToast: 'This area is for admins.',
       },
       dash: {
         title:      'Dashboard',
