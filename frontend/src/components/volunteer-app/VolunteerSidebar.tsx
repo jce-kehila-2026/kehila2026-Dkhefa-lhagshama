@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Layers,
   ClipboardList,
+  CalendarDays,
   BarChart3,
   MessagesSquare,
   Home,
@@ -23,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/volunteer-hub', key: 'dashboard', icon: LayoutDashboard, exact: true },
   { href: '/volunteer-hub/pool', key: 'pool', icon: Layers },
   { href: '/volunteer-hub/assigned', key: 'assigned', icon: ClipboardList },
+  { href: '/volunteer-hub/calendar', key: 'calendar', icon: CalendarDays },
   { href: '/volunteer-hub/insights', key: 'insights', icon: BarChart3 },
   { href: '/chats', key: 'chats', icon: MessagesSquare, external: true },
 ]
