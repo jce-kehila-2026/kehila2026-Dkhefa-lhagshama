@@ -507,6 +507,17 @@ export default function AdminRequestsListPage() {
                       r.origin === 'admin' || r.requestType === 'task' || r.requestType === 'admin_task'
                     return (
                       <tr key={r.id}>
+                        <td data-label={a.reqList.colRequester}>
+                          {isAdminTask ? (
+                            <span className="admin-reqlist-requester--task">
+                              {a.reqList.adminTaskRequester}
+                            </span>
+                          ) : name ? (
+                            <span className="admin-reqlist-requester">{name}</span>
+                          ) : (
+                            <span className="admin-reqlist-meta--empty">·</span>
+                          )}
+                        </td>
                         <td data-label={a.reqList.colTitle}>
                           <span className="admin-reqlist-cell">
                             <span className="admin-reqlist-primary">{primary}</span>
@@ -557,6 +568,19 @@ export default function AdminRequestsListPage() {
                             <span className="admin-reqlist-meta">{r.assignedVolunteerName}</span>
                           ) : (
                             <span className="admin-reqlist-meta--empty">·</span>
+                          )}
+                        </td>
+                        <td data-label={a.reqList.colInterested}>
+                          {r.hasClaims ? (
+                            <span className="admin-reqlist-interested">
+                              <HandHeart size={13} aria-hidden="true" />
+                              {a.reqList.interestedYes}
+                              {typeof r.claimsCount === 'number' && r.claimsCount > 0 && (
+                                <span className="admin-reqlist-meta"> ({r.claimsCount})</span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="admin-reqlist-interested--no">{a.reqList.interestedNo}</span>
                           )}
                         </td>
                         <td data-label={a.reqList.colStatus}>
