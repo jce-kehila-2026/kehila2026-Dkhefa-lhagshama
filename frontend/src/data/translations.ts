@@ -2112,12 +2112,29 @@ const base = {
         avgResolution:    'Average resolution time',
         volunteerWorkload:'Volunteer workload',
       },
+      kpi: {
+        eyebrow:        'Key metrics',
+        total:          'Total requests',
+        open:           'Open now',
+        closedThisMonth:'Closed this month',
+        closureRate:    'Closure rate',
+        avgResolution:  'Avg. resolution',
+        avgAge:         'Average age',
+        noValue:        '–',
+      },
+      sections: {
+        volume:       'Volume & throughput',
+        breakdown:    'Breakdown',
+        people:       'People',
+        beneficiaries:'Beneficiaries',
+      },
       axis: {
         count:   'Requests',
         days:    'Days',
         noData:  'No data',
       },
       avgResolutionDays: (days: number) => days === 1 ? '1 day' : `${days} days`,
+      closureRatePct: (pct: number) => `${pct}%`,
     },
 
     track: {
