@@ -1742,6 +1742,23 @@ const base = {
         // ?volunteerId= deep-link filter chip
         volunteerFilter:      'Volunteer',
         volunteerFilterClear: 'Clear volunteer filter',
+        // WS-5 — search + new columns + client-side sortable headers
+        searchPlaceholder:  'Search by requester, description, city, category or volunteer...',
+        searchLabel:        'Search requests',
+        searchClear:        'Clear search',
+        noMatches:          'No requests match your search',
+        noMatchesHint:      'Try another term or clear the search.',
+        resultsOne:         'request',
+        resultsMany:        'requests',
+        colRequester:       'Requester / From',
+        adminTaskRequester: 'Admin task',
+        colInterested:      'Interested volunteer',
+        interestedYes:      'Yes',
+        interestedNo:       'No',
+        interestedHelp:     'Volunteers who expressed interest in this request (claimed the pooled task).',
+        interestedHelpLabel:'About interested volunteers',
+        sortAria:           'Sort by {col}',
+        sortAscDesc:        'Click to sort',
       },
       reqDetail: {
         title:        'Request details',
