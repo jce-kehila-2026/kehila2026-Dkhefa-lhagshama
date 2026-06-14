@@ -528,6 +528,18 @@ describe('/counters (server-only, fully denied to clients)', () => {
   test('client write is denied even for admin', async () => {
     await assertFails(setDoc(doc(asAdmin(), 'counters/requests'), { next: 99 }));
   });
+
+  test('volunteer client write is denied (WS-7)', async () => {
+    await assertFails(setDoc(doc(asVolunteer(), 'counters/requests'), { next: 99 }));
+  });
+
+  // WS-7: the trusted backend (Admin SDK, rules disabled) is the only writer.
+  test('the trusted backend (rules disabled) can read + advance the counter', async () => {
+    await seed(async (dbx) => {
+      await assertSucceeds(getDoc(doc(dbx, 'counters/requests')));
+      await assertSucceeds(setDoc(doc(dbx, 'counters/requests'), { next: 2 }));
+    });
+  });
 });
 
 // ── catch-all ───────────────────────────────────────────────────────────────
