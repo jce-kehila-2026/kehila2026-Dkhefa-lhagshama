@@ -99,7 +99,7 @@ export default function AdminDashboard() {
     { key: 'openRequests', label: a.dash.s.openRequests, tone: 'amber', icon: Inbox, href: '/admin/requests?status=pending' },
     { key: 'inProgressRequests', label: a.dash.s.inProgress, tone: 'blue', icon: Clock, href: '/admin/requests?status=in_progress' },
     { key: 'awaitingReviewRequests', label: a.dash.s.awaitingReview, tone: 'amber', icon: ClipboardCheck, href: '/admin/requests?status=awaiting_review' },
-    { key: 'helped', label: a.dash.s.helped, tone: 'green', icon: CheckCircle2, href: '/admin/requests?status=closed' },
+    { key: 'closedRequests', label: a.dash.s.helped, tone: 'green', icon: CheckCircle2, href: '/admin/requests?status=closed' },
     { key: 'activeVolunteers', label: a.dash.s.activeVolunteers, tone: 'green', icon: HeartHandshake, href: '/admin/volunteers?tab=active' },
     { key: 'totalUsers', label: a.dash.s.usersLink, tone: 'default', icon: Users, href: '/admin/users' },
   ]
