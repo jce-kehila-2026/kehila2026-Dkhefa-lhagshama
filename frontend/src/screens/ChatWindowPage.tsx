@@ -29,6 +29,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { firebaseDb } from "../lib/firebase";
 import { apiFetch } from "../lib/apiClient";
+import { formatRequestRef } from "@/lib/requestRef";
 import { useMessages } from "../hooks/useMessages";
 import type { ChatMessage } from "../hooks/useMessages";
 import { getIdToken } from "../lib/auth";
@@ -91,6 +92,8 @@ interface ChatMeta {
  */
 interface LinkedRequest {
   id: string;
+  /** Friendly reference "REQ-####" (WS-3); display-only. */
+  displayId?: string | null;
   status: RequestStatus;
   handler?: string | null;
   assignedVolunteerId?: string | null;
@@ -386,6 +389,12 @@ export default function ChatWindowPage() {
       linkedRequest.status === "awaiting_review");
 
   const closeReq = linkedRequest?.closeRequest ?? null;
+  // WS-3 — friendly reference for the rail. Prefer the fetched linkedRequest's
+  // displayId; fall back to a short slice of the UUID id we already mirror.
+  const railRequestRef = formatRequestRef({
+    displayId: linkedRequest?.displayId ?? null,
+    id: linkedRequestId,
+  });
   // Did THIS side already propose / approve? (proposedRole is the initiator.)
   const iProposed =
     !!closeReq &&
@@ -1137,7 +1146,7 @@ export default function ChatWindowPage() {
                 <h1 className="chat-rail-name">{groupName}</h1>
                 {linkedRequestId && (
                   <p className="chat-rail-sub">
-                    {c.request} {linkedRequestId}
+                    {c.request} {railRequestRef}
                   </p>
                 )}
                 <p className="chat-rail-people-label">{c.participantsTitle}</p>
@@ -1213,7 +1222,7 @@ export default function ChatWindowPage() {
                 </h1>
                 {linkedRequestId && (
                   <p className="chat-rail-sub">
-                    {c.request} {linkedRequestId}
+                    {c.request} {railRequestRef}
                   </p>
                 )}
               </div>
