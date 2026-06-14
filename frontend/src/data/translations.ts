@@ -844,12 +844,29 @@ const base = {
         avgResolution:   'זמן טיפול ממוצע',
         volunteerWorkload:'עומס מתנדבים',
       },
+      kpi: {
+        eyebrow:        'מדדים מרכזיים',
+        total:          'סך הבקשות',
+        open:           'פתוחות כעת',
+        closedThisMonth:'נסגרו החודש',
+        closureRate:    'שיעור סגירה',
+        avgResolution:  'זמן טיפול ממוצע',
+        avgAge:         'גיל ממוצע',
+        noValue:        '–',
+      },
+      sections: {
+        volume:       'נפח ותפוקה',
+        breakdown:    'פילוח',
+        people:       'מתנדבים',
+        beneficiaries:'נעזרים',
+      },
       axis: {
         count:   'מספר בקשות',
         days:    'ימים',
         noData:  'אין נתונים',
       },
       avgResolutionDays: (days: number) => days === 1 ? 'יום אחד' : `${days} ימים`,
+      closureRatePct: (pct: number) => `${pct}%`,
     },
 
     // ── TRACK REQUEST ─────────────────────────────────────────
