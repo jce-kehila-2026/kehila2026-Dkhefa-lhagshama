@@ -1638,3 +1638,68 @@
 .admin-dir-delete { color: var(--danger); }
 
 .admin-dir-delete:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }
+
+/* ── WS-6 volunteer matching — ranked candidate cards ──────────────────── */
+.match-list {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-3);
+}
+.match-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.match-card--top {
+  border-color: var(--ember-soft);
+  box-shadow: var(--ring);
+}
+.match-card-body {
+  min-width: 0;
+  flex: 1;
+}
+.match-card-name {
+  font-weight: 600;
+  color: var(--ink);
+  word-break: break-word;
+}
+.match-card-meta {
+  margin-block-start: 2px;
+  color: var(--gray-500);
+  font-size: var(--fs-sm);
+}
+.match-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block-start: var(--sp-2);
+}
+.match-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-block: 3px;
+  padding-inline: 9px;
+  border-radius: 999px;
+  border: 1px solid var(--hair);
+  background: var(--sky-3);
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.match-chip--strong {
+  background: var(--ember-soft);
+  border-color: var(--ember-soft);
+  color: var(--ember-700);
+}
+.match-toggle {
+  margin-block-start: var(--sp-3);
+}
