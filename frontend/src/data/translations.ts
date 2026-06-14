@@ -491,6 +491,23 @@ const base = {
         // ?volunteerId= deep-link filter chip
         volunteerFilter:      'מתנדב/ת',
         volunteerFilterClear: 'ניקוי סינון מתנדב',
+        // WS-5 — search + new columns + client-side sortable headers
+        searchPlaceholder:  'חיפוש לפי שם פונה, תיאור, עיר, קטגוריה או מתנדב/ת...',
+        searchLabel:        'חיפוש בקשות',
+        searchClear:        'ניקוי חיפוש',
+        noMatches:          'אין בקשות שתואמות את החיפוש',
+        noMatchesHint:      'נסו מונח אחר או נקו את החיפוש.',
+        resultsOne:         'בקשה אחת',
+        resultsMany:        'בקשות',
+        colRequester:       'פונה / מאת',
+        adminTaskRequester: 'משימת מנהל',
+        colInterested:      'מתנדב/ת מעוניין/ת',
+        interestedYes:      'כן',
+        interestedNo:       'לא',
+        interestedHelp:     'מתנדבים שהביעו עניין בבקשה (סימנו שהם מעוניינים לטפל בה מהמאגר).',
+        interestedHelpLabel:'מידע על מתנדב מעוניין',
+        sortAria:           'מיון לפי {col}',
+        sortAscDesc:        'לחיצה למיון',
       },
       reqDetail: {
         title:        'פרטי בקשה',
