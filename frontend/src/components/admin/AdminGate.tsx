@@ -1,15 +1,16 @@
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import Link from 'next/link'
-import { ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { roleHome } from '@/utils/roleHome'
 
 /**
  * Role gate for /admin/* pages. While auth resolves, shows a light loading
  * state. If not signed in, redirects to /login?next=<path>. If signed in but
- * not an admin, shows an access-denied card. Otherwise renders children.
+ * not an admin, redirects to the user's role-home with a toast. Otherwise
+ * renders children.
  */
 interface AdminGateProps {
   children: ReactNode
@@ -17,7 +18,8 @@ interface AdminGateProps {
 
 export default function AdminGate({ children }: AdminGateProps) {
   const { user, role, loading } = useAuth()
-  const { t, lang } = useLanguage()
+  const { t } = useLanguage()
+  const { toast } = useApp()
   const router = useRouter()
 
   useEffect(() => {
@@ -38,6 +40,18 @@ export default function AdminGate({ children }: AdminGateProps) {
     return () => clearTimeout(handle)
   }, [loading, user, router])
 
+  // Signed in but NOT an admin → don't dead-end on an access-denied card.
+  // Send them to their own role-home (admin→/admin, volunteer→/volunteer-hub,
+  // else /requests) and explain with a toast. Role resolves slightly after
+  // `user`, so wait until role is non-null before deciding (avoids bouncing an
+  // admin during the brief window where user is set but role is still null).
+  useEffect(() => {
+    if (loading || !user || role === null) return
+    if (role === 'admin') return
+    toast(t.admin.ui.roleMismatchToast, 'info')
+    router.replace(roleHome(role))
+  }, [loading, user, role, router, toast, t])
+
   if (loading || !user) {
     return (
       <div className="admin-gate-msg" role="status" aria-live="polite">
@@ -48,20 +62,13 @@ export default function AdminGate({ children }: AdminGateProps) {
   }
 
   if (role !== 'admin') {
+    // The effect above is redirecting to this user's role-home. Render the
+    // neutral loading state for the single frame until router.replace lands,
+    // so a non-admin never sees a dead-end card.
     return (
-      <div className="admin-gate-denied" role="alert">
-        <span className="admin-gate-icon" aria-hidden="true">
-          <ShieldAlert size={28} />
-        </span>
-        <h1>{lang === 'he' ? 'גישה נדחתה' : 'Access denied'}</h1>
-        <p>
-          {lang === 'he'
-            ? 'אין לך הרשאת מנהל לגשת לדף זה.'
-            : 'You do not have admin permission to access this page.'}
-        </p>
-        <Link href="/" className="btn btn-outline btn-sm">
-          {lang === 'he' ? 'חזרה לאתר' : 'Back to site'}
-        </Link>
+      <div className="admin-gate-msg" role="status" aria-live="polite">
+        <span className="skeleton skeleton-title" style={{ width: '14rem' }} aria-hidden="true" />
+        <span className="sr-only">{t.admin.ui.loading}</span>
       </div>
     )
   }
