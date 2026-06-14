@@ -76,6 +76,8 @@ export default function AdminInsights() {
   const ins = t.insights
   const lifecycle = t.lifecycle
   const age = t.admin.ageInsights
+  const kpi = t.insights.kpi
+  const sections = t.insights.sections
   // Bilingual category labels from the admin-managed taxonomy (chart axis).
   const { labelFor } = useCategories()
 
@@ -165,7 +167,8 @@ export default function AdminInsights() {
       data.perVolunteer.length > 0 ||
       data.avgResolutionDays != null ||
       data.ageStats?.averageAge != null ||
-      (data.ageStats?.buckets?.length ?? 0) > 0
+      (data.ageStats?.buckets?.length ?? 0) > 0 ||
+      (data.kpis?.totalRequests ?? 0) > 0
     )
   }, [data])
 
@@ -184,19 +187,53 @@ export default function AdminInsights() {
   const CountTooltip = useMemo(() => makeTooltip(ins.axis.count), [ins.axis.count])
   const PeopleTooltip = useMemo(() => makeTooltip(age.peopleUnit), [age.peopleUnit])
 
+  // WS-10 — scalar KPI strip values. Each falls back to the localized en-dash
+  // placeholder when the backend has nothing to report yet.
+  const k = data?.kpis ?? null
+  const kpiItems: { key: string; label: string; value: string; lead?: boolean }[] = [
+    { key: 'total', label: kpi.total, value: k ? String(k.totalRequests) : kpi.noValue, lead: true },
+    { key: 'open', label: kpi.open, value: k ? String(k.openRequests) : kpi.noValue },
+    { key: 'closedThisMonth', label: kpi.closedThisMonth, value: k ? String(k.closedThisMonth) : kpi.noValue },
+    {
+      key: 'closureRate',
+      label: kpi.closureRate,
+      value: k && k.closureRate != null ? ins.closureRatePct(k.closureRate) : kpi.noValue,
+    },
+    {
+      key: 'avgResolution',
+      label: kpi.avgResolution,
+      value: data?.avgResolutionDays != null ? ins.avgResolutionDays(data.avgResolutionDays) : kpi.noValue,
+    },
+    {
+      key: 'avgAge',
+      label: kpi.avgAge,
+      value: averageAge != null ? `${averageAge} ${age.avgUnit}` : kpi.noValue,
+    },
+  ]
+
   const renderBody = () => {
     if (error) {
       return <ErrorState message={error} onRetry={load} retryLabel={t.admin.ui.retry} />
     }
     if (loading || !mounted) {
       return (
-        <div className="insights-grid" aria-busy="true">
-          {[0, 1, 2, 3].map((i) => (
-            <div className="insights-card" key={i}>
-              <span className="skeleton skeleton-line insights-skeleton-title" aria-hidden="true" />
-              <span className="skeleton insights-skeleton-chart" aria-hidden="true" />
-            </div>
-          ))}
+        <div className="admin-insights" aria-busy="true">
+          <div className="insights-kpi-strip">
+            {[0, 1, 2, 3].map((i) => (
+              <div className="insights-kpi" key={i}>
+                <span className="skeleton skeleton-line insights-skeleton-title" aria-hidden="true" />
+                <span className="skeleton skeleton-line insights-skeleton-title" aria-hidden="true" />
+              </div>
+            ))}
+          </div>
+          <div className="insights-grid">
+            {[0, 1, 2, 3].map((i) => (
+              <div className="insights-card" key={i}>
+                <span className="skeleton skeleton-line insights-skeleton-title" aria-hidden="true" />
+                <span className="skeleton insights-skeleton-chart" aria-hidden="true" />
+              </div>
+            ))}
+          </div>
         </div>
       )
     }
@@ -205,209 +242,157 @@ export default function AdminInsights() {
     }
 
     return (
-      // One motivated entrance: the dashboard fades + rises once after data
-      // loads. Reveal renders static (no transform) under prefers-reduced-motion
-      // and reuses the shared --ease-out curve. No per-card or looping motion;
-      // a dashboard should settle, not perform.
-      <Reveal className="insights-grid" y={16}>
-        {/* ── REQUESTS OVER TIME (area) ─────────────────────────── */}
-        <section className="insights-card insights-card--wide" aria-label={ins.charts.overTime}>
-          <h2 className="insights-card-title">{ins.charts.overTime}</h2>
-          {data!.overTime.length > 0 ? (
-            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.overTime}>
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={data!.overTime} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
-                  <defs>
-                    <linearGradient id="insightsOverTime" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={COLOR_EMBER} stopOpacity={0.28} />
-                      <stop offset="100%" stopColor={COLOR_EMBER} stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
-                  <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} />
-                  <YAxis
-                    orientation={yAxisOrientation}
-                    allowDecimals={false}
-                    tick={axisTick}
-                    tickLine={false}
-                    axisLine={false}
-                    width={36}
-                  />
-                  <Tooltip
-                    cursor={{ stroke: COLOR_HAIR }}
-                    content={CountTooltip}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="count"
-                    stroke={COLOR_EMBER}
-                    strokeWidth={2}
-                    fill="url(#insightsOverTime)"
-                    isAnimationActive={animateCharts}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+      // One motivated entrance: the whole insights view fades + rises once after
+      // data loads. Reveal renders static under prefers-reduced-motion.
+      <Reveal className="admin-insights" y={16}>
+        {/* ── KPI STRIP (compact scalar numbers, no big single-number cards) ── */}
+        <section className="insights-kpi-strip" aria-label={kpi.eyebrow}>
+          {kpiItems.map((item) => (
+            <div
+              className={item.lead ? 'insights-kpi insights-kpi--lead' : 'insights-kpi'}
+              key={item.key}
+            >
+              <span className="insights-kpi-label">{item.label}</span>
+              <span className="insights-kpi-value">{item.value}</span>
             </div>
-          ) : (
-            <p className="insights-nodata">{ins.axis.noData}</p>
-          )}
+          ))}
         </section>
 
-        {/* ── AVERAGE RESOLUTION TIME (stat) ────────────────────── */}
-        <section className="insights-card insights-card--stat" aria-label={ins.charts.avgResolution}>
-          <h2 className="insights-card-title">{ins.charts.avgResolution}</h2>
-          {data!.avgResolutionDays != null ? (
-            <p className="insights-stat">
-              <span className="insights-stat-value">{data!.avgResolutionDays}</span>
-              <span className="insights-stat-unit">
-                {ins.avgResolutionDays(data!.avgResolutionDays)}
-              </span>
-            </p>
-          ) : (
-            <p className="insights-nodata">{ins.axis.noData}</p>
-          )}
+        {/* ── VOLUME & THROUGHPUT — hero over-time chart, promoted first ───── */}
+        <section className="insights-section" aria-label={sections.volume}>
+          <h2 className="insights-section-title">{sections.volume}</h2>
+          <div className="insights-card insights-card--hero" aria-label={ins.charts.overTime}>
+            <h3 className="insights-card-title">{ins.charts.overTime}</h3>
+            {data!.overTime.length > 0 ? (
+              <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.overTime}>
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart data={data!.overTime} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+                    <defs>
+                      <linearGradient id="insightsOverTime" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={COLOR_EMBER} stopOpacity={0.28} />
+                        <stop offset="100%" stopColor={COLOR_EMBER} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
+                    <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} />
+                    <YAxis
+                      orientation={yAxisOrientation}
+                      allowDecimals={false}
+                      tick={axisTick}
+                      tickLine={false}
+                      axisLine={false}
+                      width={36}
+                    />
+                    <Tooltip cursor={{ stroke: COLOR_HAIR }} content={CountTooltip} />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke={COLOR_EMBER}
+                      strokeWidth={2}
+                      fill="url(#insightsOverTime)"
+                      isAnimationActive={animateCharts}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="insights-nodata">{ins.axis.noData}</p>
+            )}
+          </div>
         </section>
 
-        {/* ── REQUESTS BY CATEGORY (bar) ────────────────────────── */}
-        <section className="insights-card" aria-label={ins.charts.byCategory}>
-          <h2 className="insights-card-title">{ins.charts.byCategory}</h2>
-          {data!.byCategory.length > 0 ? (
-            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.byCategory}>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={byCategoryData} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
-                  <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
-                  <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} interval={0} />
-                  <YAxis
-                    orientation={yAxisOrientation}
-                    allowDecimals={false}
-                    tick={axisTick}
-                    tickLine={false}
-                    axisLine={false}
-                    width={36}
-                  />
-                  <Tooltip
-                    cursor={{ fill: COLOR_CURSOR }}
-                    content={CountTooltip}
-                  />
-                  <Bar dataKey="count" fill={COLOR_SKY} stroke={COLOR_BAR_STROKE} strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts} />
-                </BarChart>
-              </ResponsiveContainer>
+        {/* ── BREAKDOWN — category + status bars, two-up ──────────────────── */}
+        <section className="insights-section" aria-label={sections.breakdown}>
+          <h2 className="insights-section-title">{sections.breakdown}</h2>
+          <div className="insights-grid">
+            <div className="insights-card" aria-label={ins.charts.byCategory}>
+              <h3 className="insights-card-title">{ins.charts.byCategory}</h3>
+              {data!.byCategory.length > 0 ? (
+                <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.byCategory}>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={byCategoryData} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+                      <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
+                      <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} interval={0} />
+                      <YAxis orientation={yAxisOrientation} allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} width={36} />
+                      <Tooltip cursor={{ fill: COLOR_CURSOR }} content={CountTooltip} />
+                      <Bar dataKey="count" fill={COLOR_SKY} stroke={COLOR_BAR_STROKE} strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="insights-nodata">{ins.axis.noData}</p>
+              )}
             </div>
-          ) : (
-            <p className="insights-nodata">{ins.axis.noData}</p>
-          )}
-        </section>
 
-        {/* ── REQUESTS BY STATUS (bar, per-status color) ────────── */}
-        <section className="insights-card" aria-label={ins.charts.byStatus}>
-          <h2 className="insights-card-title">{ins.charts.byStatus}</h2>
-          {byStatusData.length > 0 ? (
-            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.byStatus}>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={byStatusData} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
-                  <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
-                  <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} interval={0} />
-                  <YAxis
-                    orientation={yAxisOrientation}
-                    allowDecimals={false}
-                    tick={axisTick}
-                    tickLine={false}
-                    axisLine={false}
-                    width={36}
-                  />
-                  <Tooltip
-                    cursor={{ fill: COLOR_CURSOR }}
-                    content={CountTooltip}
-                  />
-                  <Bar dataKey="count" stroke={COLOR_BAR_STROKE} strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts}>
-                    {byStatusData.map((entry) => (
-                      <Cell key={entry.status} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="insights-card" aria-label={ins.charts.byStatus}>
+              <h3 className="insights-card-title">{ins.charts.byStatus}</h3>
+              {byStatusData.length > 0 ? (
+                <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.byStatus}>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={byStatusData} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+                      <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
+                      <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} interval={0} />
+                      <YAxis orientation={yAxisOrientation} allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} width={36} />
+                      <Tooltip cursor={{ fill: COLOR_CURSOR }} content={CountTooltip} />
+                      <Bar dataKey="count" stroke={COLOR_BAR_STROKE} strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts}>
+                        {byStatusData.map((entry) => (
+                          <Cell key={entry.status} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="insights-nodata">{ins.axis.noData}</p>
+              )}
             </div>
-          ) : (
-            <p className="insights-nodata">{ins.axis.noData}</p>
-          )}
+          </div>
         </section>
 
-        {/* ── PER-VOLUNTEER WORKLOAD (horizontal bar) ───────────── */}
-        <section className="insights-card insights-card--wide" aria-label={ins.charts.volunteerWorkload}>
-          <h2 className="insights-card-title">{ins.charts.volunteerWorkload}</h2>
-          {data!.perVolunteer.length > 0 ? (
-            <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.volunteerWorkload}>
-              <ResponsiveContainer width="100%" height={Math.max(160, data!.perVolunteer.length * 44)}>
-                <BarChart
-                  data={data!.perVolunteer}
-                  layout="vertical"
-                  margin={{ top: 4, right: 16, bottom: 4, left: 8 }}
-                >
-                  <CartesianGrid stroke={COLOR_HAIR} horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    orientation={yAxisOrientation}
-                    tick={axisTick}
-                    tickLine={false}
-                    axisLine={false}
-                    width={120}
-                  />
-                  <Tooltip
-                    cursor={{ fill: COLOR_CURSOR }}
-                    content={CountTooltip}
-                  />
-                  <Bar dataKey="count" fill={COLOR_INK} radius={[0, 4, 4, 0]} maxBarSize={28} isAnimationActive={animateCharts} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="insights-nodata">{ins.axis.noData}</p>
-          )}
+        {/* ── PEOPLE — per-volunteer workload ─────────────────────────────── */}
+        <section className="insights-section" aria-label={sections.people}>
+          <h2 className="insights-section-title">{sections.people}</h2>
+          <div className="insights-card" aria-label={ins.charts.volunteerWorkload}>
+            <h3 className="insights-card-title">{ins.charts.volunteerWorkload}</h3>
+            {data!.perVolunteer.length > 0 ? (
+              <div className="insights-chart" dir="ltr" role="img" aria-label={ins.charts.volunteerWorkload}>
+                <ResponsiveContainer width="100%" height={Math.max(160, data!.perVolunteer.length * 44)}>
+                  <BarChart data={data!.perVolunteer} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
+                    <CartesianGrid stroke={COLOR_HAIR} horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} />
+                    <YAxis type="category" dataKey="name" orientation={yAxisOrientation} tick={axisTick} tickLine={false} axisLine={false} width={120} />
+                    <Tooltip cursor={{ fill: COLOR_CURSOR }} content={CountTooltip} />
+                    <Bar dataKey="count" fill={COLOR_INK} radius={[0, 4, 4, 0]} maxBarSize={28} isAnimationActive={animateCharts} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="insights-nodata">{ins.axis.noData}</p>
+            )}
+          </div>
         </section>
 
-        {/* ── AVERAGE BENEFICIARY AGE (stat) — req 24 ───────────── */}
-        <section className="insights-card insights-card--stat" aria-label={age.avgLabel}>
-          <h2 className="insights-card-title">{age.avgLabel}</h2>
-          {averageAge != null ? (
-            <p className="insights-stat">
-              <span className="insights-stat-value">{averageAge}</span>
-              <span className="insights-stat-unit">{age.avgUnit}</span>
-            </p>
-          ) : (
-            <p className="insights-nodata">{age.noAge}</p>
-          )}
-        </section>
-
-        {/* ── AGE DISTRIBUTION (bar) — req 24 ───────────────────── */}
-        <section className="insights-card" aria-label={age.distribution}>
-          <h2 className="insights-card-title">{age.distribution}</h2>
-          {ageBuckets.length > 0 ? (
-            <div className="insights-chart" dir="ltr" role="img" aria-label={age.distribution}>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={ageBuckets} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
-                  <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
-                  <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} interval={0} />
-                  <YAxis
-                    orientation={yAxisOrientation}
-                    allowDecimals={false}
-                    tick={axisTick}
-                    tickLine={false}
-                    axisLine={false}
-                    width={36}
-                  />
-                  <Tooltip
-                    cursor={{ fill: COLOR_CURSOR }}
-                    content={PeopleTooltip}
-                  />
-                  <Bar dataKey="count" fill={COLOR_EMBER} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="insights-nodata">{age.noAge}</p>
-          )}
+        {/* ── BENEFICIARIES — age distribution (req 24) ───────────────────── */}
+        <section className="insights-section" aria-label={sections.beneficiaries}>
+          <h2 className="insights-section-title">{sections.beneficiaries}</h2>
+          <div className="insights-card" aria-label={age.distribution}>
+            <h3 className="insights-card-title">{age.distribution}</h3>
+            {ageBuckets.length > 0 ? (
+              <div className="insights-chart" dir="ltr" role="img" aria-label={age.distribution}>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={ageBuckets} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+                    <CartesianGrid stroke={COLOR_HAIR} vertical={false} />
+                    <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: COLOR_HAIR }} interval={0} />
+                    <YAxis orientation={yAxisOrientation} allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} width={36} />
+                    <Tooltip cursor={{ fill: COLOR_CURSOR }} content={PeopleTooltip} />
+                    <Bar dataKey="count" fill={COLOR_EMBER} radius={[4, 4, 0, 0]} maxBarSize={48} isAnimationActive={animateCharts} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="insights-nodata">{age.noAge}</p>
+            )}
+          </div>
         </section>
       </Reveal>
     )
