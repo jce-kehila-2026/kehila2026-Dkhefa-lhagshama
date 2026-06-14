@@ -1964,3 +1964,55 @@
 .match-toggle {
   margin-block-start: var(--sp-3);
 }
+.match-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+/* FIX 2 — assigned summary: who the request is assigned to + the why chips,
+   shown in place of the ranked list once a volunteer is assigned. */
+.match-assigned {
+  padding: var(--sp-4);
+  border: 1px solid var(--ember-soft);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--ring);
+}
+.match-assigned-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.match-assigned-icon {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--ember-soft);
+  color: var(--ember-700);
+}
+.match-assigned-label {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+.match-assigned-name {
+  font-weight: 600;
+  word-break: break-word;
+}
+.match-assigned .match-chips {
+  margin-block-start: var(--sp-3);
+}
+.match-assigned-reassign {
+  margin-block-start: var(--sp-3);
+}

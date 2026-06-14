@@ -28,6 +28,7 @@ import {
   Languages,
   Gauge,
   ChevronDown,
+  Check,
 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
@@ -153,6 +154,8 @@ type MatchingCopy = {
   loadError: string
   claimedTag: string
   openTasks: string
+  reassign: string
+  cancelReassign: string
   reasons: Record<string, string>
   langLabels: Record<string, string>
 }
@@ -319,6 +322,9 @@ export default function AdminRequestDetailPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [candidatesError, setCandidatesError] = useState(false)
   const [showAllCandidates, setShowAllCandidates] = useState(false)
+  // FIX 2 — when a request is already assigned the aside shows an assigned
+  // summary (who + why); toggling this reveals the ranked list to reassign.
+  const [reassigning, setReassigning] = useState(false)
 
   // Lifecycle transition confirmation (Note 6).
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null)
@@ -334,9 +340,13 @@ export default function AdminRequestDetailPage() {
   // Document viewer (Note 1): tracks which attachment is being opened.
   const [openingDoc, setOpeningDoc] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
+  // `silent` refreshes the data WITHOUT toggling the page-level loading
+  // skeleton, so post-action refreshes (assign, status, note) update the detail
+  // in place instead of blanking + rebuilding the whole page. The mount/retry
+  // load runs full (non-silent) so the initial skeleton still shows.
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
     if (!id) return
-    setLoading(true)
+    if (!opts?.silent) setLoading(true)
     setError(null)
     try {
       const [reqData, volData] = await Promise.all([
@@ -358,7 +368,7 @@ export default function AdminRequestDetailPage() {
     } catch {
       setError(a.ui.loading)
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }, [id, a.ui.loading])
 
@@ -387,7 +397,10 @@ export default function AdminRequestDetailPage() {
         setError((onError && onError(res.status, payload)) || a.reqDetail.statusGenericError)
         return false
       }
-      await load()
+      // Refresh data in place — `silent` keeps the detail body mounted so the
+      // page does not blank/rebuild on every action (the `saving` flag already
+      // disables the controls during the request).
+      await load({ silent: true })
       return true
     } catch {
       // Network / unexpected failure.
@@ -407,14 +420,19 @@ export default function AdminRequestDetailPage() {
     heading: string; subtitle: string; score: string; why: string
     showAll: string; hideAll: string; assign: string; assigning: string
     empty: string; loadError: string; claimedTag: string; openTasks: string
+    reassign: string; cancelReassign: string
     reasons: Record<string, string>; langLabels: Record<string, string>
   }
   const handleAssignCandidate = async (uid: string) => {
     setAssigningUid(uid)
     const ok = await post('assign', { volunteerId: uid })
     setAssigningUid(null)
-    if (ok) toast(a.claims.assignSuccess, 'success')
-    else toast(a.claims.assignError, 'error')
+    if (ok) {
+      // FIX 2 — flip the aside back to the assigned summary; the silent reload
+      // (FIX 1) has already refreshed request.assignedVolunteerId.
+      setReassigning(false)
+      toast(a.claims.assignSuccess, 'success')
+    } else toast(a.claims.assignError, 'error')
   }
   const reasonChipLabel = (r: MatchReason): string => {
     if (r.key === 'speaksLanguage') {
@@ -437,8 +455,11 @@ export default function AdminRequestDetailPage() {
     setAssigningClaim(volunteerId)
     const ok = await post('assign', { volunteerId })
     setAssigningClaim(null)
-    if (ok) toast(a.claims.assignSuccess, 'success')
-    else toast(a.claims.assignError, 'error')
+    if (ok) {
+      // FIX 2 — assigning a claimant also flips the aside to the summary.
+      setReassigning(false)
+      toast(a.claims.assignSuccess, 'success')
+    } else toast(a.claims.assignError, 'error')
   }
   const handleNote = async () => {
     const trimmed = note.trim()
@@ -482,7 +503,9 @@ export default function AdminRequestDetailPage() {
         toast(msg, 'error')
         return
       }
-      await load()
+      // Silent refresh so a status change updates in place rather than
+      // re-running the full-page skeleton (FIX 1).
+      await load({ silent: true })
       toast(copy.success, 'success')
     } catch {
       setError(copy.error)
@@ -532,7 +555,8 @@ export default function AdminRequestDetailPage() {
         toast(msg, 'error')
         return
       }
-      await load()
+      // Silent refresh (FIX 1) — keep the detail mounted after referring.
+      await load({ silent: true })
       toast(lc.referral.success, 'success')
       setReferOpen(false)
       setReferAnswerId('')
@@ -661,6 +685,18 @@ export default function AdminRequestDetailPage() {
       request.assignedVolunteerId
     : rdStr(a, 'unassigned')
 
+  // FIX 2 — the assigned volunteer's own match entry. The /candidates endpoint
+  // ranks ALL active volunteers, so the assigned one is present with its score
+  // + reasons; we surface those reasons as the "why" in the assigned summary.
+  // Null if the assigned volunteer is no longer active (e.g. deactivated, #91).
+  const assignedCandidate = useMemo(
+    () =>
+      (request?.assignedVolunteerId &&
+        candidates.find((c) => c.uid === request.assignedVolunteerId)) ||
+      null,
+    [request, candidates],
+  )
+
   return (
     <AdminLayout title={a.reqDetail.title}>
       <Link
@@ -674,7 +710,7 @@ export default function AdminRequestDetailPage() {
 
       {error && (
         <div style={{ marginBlockStart: 'var(--sp-4)' }}>
-          <ErrorState message={error} onRetry={load} retryLabel={a.ui.retry} />
+          <ErrorState message={error} onRetry={() => load()} retryLabel={a.ui.retry} />
         </div>
       )}
 
@@ -1108,7 +1144,45 @@ export default function AdminRequestDetailPage() {
                   </p>
                 )}
 
-                {candidatesError ? (
+                {/* FIX 2 — once assigned (and not actively reassigning) the aside
+                    shows WHO it is assigned to + WHY (the assigned volunteer's
+                    own match reasons), not the ranked list. */}
+                {request.assignedVolunteerId && !reassigning ? (
+                  <div className="match-assigned" style={{ marginBlockStart: 'var(--sp-3)' }}>
+                    <p className="match-assigned-head">
+                      <span className="match-assigned-icon" aria-hidden="true">
+                        <Check size={15} />
+                      </span>
+                      <span className="match-assigned-label">{a.reqDetail.assignedTo}:</span>{' '}
+                      <span className="match-assigned-name">{assignedLabel}</span>
+                    </p>
+                    {assignedCandidate && assignedCandidate.reasons.length > 0 && (
+                      <div className="match-chips" aria-label={m.why}>
+                        {assignedCandidate.reasons.map((r, ri) => (
+                          <span
+                            key={`${r.key}-${ri}`}
+                            className={`match-chip${r.key === 'sameCategory' ? ' match-chip--strong' : ''}`}
+                          >
+                            {r.key === 'speaksLanguage' && <Languages size={12} aria-hidden="true" />}
+                            {r.key === 'lowLoad' && <Gauge size={12} aria-hidden="true" />}
+                            {reasonChipLabel(r)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {!isTerminal && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm match-assigned-reassign"
+                        disabled={saving}
+                        onClick={() => setReassigning(true)}
+                      >
+                        <RotateCcw size={14} aria-hidden="true" />
+                        {m.reassign}
+                      </button>
+                    )}
+                  </div>
+                ) : candidatesError ? (
                   <p style={{ margin: 'var(--sp-3) 0 0', color: 'var(--gray-500)', fontSize: 'var(--fs-sm)' }}>
                     {m.loadError}
                   </p>
@@ -1118,13 +1192,19 @@ export default function AdminRequestDetailPage() {
                   </p>
                 ) : (
                   <>
+                    {/* FIX 3 — the candidates arrive ranked best-first, so render
+                        the FULL sorted list (top emphasized). Only when there are
+                        many (>8) do we collapse to the first 8 with a show-all. */}
                     <ul className="match-list">
-                      {(showAllCandidates ? candidates : candidates.slice(0, 3)).map((c, i) => {
+                      {(showAllCandidates || candidates.length <= 8
+                        ? candidates
+                        : candidates.slice(0, 8)
+                      ).map((c, i) => {
                         const busy = assigningUid === c.uid
                         return (
                           <li
                             key={c.uid}
-                            className={`match-card${i === 0 && !showAllCandidates ? ' match-card--top' : ''}`}
+                            className={`match-card${i === 0 ? ' match-card--top' : ''}`}
                           >
                             <div className="match-card-body">
                               <span className="match-card-name">{c.name}</span>
@@ -1159,17 +1239,31 @@ export default function AdminRequestDetailPage() {
                         )
                       })}
                     </ul>
-                    {candidates.length > 3 && (
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm match-toggle"
-                        onClick={() => setShowAllCandidates((v) => !v)}
-                        aria-expanded={showAllCandidates}
-                      >
-                        <ChevronDown size={14} aria-hidden="true" />
-                        {showAllCandidates ? m.hideAll : m.showAll}
-                      </button>
-                    )}
+                    <div className="match-toggle-row">
+                      {candidates.length > 8 && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm match-toggle"
+                          onClick={() => setShowAllCandidates((v) => !v)}
+                          aria-expanded={showAllCandidates}
+                        >
+                          <ChevronDown size={14} aria-hidden="true" />
+                          {showAllCandidates ? m.hideAll : m.showAll}
+                        </button>
+                      )}
+                      {/* When reassigning an already-assigned request, offer a way
+                          back to the assigned summary without changing anyone. */}
+                      {reassigning && request.assignedVolunteerId && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm match-toggle"
+                          disabled={saving}
+                          onClick={() => setReassigning(false)}
+                        >
+                          {m.cancelReassign}
+                        </button>
+                      )}
+                    </div>
                   </>
                 )}
               </div>

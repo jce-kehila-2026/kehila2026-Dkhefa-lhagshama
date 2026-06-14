@@ -563,6 +563,8 @@ const base = {
           loadError:      'טעינת ההמלצות נכשלה.',
           claimedTag:     'התעניין/ה בבקשה',
           openTasks:      'משימות פתוחות',
+          reassign:       'שינוי הקצאה',
+          cancelReassign: 'ביטול',
           reasons: {
             sameCategory:            'אותו תחום',
             relatedArea:             'תחום קרוב',
@@ -1834,6 +1836,8 @@ const base = {
           loadError:      'Failed to load recommendations.',
           claimedTag:     'Interested in this request',
           openTasks:      'open tasks',
+          reassign:       'Reassign',
+          cancelReassign: 'Cancel',
           reasons: {
             sameCategory:            'Same category',
             relatedArea:             'Related area',
