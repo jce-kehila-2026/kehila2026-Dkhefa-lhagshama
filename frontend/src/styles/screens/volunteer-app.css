@@ -414,3 +414,164 @@
 .volapp-insights .insights-skeleton-chart {
   height: 240px;
 }
+
+/* ═════════════════════════════════════════════════════════════
+   CALENDAR + AVAILABILITY (volunteer-hub /calendar) — WS-7.
+   New .volapp-cal-* variant classes only; no shared class is mutated.
+   RTL via logical properties; tokens only; reduced-motion honoured.
+═════════════════════════════════════════════════════════════ */
+
+.volapp-cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-block-end: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.volapp-cal-month {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+
+.volapp-cal-nav {
+  display: inline-flex;
+  gap: var(--sp-2);
+}
+
+/* Month grid: 7 equal day columns. */
+.volapp-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: var(--hair);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.volapp-cal-dow {
+  background: var(--cream);
+  padding: 0.4rem 0.3rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gray-600);
+}
+
+.volapp-cal-cell {
+  background: var(--white);
+  min-height: 78px;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.volapp-cal-cell--pad { background: var(--paper); }
+
+.volapp-cal-daynum {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+}
+
+.volapp-cal-cell--today .volapp-cal-daynum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.45rem;
+  block-size: 1.45rem;
+  border-radius: 999px;
+  background: var(--ember);
+  color: var(--cream);
+}
+
+/* A deadline pip + label inside a day cell. */
+.volapp-cal-deadline {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--sky-2);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.25rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A day cell that this volunteer has a recurring availability window on. */
+.volapp-cal-cell--available { background: rgba(185, 105, 78, 0.08); }
+
+.volapp-cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-block-start: var(--sp-3);
+  font-size: 0.82rem;
+  color: var(--gray-600);
+}
+
+.volapp-cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.volapp-cal-swatch {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.volapp-cal-swatch--deadline { background: var(--sky-2); }
+.volapp-cal-swatch--available { background: rgba(185, 105, 78, 0.4); }
+
+/* Availability editor: a list of weekly-window rows + add controls. */
+.volapp-win-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-2);
+  padding-block: var(--sp-2);
+  border-block-end: 1px solid var(--hair);
+}
+
+.volapp-win-row:last-child { border-block-end: 0; }
+
+.volapp-win-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-inline-size: 6.5rem;
+}
+
+.volapp-win-field .form-select,
+.volapp-win-field .form-input { min-inline-size: 0; }
+
+.volapp-win-remove { align-self: end; }
+
+.volapp-avail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-block-start: var(--sp-3);
+}
+
+@media (max-width: 640px) {
+  .volapp-cal-cell { min-height: 56px; }
+  .volapp-win-field { min-inline-size: 100%; }
+}
