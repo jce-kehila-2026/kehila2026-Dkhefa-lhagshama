@@ -52,12 +52,20 @@ export default function AdminVolunteersPage() {
   const a = t.admin
   // Bilingual category labels from the admin-managed taxonomy (permission badge).
   const { labelFor } = useCategories()
-  const [tab, setTab] = useState<VolunteerTab>('pending') // 'pending' | 'active'
+  const [tab, setTab] = useState<VolunteerTab>('active') // 'pending' | 'active' — WS-9 defaults to Active
   const [data, setData] = useState<{ pending: VolunteerRow[]; active: VolunteerRow[]; categoryRequests: CatReqRow[] }>({ pending: [], active: [], categoryRequests: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [busyCat, setBusyCat] = useState<string | null>(null)
+
+  // WS-9 — honour a ?tab=active|pending deep-link (e.g. the dashboard KPI
+  // "active volunteers" link). Runs once on mount; invalid values are ignored
+  // so the Active default stands.
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get('tab')
+    if (param === 'pending' || param === 'active') setTab(param)
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
