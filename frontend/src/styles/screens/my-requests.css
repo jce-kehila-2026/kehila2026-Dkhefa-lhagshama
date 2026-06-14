@@ -44,6 +44,96 @@
   flex-shrink: 0;
 }
 
+/* ── WS-2: compact interior header (my-requests) ────────────────
+   Round-4 density pass. Scoped variant of the my-requests header band
+   that compresses vertical rhythm. The shared .myreq-header /
+   .section-display-bold are NOT mutated. */
+.myreq-header-container-compact {
+  padding-block: clamp(20px, 3vw, 32px) clamp(12px, 2vw, 20px);
+}
+
+.myreq-header-container-compact .section-display-bold {
+  font-size: var(--fs-h2);
+  margin-block-end: 6px;
+}
+
+/* List page: drop the lede entirely (the board/count below explains itself). */
+.myreq-header-container-compact .myreq-header-lede {
+  display: none;
+}
+
+/* The board container follows the band directly: collapse its top padding. */
+.myreq-shell-compact {
+  max-width: 1180px;
+  padding-block: 20px 80px;
+  padding-inline: 1.5rem;
+}
+
+/* ── WS-2: consolidated post-submit banner ──────────────────────
+   The three ?new= blocks (success + save-to-profile + suggestions)
+   previously stacked. This single compact banner holds the success
+   line, the request ref, and the inline save-to-profile action on one
+   surface so it doesn't push the board down. */
+.myreq-new-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  margin-block-end: 20px;
+  background: var(--success-soft);
+  border: 1px solid var(--success-soft);
+  border-radius: var(--radius-lg);
+}
+
+.myreq-new-banner-icon {
+  color: var(--success);
+  flex-shrink: 0;
+  margin-block-start: 1px;
+}
+
+.myreq-new-banner-body {
+  flex: 1;
+  min-inline-size: 200px;
+}
+
+.myreq-new-banner-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.myreq-new-banner-ref {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin-block-start: 2px;
+}
+
+.myreq-new-banner-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  inline-size: 100%;
+  margin-block-start: 8px;
+  padding-block-start: 10px;
+  border-block-start: 1px solid var(--hair);
+}
+
+.myreq-new-banner-save-text {
+  flex: 1;
+  min-inline-size: 180px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.myreq-new-banner-save-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* ── req 10 — kanban-style status columns for active requests ───
    3 equal columns on wide screens; collapses to stacked single-column
    sections on narrow screens. */
