@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { Inbox, ChevronLeft, ChevronRight, Plus, HandHeart, X } from 'lucide-react'
+import { Inbox, ChevronLeft, ChevronRight, Plus, HandHeart, X, Search, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson } from '@/lib/apiClient'
 import type { CloseRequestSummary } from '@/types'
 import AdminLayout from '@/components/admin/AdminLayout'
 import CreateTaskDialog from '@/components/admin/CreateTaskDialog'
+import HelpTooltip from '@/components/feedback/HelpTooltip'
 import Reveal from '../../components/motion/Reveal'
 import {
   StatusBadge,
@@ -51,6 +52,8 @@ interface RequestRow {
   origin?: string
   requestType?: string
   hasClaims?: boolean
+  claimsCount?: number
+  createdAt?: string | null
   assignedVolunteerId?: string | null
   assignedVolunteerName?: string | null
   // Compact consent-close handshake state (req 25), null when none pending.
@@ -76,6 +79,14 @@ export default function AdminRequestsListPage() {
   // ?volunteerId= deep link (e.g. from the volunteers roster): narrow the list
   // to one volunteer's assigned requests, server-side.
   const [volunteerId, setVolunteerId] = useState('')
+  // WS-5: live client-side search over the already-loaded items[].
+  const [search, setSearch] = useState('')
+  // WS-5: one client-side sort model. The Newest/Priority presets seed the
+  // initial column+direction; a header click overrides. 'created' = Newest,
+  // 'priority' is server-ordered (we keep server order when col === 'priority').
+  type SortCol = 'requester' | 'category' | 'city' | 'interested' | 'status' | 'priority' | 'created'
+  const [sortCol, setSortCol] = useState<SortCol>('created')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   const ManageArrow = isRTL ? ChevronLeft : ChevronRight
 
@@ -106,6 +117,18 @@ export default function AdminRequestsListPage() {
     const qs = params.toString()
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
   }, [filter, claimsOnly, sort, volunteerId])
+
+  // Mirror the Newest/Priority preset into the client sort model so the table
+  // reflects the chosen preset until the admin clicks a column header.
+  useEffect(() => {
+    if (sort === 'priority') {
+      setSortCol('priority')
+      setSortDir('desc')
+    } else {
+      setSortCol('created')
+      setSortDir('desc')
+    }
+  }, [sort])
 
   // Resolve the human label for a filter tab. Active statuses use the canonical
   // admin status labels; the archived tab + "all" use their dedicated keys.
@@ -142,23 +165,86 @@ export default function AdminRequestsListPage() {
     load()
   }, [load])
 
-  // When the claims-only view is active, narrow to requests that carry at
-  // least one interested-volunteer claim (req 22).
-  const visibleItems = claimsOnly ? items.filter((r) => r.hasClaims) : items
-
   // Label for the ?volunteerId= filter chip: every returned row is assigned to
   // that volunteer, so any row's denormalized name resolves it; uid otherwise.
   const volunteerChipName =
     items.find((r) => r.assignedVolunteerId === volunteerId)?.assignedVolunteerName ||
     volunteerId
 
-  // Live result summary: "N results" reusing the column/empty vocabulary the
-  // page already ships (no new translation keys introduced).
+  // Claims-only view (req 22) narrows to requests carrying interested claims.
+  const claimsFiltered = claimsOnly ? items.filter((r) => r.hasClaims) : items
+
+  // WS-5 search: case-insensitive substring over requester name, title,
+  // description, city, category label, and assigned-volunteer name.
+  const requesterText = (r: RequestRow): string => {
+    if (r.origin === 'admin' || r.requestType === 'task' || r.requestType === 'admin_task') {
+      return a.reqList.adminTaskRequester
+    }
+    return [r.firstName, r.lastName].filter(Boolean).join(' ')
+  }
+  const q = search.trim().toLowerCase()
+  const searched = q
+    ? claimsFiltered.filter((r) => {
+        const hay = [
+          requesterText(r),
+          r.title,
+          r.description,
+          r.city,
+          r.category ? labelFor(r.category) : '',
+          r.assignedVolunteerName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        return hay.includes(q)
+      })
+    : claimsFiltered
+
+  // WS-5 unified client-side sort. 'priority'/'created' keep the server order
+  // (already sorted by the fetch); the column presets sort the loaded array.
+  const statusLabelOf = (r: RequestRow): string =>
+    (r.status ? (a.statusLabels as Record<string, string>)[r.status] : '') || r.status || ''
+  const visibleItems = useMemo(() => {
+    if (sortCol === 'priority' || sortCol === 'created') return searched
+    const dir = sortDir === 'asc' ? 1 : -1
+    const key = (r: RequestRow): string => {
+      switch (sortCol) {
+        case 'requester': return requesterText(r)
+        case 'category':  return r.category ? labelFor(r.category) : ''
+        case 'city':      return r.city || ''
+        case 'interested': return r.hasClaims ? '1' : '0'
+        case 'status':    return statusLabelOf(r)
+        default:          return ''
+      }
+    }
+    return [...searched].sort((x, y) =>
+      key(x).localeCompare(key(y), lang === 'he' ? 'he' : 'en', { numeric: true }) * dir,
+    )
+    // labelFor/requesterText/statusLabelOf are stable per render; deps cover inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searched, sortCol, sortDir, lang])
+
+  // Live result summary using i18n keys (WS-5).
   const resultSummary = (() => {
     const n = visibleItems.length
-    if (lang === 'he') return `${n} ${n === 1 ? 'בקשה' : 'בקשות'}`
-    return `${n} ${n === 1 ? 'request' : 'requests'}`
+    if (n === 1) return `1 ${a.reqList.resultsOne}`
+    return `${n} ${a.reqList.resultsMany}`
   })()
+
+  // Toggle a column: same column flips direction, a new column starts ascending.
+  const toggleSort = (col: SortCol) => {
+    setSortCol((prev) => {
+      if (prev === col) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+        return prev
+      }
+      setSortDir('asc')
+      return col
+    })
+  }
+  // aria-sort value for a header (none when this isn't the active sort column).
+  const ariaSortFor = (col: SortCol): 'ascending' | 'descending' | 'none' =>
+    sortCol === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
 
   return (
     <AdminLayout
