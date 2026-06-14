@@ -24,6 +24,7 @@ import { authenticate } from '@/middleware/auth';
 import { canTransition, REQUEST_STATUSES, type RequestStatus } from '@/lib/requestTransitions';
 import { mintSignedReadUrl, SIGNED_URL_TTL_MS } from '@/lib/signedUrl';
 import { applyCloseConsent } from '@/lib/closeConsent';
+import { formatDisplayId } from '@/lib/displayId';
 
 const router = Router();
 
@@ -196,6 +197,25 @@ class TransitionError extends Error {
   }
 }
 
+// ── Friendly request reference allocation (WS-3) ────────────────────────────
+// Allocate the next sequential integer from a single `counters/requests` doc
+// inside a transaction, then format it as REQ-####. The transaction's
+// read-then-write on the same doc serializes concurrent allocations, so two
+// requests created at the same instant get distinct numbers (no collision).
+// The counter is the ONLY shared doc touched here; the request doc itself is
+// created separately (its UUID id already guarantees uniqueness).
+async function allocateNextRequestNumber(): Promise<{ n: number; displayId: string }> {
+  const counterRef = db().collection('counters').doc('requests');
+  const n = await db().runTransaction(async (tx) => {
+    const snap = await tx.get(counterRef);
+    const current = snap.exists ? Number((snap.data() as { next?: unknown }).next) : 0;
+    const next = (Number.isFinite(current) && current > 0 ? current : 0) + 1;
+    tx.set(counterRef, { next }, { merge: true });
+    return next;
+  });
+  return { n, displayId: formatDisplayId(n) };
+}
+
 // ── POST /api/requests ────────────────────────────────────────────────────
 router.post('/', authenticate, async (req: Request, res: Response) => {
   if (!req.user) {
@@ -234,12 +254,24 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
   const docRef = db().collection('requests').doc(input.requestId);
 
+  let displayId: string;
+  try {
+    ({ displayId } = await allocateNextRequestNumber());
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[requests.create] displayId allocation failed:', err);
+    res.status(500).json({ error: 'internal' });
+    return;
+  }
+
   try {
     await docRef.create({
       beneficiaryId,
       submittedBy: req.user.uid,             // who actually pressed submit
       submittedByRole: role,                 // 'beneficiary' or 'volunteer'
       onBehalf: role === 'volunteer' ? input.onBehalf === true : false,
+      // Friendly parallel reference (WS-3) — display-only; the UUID stays the key.
+      displayId,
 
       // Personal info snapshot at submit time
       firstName: input.firstName,
@@ -331,7 +363,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     console.error('[requests.create] event write failed:', err);
   });
 
-  res.status(201).json({ requestId: input.requestId });
+  res.status(201).json({ requestId: input.requestId, displayId });
 });
 
 // ── GET /api/requests/mine ───────────────────────────────────────────────
