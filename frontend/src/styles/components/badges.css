@@ -104,6 +104,42 @@
 
 .stat-card-value { font-variant-numeric: tabular-nums; }
 
+/* ── Clickable stat card (WS-4): wraps the card in an <a>. New variant only;
+   does not touch the shared .stat-card used on other admin pages. ── */
+
+a.stat-card--link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+}
+
+a.stat-card--link:hover {
+  border-color: var(--ember);
+}
+
+a.stat-card--link:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-ink);
+}
+
+.stat-card-link-arrow {
+  color: var(--gray-400);
+  flex: 0 0 auto;
+  transition: color var(--dur-2) var(--ease-out);
+}
+
+a.stat-card--link:hover .stat-card-link-arrow { color: var(--ember); }
+
+a.stat-card--link:focus-visible .stat-card-link-arrow { color: var(--ember); }
+
+/* Up-and-out arrow mirrors horizontally under RTL so it reads correctly. */
+[dir="rtl"] .stat-card-link-arrow { transform: scaleX(-1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card-link-arrow { transition: none; }
+}
+
 /* ── Badge dot: non-color status cue (shape + position) ── */
 
 .badge-dot {
