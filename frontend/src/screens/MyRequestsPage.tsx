@@ -791,7 +791,49 @@ export default function MyRequestsPage() {
 
       <div className="page-container myreq-shell-compact">
 
-        {/* UC-01 A1 — suggest-alternatives card (dismissible, top of page) */}
+        {/* WS-2 — consolidated post-submit banner: success + ref + save-to-profile
+            on one compact surface (was three stacked blocks). */}
+        {newId && !loading && (
+          <Reveal>
+            <div className="myreq-new-banner" role="status">
+              <CheckCircle size={18} aria-hidden="true" className="myreq-new-banner-icon" />
+              <div className="myreq-new-banner-body">
+                <div className="myreq-new-banner-title">{t.stream2.newRequestBadge}</div>
+                <div className="myreq-new-banner-ref">{newId}</div>
+              </div>
+              {/* #67 — save-to-profile offer, folded into the same banner. */}
+              {saveOffer && (
+                <div className="myreq-new-banner-save">
+                  <span className="myreq-new-banner-save-text">
+                    <UserCheck size={15} aria-hidden="true" style={{ marginInlineEnd: "6px", verticalAlign: "-3px", color: "var(--ember)" }} />
+                    {t.stream2.autoFill.saveToProfile}
+                  </span>
+                  <div className="myreq-new-banner-save-actions">
+                    <button
+                      type="button"
+                      className={`btn btn-outline btn-sm${savingProfile ? " is-loading" : ""}`}
+                      onClick={handleSaveOffer}
+                      disabled={savingProfile}
+                      aria-busy={savingProfile}
+                    >
+                      {t.common.save}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={clearSaveOffer}
+                      disabled={savingProfile}
+                    >
+                      {t.myRequests.suggest.dismiss}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Reveal>
+        )}
+
+        {/* UC-01 A1 — suggest-alternatives card (dismissible, below the status banner) */}
         {!suggestDismissed && suggestions.length > 0 && (
           <Reveal>
             <SuggestCard
@@ -806,53 +848,6 @@ export default function MyRequestsPage() {
               dismissLabel={t.myRequests.suggest.dismiss}
               onDismiss={() => setSuggestDismissed(true)}
             />
-          </Reveal>
-        )}
-
-        {/* #94 — New-request success banner */}
-        {newId && !loading && (
-          <Reveal>
-            <div className="form-banner form-banner-success" style={{ marginBlockEnd: "28px", alignItems: "flex-start" }}>
-              <CheckCircle size={18} aria-hidden="true" />
-              <div>
-                <div style={{ fontWeight: 700 }}>{t.stream2.newRequestBadge}</div>
-                <div style={{ fontSize: "12.5px", fontWeight: 500, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', marginBlockStart: "2px" }}>
-                  {newId}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        )}
-
-        {/* #67 — save-to-profile offer, shown right under the success banner
-            when the just-submitted personal details differ from the profile */}
-        {newId && !loading && saveOffer && (
-          <Reveal>
-            <div className="soft-note" role="status" style={{ marginBlockEnd: "28px", alignItems: "center", flexWrap: "wrap" }}>
-              <UserCheck size={18} className="soft-note-icon" aria-hidden="true" />
-              <span style={{ flex: 1, minWidth: "180px", fontSize: "13px", color: "var(--ink-2)" }}>
-                {t.stream2.autoFill.saveToProfile}
-              </span>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  type="button"
-                  className={`btn btn-outline btn-sm${savingProfile ? " is-loading" : ""}`}
-                  onClick={handleSaveOffer}
-                  disabled={savingProfile}
-                  aria-busy={savingProfile}
-                >
-                  {t.common.save}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={clearSaveOffer}
-                  disabled={savingProfile}
-                >
-                  {t.myRequests.suggest.dismiss}
-                </button>
-              </div>
-            </div>
           </Reveal>
         )}
 
