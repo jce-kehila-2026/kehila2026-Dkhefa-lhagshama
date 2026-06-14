@@ -1507,6 +1507,115 @@
   gap: var(--sp-1);
 }
 
+/* ── WS-5: searchable, two-column, sortable admin requests list ─────────────
+   New variant classes only — none of the shared .admin-data-table or
+   .admin-reqlist-* selectors above are mutated, so sibling admin tables
+   (users, volunteers) are untouched. Logical properties throughout for RTL. */
+
+/* Search field reuses the public dir-search anatomy (icon + inset input). */
+.admin-reqlist-search {
+  position: relative;
+  margin-block: var(--sp-4) var(--sp-3);
+  max-inline-size: 420px;
+}
+
+.admin-reqlist-search-icon {
+  position: absolute;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  inset-inline-start: 14px;
+  color: var(--gray-500);
+  pointer-events: none;
+}
+
+.admin-reqlist-search-input {
+  padding-inline-start: 42px;
+  padding-inline-end: 40px;
+  block-size: 44px;
+  border-radius: var(--radius);
+  text-align: start;
+  inline-size: 100%;
+}
+
+/* Clear (X) button parked at the inline-end of the field. */
+.admin-reqlist-search-clear {
+  position: absolute;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  inset-inline-end: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 26px;
+  block-size: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gray-500);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .admin-reqlist-search-clear:hover { background: var(--sky-3); color: var(--ink); }
+}
+
+.admin-reqlist-search-clear:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* Requester / interested cells: same calm metadata tone as the others. */
+.admin-reqlist-requester { color: var(--ink); font-weight: 600; }
+.admin-reqlist-requester--task { color: var(--gray-600); font-weight: 600; }
+
+.admin-reqlist-interested {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--gray-700);
+}
+.admin-reqlist-interested--no { color: var(--gray-500); }
+
+/* Sortable header: the whole <th> content is a borderless button so the hit
+   target spans the cell. A caret to the inline-end flips with aria-sort. */
+.admin-reqlist-sortbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.admin-reqlist-sortbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+.admin-reqlist-sortbtn-wrap { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Caret: dim by default, ember + oriented when this column is the sort key. */
+.admin-reqlist-sortcaret { color: var(--gray-400); flex: none; }
+[aria-sort='ascending'] .admin-reqlist-sortcaret,
+[aria-sort='descending'] .admin-reqlist-sortcaret { color: var(--ember); }
+
+/* Distinct "no search matches" affordance, set apart from the empty-list state. */
+.admin-reqlist-nomatch {
+  margin-block: var(--sp-5);
+  padding-block: var(--sp-5);
+  padding-inline: var(--sp-4);
+  text-align: center;
+  color: var(--gray-600);
+}
+.admin-reqlist-nomatch-title { font-weight: 600; color: var(--ink); margin-block-end: var(--sp-1); }
+
 /* ── Volunteers management (route /admin/volunteers) ───────────────────────
    Volunteers-only selectors: the summary band, the category-permission
    request panel, the roster identity cell, and the row action sizing.
