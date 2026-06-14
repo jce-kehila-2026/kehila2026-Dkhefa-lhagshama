@@ -69,6 +69,10 @@ const createRequestSchema = z
     description: z.string().trim().min(10).max(4000),
     urgency:     z.enum(['low', 'medium', 'high']).default('low'),
 
+    // Beneficiary's preferred contact language (WS-6). Drives the volunteer
+    // matcher's language signal. Optional; null when the beneficiary skipped it.
+    preferredLanguage: z.enum(['he', 'am', 'en']).nullable().optional().default(null),
+
     // Optional deadline (#68). ISO date or datetime string; validated parseable.
     deadline: z
       .string()
@@ -290,6 +294,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       description: input.description,
       urgency:     input.urgency,
       deadline:    input.deadline ?? null,
+      preferredLanguage: input.preferredLanguage ?? null,
 
       // Lifecycle
       status:              'pending',
