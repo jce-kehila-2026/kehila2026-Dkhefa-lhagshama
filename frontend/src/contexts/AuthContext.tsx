@@ -83,10 +83,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u);
       if (u) {
         try {
-          // Force a token refresh once on auth-state-init/login so a freshly
-          // promoted user (e.g. just granted `volunteer`) isn't stuck reading a
-          // stale role from a cached token. Pragmatic — not a live listener.
-          let nextRole = await readRoleFromToken(u, /*forceRefresh*/ true);
+          // Read the role from the *cached* token first. A forced refresh on
+          // every onAuthStateChanged init (e.g. on each navigation that
+          // re-initialises the SDK) repeatedly hit the token endpoint and was
+          // observed to invalidate live sessions on staging — a failed refresh
+          // cleared the persisted user and bounced the page to /login mid-flow.
+          // The cached token already carries the role claim for an established
+          // session, so reading it without a network round-trip is both correct
+          // and stable. We only force a refresh when the cached token has no
+          // usable role (a freshly-promoted user or a brand-new account), where
+          // the network cost is justified to pick up the new claim immediately.
+          let nextRole = await readRoleFromToken(u, /*forceRefresh*/ false);
           // Self-heal: a signed-in user with no role can't submit requests.
           // Assign the default `beneficiary` role, then re-read with a forced
           // token refresh so the new claim is reflected immediately.
@@ -95,7 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (assigned) nextRole = await readRoleFromToken(u, /*forceRefresh*/ true);
           }
           setRole(nextRole);
-        } catch { setRole(null); }
+        } catch {
+          // A transient token read failure must not nuke an established role.
+          // Keep whatever role we already resolved (no-op setRole) rather than
+          // forcing it to null, which would make role-gated UI flap. Only an
+          // explicit sign-out (u === null, handled below) clears the role.
+        }
       } else {
         setRole(null);
       }

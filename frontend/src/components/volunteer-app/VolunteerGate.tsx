@@ -23,10 +23,17 @@ export default function VolunteerGate({ children }: VolunteerGateProps) {
   const v = t.volunteerApp
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading || user) return
+    // Grace window before redirecting on (loading=false, user=null): Firebase
+    // can briefly emit a null user during a token refresh before re-emitting
+    // the signed-in user; redirecting on that transient null bounced
+    // authenticated volunteers to /login mid-flow. Cancelled the moment the
+    // user reappears, so an established session never navigates away.
+    const handle = setTimeout(() => {
       const next = encodeURIComponent(router.asPath || '/volunteer-hub')
       router.replace(`/login?next=${next}`)
-    }
+    }, 600)
+    return () => clearTimeout(handle)
   }, [loading, user, router])
 
   if (loading || !user) {

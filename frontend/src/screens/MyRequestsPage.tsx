@@ -667,9 +667,16 @@ export default function MyRequestsPage() {
   }, [saveOffer, savingProfile, toast, t, clearSaveOffer]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading || user) return;
+    // Grace window before redirecting on (authLoading=false, user=null):
+    // Firebase can briefly emit a null user during a token refresh before
+    // re-emitting the signed-in user, and redirecting on that transient null
+    // bounced authenticated beneficiaries to /login while navigating
+    // /requests -> /my-requests. Cancelled the moment the user reappears.
+    const handle = setTimeout(() => {
       router.replace(`/login?next=${encodeURIComponent("/my-requests")}`);
-    }
+    }, 600);
+    return () => clearTimeout(handle);
   }, [authLoading, user, router]);
 
   useEffect(() => {

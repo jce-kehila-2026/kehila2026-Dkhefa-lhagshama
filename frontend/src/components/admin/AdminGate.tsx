@@ -21,10 +21,21 @@ export default function AdminGate({ children }: AdminGateProps) {
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading || user) return
+    // Don't redirect on the *first* (loading=false, user=null) tick. Firebase
+    // can briefly emit a null user mid token-refresh before re-emitting the
+    // signed-in user; firing router.replace('/login') on that transient null
+    // spuriously bounced authenticated admins off /admin/* (observed losing the
+    // edit dialog while typing in the directory search). Wait a short grace
+    // window — if the user is still null when it elapses, they really are
+    // signed out and we redirect. The timer is cleared the moment a user
+    // reappears (effect deps change), so an authenticated session never
+    // navigates away.
+    const handle = setTimeout(() => {
       const next = encodeURIComponent(router.asPath || '/admin')
       router.replace(`/login?next=${next}`)
-    }
+    }, 600)
+    return () => clearTimeout(handle)
   }, [loading, user, router])
 
   if (loading || !user) {

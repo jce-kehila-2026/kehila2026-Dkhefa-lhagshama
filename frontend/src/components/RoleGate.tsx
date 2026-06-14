@@ -32,11 +32,18 @@ export default function RoleGate({ allow, redirect, children, fallback }: RoleGa
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading || user) return
+    // Grace window before redirecting on (loading=false, user=null): Firebase
+    // can briefly emit a null user during a token refresh before re-emitting
+    // the signed-in user, and redirecting on that transient null bounced
+    // authenticated users to /login mid-flow. The timer is cancelled the moment
+    // the user reappears, so an established session never navigates away.
+    const handle = setTimeout(() => {
       const target =
         redirect ?? `/login?next=${encodeURIComponent(router.asPath || '/')}`
       router.replace(target)
-    }
+    }, 600)
+    return () => clearTimeout(handle)
   }, [loading, user, router, redirect])
 
   if (loading || !user) {

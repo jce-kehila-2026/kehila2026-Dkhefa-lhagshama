@@ -194,10 +194,18 @@ export default function RequestsPage() {
   }, [values.category])
 
   // Auth guard — redirect to login if not signed in (#93 — next= so draft is kept)
+  // Grace window before redirecting on (authLoading=false, user=null): Firebase
+  // can briefly emit a null user during a token refresh before re-emitting the
+  // signed-in user, and redirecting on that transient null tore the beneficiary
+  // out of the form mid step-transition. The draft is saved first either way so
+  // nothing is lost; the timer is cancelled the moment the user reappears.
   useEffect(() => {
     if (!authLoading && !user) {
-      saveDraft(values) // save before redirect so it's restored on return
-      router.replace(`/login?next=${encodeURIComponent('/requests')}`)
+      saveDraft(values) // save before (possible) redirect so it's restored on return
+      const handle = setTimeout(() => {
+        router.replace(`/login?next=${encodeURIComponent('/requests')}`)
+      }, 600)
+      return () => clearTimeout(handle)
     }
   }, [authLoading, user, router, values])
 
