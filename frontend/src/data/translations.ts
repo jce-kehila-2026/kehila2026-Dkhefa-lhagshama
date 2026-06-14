@@ -1629,6 +1629,10 @@ const base = {
           activeVolunteers:  'Active volunteers',
           pendingVolunteers: 'Pending volunteers',
           totalUsers:        'Total users',
+          awaitingReview:    'Awaiting review',
+          unassigned:        'Unassigned',
+          usersLink:         'Users',
+          todayNew:          "Today's new requests",
         },
       },
       statusLabels: {
