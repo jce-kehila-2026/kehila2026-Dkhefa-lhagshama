@@ -20,6 +20,7 @@ import { Router, type Request, type Response } from 'express';
 
 import { db } from '@/lib/firebaseAdmin';
 import { authenticate, requireRole } from '@/middleware/auth';
+import { computeScalarKpis, type KpiRequest } from '@/lib/insightsKpis';
 
 const router = Router();
 router.use(authenticate, requireRole('admin'));
@@ -67,9 +68,11 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
     const perVolunteerMap = new Map<string, number>();
     const createdAtById = new Map<string, Date>();
     const validAges: number[] = []; // beneficiary ages for ageStats (req 24)
+    const kpiRequests: KpiRequest[] = []; // WS-10 scalar KPIs over the same scan
 
     for (const doc of reqSnap.docs) {
       const data = doc.data() as RequestDoc;
+      kpiRequests.push({ id: doc.id, status: data.status });
 
       // Age insights (req 24): only count finite, in-range ages.
       const age = typeof data.age === 'number' ? data.age : null;
@@ -121,6 +124,10 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
         closedAtById.set(ev.requestId, at);
       }
     }
+
+    // WS-10 — scalar KPI strip values, derived from the same request scan and
+    // the closed-at timestamps already resolved from requestEvents above.
+    const kpis = computeScalarKpis(kpiRequests, closedAtById, Date.now());
 
     const durationsDays: number[] = [];
     for (const [id, closedAt] of closedAtById) {
@@ -179,7 +186,7 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
     }));
     const ageStats = { averageAge, buckets: ageBuckets };
 
-    res.json({ overTime, byCategory, byStatus, avgResolutionDays, perVolunteer, ageStats });
+    res.json({ overTime, byCategory, byStatus, avgResolutionDays, perVolunteer, ageStats, kpis });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[adminInsights] GET /:', err);
