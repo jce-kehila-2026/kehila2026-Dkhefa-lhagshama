@@ -64,6 +64,29 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     rows.sort((a, b) => b.sortMs - a.sortMs);
     const page = rows.slice(0, limit);
 
+    // WS-3 — resolve each linked request's friendly reference (displayId) so the
+    // oversight table shows REQ-#### instead of a 36-char UUID. Batched getAll
+    // over the unique requestIds on this page; missing/legacy docs fall back to
+    // null and the frontend renders the UUID-derived short fallback.
+    const uniqueRequestIds = [
+      ...new Set(
+        page
+          .map((r) => r.requestId)
+          .filter((rid): rid is string => typeof rid === 'string' && rid.length > 0),
+      ),
+    ];
+    const displayIdByRequestId = new Map<string, string | null>();
+    if (uniqueRequestIds.length > 0) {
+      const refs = uniqueRequestIds.map((rid) => db().collection('requests').doc(rid));
+      const snaps = await db().getAll(...refs);
+      for (const s of snaps) {
+        if (s.exists) {
+          const did = (s.data() as { displayId?: unknown }).displayId;
+          displayIdByRequestId.set(s.id, typeof did === 'string' ? did : null);
+        }
+      }
+    }
+
     // Resolve display names once per unique uid (best-effort; falls back to uid).
     const uniqueUids = [...new Set(page.flatMap((r) => r.participantUids))];
     const nameByUid = new Map<string, string>();
@@ -75,6 +98,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
     const items = page.map(({ sortMs: _sortMs, participantUids, ...rest }) => ({
       ...rest,
+      requestDisplayId:
+        rest.requestId != null ? (displayIdByRequestId.get(rest.requestId) ?? null) : null,
       participants: participantUids.map((uid) => ({
         uid,
         displayName: nameByUid.get(uid) ?? uid,
