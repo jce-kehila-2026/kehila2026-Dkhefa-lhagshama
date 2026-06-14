@@ -30,6 +30,7 @@ import { canTransition, canArchive } from '@/lib/requestTransitions';
 import { sortByPriority } from '@/lib/requestSort';
 import { volunteerDisplayName } from '@/lib/displayName';
 import { ensureChatForRequest } from '@/lib/chatOnAssign';
+import { scoreVolunteers, type MatchVolunteer } from '@/lib/matchVolunteers';
 
 const router = Router();
 router.use(authenticate, requireRole('admin'));
@@ -147,6 +148,88 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     res.json({ items });
   } catch (err) {
     console.error('[adminRequests] GET /:', err);
+    res.status(500).json({ error: 'internal_error' });
+  }
+});
+
+// ── GET /api/admin/requests/:id/candidates ────────────────────────────────
+// Ranked volunteer-matching surface (WS-6). Loads the active roster + the
+// request, computes each volunteer's open assigned-load from one full request
+// scan (mirrors the in-memory architecture used elsewhere in this file), then
+// runs the transparent scorer. Admin-gated by the router-level requireRole.
+const OPEN_LOAD_STATUSES = new Set(['pending', 'in_progress', 'awaiting_review']);
+
+router.get('/:id/candidates', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const reqSnap = await db().collection('requests').doc(req.params.id).get();
+    if (!reqSnap.exists) {
+      res.status(404).json({ error: 'not_found' });
+      return;
+    }
+    const reqData = reqSnap.data()!;
+
+    const [volSnap, allReqSnap] = await Promise.all([
+      db().collection('volunteers').where('active', '==', true).limit(200).get(),
+      db().collection('requests').get(),
+    ]);
+
+    // Open-load per volunteer: assigned + still-open requests.
+    const loadByUid = new Map<string, number>();
+    for (const d of allReqSnap.docs) {
+      const dd = d.data();
+      const uid = dd.assignedVolunteerId as string | undefined;
+      if (uid && OPEN_LOAD_STATUSES.has(dd.status as string)) {
+        loadByUid.set(uid, (loadByUid.get(uid) ?? 0) + 1);
+      }
+    }
+
+    const volunteers: MatchVolunteer[] = volSnap.docs.map((d) => {
+      const v = d.data();
+      return {
+        uid: d.id,
+        name: (v.fullName as string | undefined) || d.id,
+        languages: (v.languages as string[] | undefined) ?? [],
+        areas: (v.areas as string[] | undefined) ?? [],
+        approvedCategories: (v.approvedCategories as string[] | undefined) ?? [],
+        workStatus: (v.workStatus as string | undefined) ?? 'free',
+        openLoad: loadByUid.get(d.id) ?? 0,
+        availabilityWindows:
+          (v.availabilityWindows as MatchVolunteer['availabilityWindows'] | undefined) ?? [],
+      };
+    });
+
+    const ranked = scoreVolunteers(
+      {
+        category: (reqData.category as string | undefined) ?? null,
+        preferredLanguage:
+          (reqData.preferredLanguage as 'he' | 'am' | 'en' | null | undefined) ?? null,
+        deadline: (reqData.deadline as string | null | undefined) ?? null,
+      },
+      volunteers,
+    );
+
+    // Mark which candidates already claimed this pooled request (req 22) so the
+    // UI can merge them into the ranking instead of showing a separate list.
+    const claimedUids = new Set(
+      ((reqData.claims as Array<{ volunteerId?: string }> | undefined) ?? [])
+        .map((c) => c.volunteerId)
+        .filter(Boolean) as string[],
+    );
+
+    const candidates = ranked.map((c) => ({
+      uid: c.uid,
+      name: c.name,
+      score: c.score,
+      reasons: c.reasons,
+      workStatus: c.workStatus,
+      openLoad: c.openLoad,
+      languages: c.languages,
+      hasClaimed: claimedUids.has(c.uid),
+    }));
+
+    res.json({ candidates });
+  } catch (err) {
+    console.error('[adminRequests] GET /:id/candidates:', err);
     res.status(500).json({ error: 'internal_error' });
   }
 });
