@@ -67,10 +67,7 @@ export default function VolunteerDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Work-status + category-request inline feedback.
-  const [statusBusy, setStatusBusy] = useState(false)
-  const [statusMsg, setStatusMsg] = useState<string | null>(null)
-  const [statusErr, setStatusErr] = useState(false)
+  // Category-request inline feedback.
   const [catName, setCatName] = useState('')
   const [catNote, setCatNote] = useState('')
   const [catBusy, setCatBusy] = useState(false)
@@ -130,26 +127,6 @@ export default function VolunteerDashboard() {
     return { assigned: assigned.length, inProgress, done, poolAvailable, nextDeadline }
   }, [assigned, pool])
 
-  const setWorkStatus = async (status: VolunteerMe['workStatus']) => {
-    if (statusBusy || me?.workStatus === status) return
-    setStatusBusy(true)
-    setStatusMsg(null)
-    setStatusErr(false)
-    try {
-      const updated = await apiJson<VolunteerMe>('/api/volunteer/me', {
-        method: 'PATCH',
-        body: JSON.stringify({ workStatus: status }),
-      })
-      setMe(updated)
-      setStatusMsg(d.workStatus.saved)
-    } catch {
-      setStatusErr(true)
-      setStatusMsg(d.workStatus.error)
-    } finally {
-      setStatusBusy(false)
-    }
-  }
-
   const requestCategory = async (e: FormEvent) => {
     e.preventDefault()
     const category = catName.trim()
@@ -194,12 +171,6 @@ export default function VolunteerDashboard() {
     ])
     return allCategories.filter((c) => !taken.has(c.id))
   }, [allCategories, me])
-
-  const workOptions: { key: VolunteerMe['workStatus']; label: string }[] = [
-    { key: 'free', label: d.workStatus.free },
-    { key: 'working', label: d.workStatus.working },
-    { key: 'unavailable', label: d.workStatus.unavailable },
-  ]
 
   return (
     <VolunteerLayout title={d.title} subtitle={d.subtitle}>
@@ -250,39 +221,8 @@ export default function VolunteerDashboard() {
         </section>
       </Reveal>
 
-      <Reveal className="volapp-columns" y={16} delay={0.05}>
-        {/* ── Work status ─────────────────────────────────────── */}
-        <section className="card volapp-panel">
-          <h2 className="volapp-panel-title">{d.workStatus.title}</h2>
-          <p className="volapp-panel-sub">{d.workStatus.subtitle}</p>
-          <div className="volapp-segmented" role="group" aria-label={d.workStatus.title}>
-            {workOptions.map((opt) => {
-              const active = me?.workStatus === opt.key
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  className={`volapp-segment${active ? ' is-active' : ''}`}
-                  aria-pressed={active}
-                  disabled={statusBusy}
-                  onClick={() => setWorkStatus(opt.key)}
-                >
-                  {opt.label}
-                </button>
-              )
-            })}
-          </div>
-          {statusMsg && (
-            <p
-              className={`volapp-inline-msg${statusErr ? ' is-error' : ''}`}
-              role={statusErr ? 'alert' : 'status'}
-            >
-              {statusMsg}
-            </p>
-          )}
-        </section>
-
-        {/* ── My chats link ───────────────────────────────────── */}
+      {/* ── My chats link ───────────────────────────────────────── */}
+      <Reveal y={16} delay={0.05}>
         <section className="card volapp-panel">
           <h2 className="volapp-panel-title">{d.myChats.title}</h2>
           <p className="volapp-panel-sub">{d.myChats.body}</p>
