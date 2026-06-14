@@ -28,6 +28,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { firebaseDb } from "../lib/firebase";
 import { apiJson, apiFetch } from "../lib/apiClient";
+import { formatRequestRef } from "../lib/requestRef";
 import { formatDate } from "../utils/helpers";
 import type { ChatKind } from "../types";
 
@@ -66,6 +67,10 @@ export default function ChatListPage() {
   // Express. Absent key ⇒ in flight / failed, treated as active (fail-open
   // toward visibility). Drives the active/past split + tab.
   const [reqStatus, setReqStatus] = useState<Record<string, string>>({});
+  // WS-3 — friendly reference per linked requestId, filled by the same lazy
+  // /api/requests/:id fan-out that resolves status below. Absent key ⇒ in
+  // flight / failed; the row falls back to a short UUID slice.
+  const [reqDisplayId, setReqDisplayId] = useState<Record<string, string>>({});
   const [tab, setTab] = useState<"active" | "past">("active");
 
   // Direct-chat row labels: comma-joined other-participant names, fetched
@@ -150,9 +155,12 @@ export default function ChatListPage() {
 
     missing.forEach((rid) => {
       reqStatusRequested.current.add(rid);
-      apiJson<{ status?: string }>(`/api/requests/${rid}`)
+      apiJson<{ status?: string; displayId?: string | null }>(`/api/requests/${rid}`)
         .then((data) => {
           setReqStatus((prev) => ({ ...prev, [rid]: data?.status ?? "" }));
+          if (typeof data?.displayId === "string" && data.displayId) {
+            setReqDisplayId((prev) => ({ ...prev, [rid]: data.displayId as string }));
+          }
         })
         .catch(() => {
           // Permission/network error — absent key is treated as active.
@@ -413,12 +421,16 @@ export default function ChatListPage() {
             const directLabel =
               chat.title || directNames[chat.id] || c.directChatFallback;
             const RowIcon = isDirect ? Users : MessageCircle;
+            const requestRef = formatRequestRef({
+              displayId: chat.requestId ? reqDisplayId[chat.requestId] : null,
+              id: chat.requestId,
+            });
             return (
               <li key={chat.id}>
                 <Link
                   href={`/chats/${chat.id}`}
                   aria-label={
-                    isDirect ? directLabel : `${c.request} ${chat.requestId}`
+                    isDirect ? directLabel : `${c.request} ${requestRef}`
                   }
                   className={`chat-row${highlighted ? " chat-row--focus" : ""}`}
                 >
@@ -434,7 +446,7 @@ export default function ChatListPage() {
                           <>
                             {c.request}{" "}
                             <span className="chat-row__id">
-                              {chat.requestId}
+                              {requestRef}
                             </span>
                           </>
                         )}
