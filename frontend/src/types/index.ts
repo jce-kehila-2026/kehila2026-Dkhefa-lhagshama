@@ -441,6 +441,14 @@ export interface InsightsData {
     averageAge: number | null;
     buckets: { label: string; count: number }[];
   };
+  /** Scalar KPI strip (WS-10): headline numbers shown above the charts. */
+  kpis?: {
+    totalRequests: number;
+    openRequests: number;
+    closedThisMonth: number;
+    /** Integer percent (closed / total), or null when there are no requests. */
+    closureRate: number | null;
+  };
 }
 
 /** A volunteer's own analytics (req 14b — GET /api/volunteer/insights). */
