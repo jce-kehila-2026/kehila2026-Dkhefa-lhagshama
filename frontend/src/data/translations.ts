@@ -565,6 +565,8 @@ const base = {
           openTasks:      'משימות פתוחות',
           reassign:       'שינוי הקצאה',
           cancelReassign: 'ביטול',
+          searchPlaceholder: 'חיפוש מתנדבים',
+          noMatches:         'לא נמצאו מתנדבים תואמים',
           reasons: {
             sameCategory:            'אותו תחום',
             relatedArea:             'תחום קרוב',
@@ -1838,6 +1840,8 @@ const base = {
           openTasks:      'open tasks',
           reassign:       'Reassign',
           cancelReassign: 'Cancel',
+          searchPlaceholder: 'Search volunteers',
+          noMatches:         'No matching volunteers',
           reasons: {
             sameCategory:            'Same category',
             relatedArea:             'Related area',

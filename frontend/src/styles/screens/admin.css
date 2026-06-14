@@ -1961,6 +1961,13 @@
   border-color: var(--ember-soft);
   color: var(--ember-700);
 }
+/* FIX 2 — name filter over the candidate list. Reuses the .admin-search shell
+   but fills the narrower action panel and sits just above the ranked list. */
+.match-search {
+  max-inline-size: none;
+  margin-block: var(--sp-3) 0;
+}
+
 .match-toggle {
   margin-block-start: var(--sp-3);
 }

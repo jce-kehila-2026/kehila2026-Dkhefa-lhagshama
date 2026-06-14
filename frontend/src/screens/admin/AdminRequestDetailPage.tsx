@@ -29,11 +29,14 @@ import {
   Gauge,
   ChevronDown,
   Check,
+  Search,
+  X,
 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson, apiFetch } from '@/lib/apiClient'
+import { formatRequestRef } from '@/lib/requestRef'
 import type { Attachment, CloseRequestSummary, RequestStatus } from '@/types'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog'
@@ -85,6 +88,10 @@ interface RequestClaim {
 // the fields this screen reads are declared.
 interface RequestDetail {
   id: string
+  // Server-allocated friendly reference ("REQ-0042"); returned by the
+  // GET :id `...data` spread. Rendered via formatRequestRef so the raw UUID
+  // never surfaces (FIX 1).
+  displayId?: string | null
   firstName?: string
   lastName?: string
   title?: string
@@ -156,6 +163,8 @@ type MatchingCopy = {
   openTasks: string
   reassign: string
   cancelReassign: string
+  searchPlaceholder: string
+  noMatches: string
   reasons: Record<string, string>
   langLabels: Record<string, string>
 }
@@ -322,6 +331,10 @@ export default function AdminRequestDetailPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [candidatesError, setCandidatesError] = useState(false)
   const [showAllCandidates, setShowAllCandidates] = useState(false)
+  // FIX 2 — client-side name filter over the ranked candidate list. When
+  // non-empty the list shows ALL matches (no 8-item cap); empty restores the
+  // collapsing show-all behavior.
+  const [candidateSearch, setCandidateSearch] = useState('')
   // FIX 2 — when a request is already assigned the aside shows an assigned
   // summary (who + why); toggling this reveals the ranked list to reassign.
   const [reassigning, setReassigning] = useState(false)
@@ -421,6 +434,7 @@ export default function AdminRequestDetailPage() {
     showAll: string; hideAll: string; assign: string; assigning: string
     empty: string; loadError: string; claimedTag: string; openTasks: string
     reassign: string; cancelReassign: string
+    searchPlaceholder: string; noMatches: string
     reasons: Record<string, string>; langLabels: Record<string, string>
   }
   const handleAssignCandidate = async (uid: string) => {
@@ -697,6 +711,24 @@ export default function AdminRequestDetailPage() {
     [request, candidates],
   )
 
+  // FIX 2 — case-insensitive name filter over the already-ranked candidates.
+  // Candidates arrive sorted best-first, so a substring filter preserves the
+  // score order; we never re-sort.
+  const candidateQuery = candidateSearch.trim().toLowerCase()
+  const filteredCandidates = useMemo(
+    () =>
+      candidateQuery
+        ? candidates.filter((c) => c.name.toLowerCase().includes(candidateQuery))
+        : candidates,
+    [candidates, candidateQuery],
+  )
+  // When searching, show every match (no 8-item cap); otherwise keep the
+  // collapsing show-all behavior on long lists.
+  const visibleCandidates =
+    candidateQuery || showAllCandidates || filteredCandidates.length <= 8
+      ? filteredCandidates
+      : filteredCandidates.slice(0, 8)
+
   return (
     <AdminLayout title={a.reqDetail.title}>
       <Link
@@ -792,8 +824,24 @@ export default function AdminRequestDetailPage() {
                       wordBreak: 'break-word',
                     }}
                   >
-                    {fullName || request.id}
+                    {/* FIX 1 — never render the raw 36-char UUID; fall back to
+                        the friendly REQ-#### ref when there's no name. */}
+                    {fullName || formatRequestRef(request)}
                   </h2>
+                  {/* FIX 1 — always-visible friendly request reference, so the
+                      admin sees REQ-#### even when a beneficiary name fills the
+                      heading. Mono caption, never the raw UUID. */}
+                  <p
+                    style={{
+                      fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                      fontSize: 'var(--fs-xs)',
+                      letterSpacing: '0.06em',
+                      color: 'var(--gray-500)',
+                      margin: '8px 0 0',
+                    }}
+                  >
+                    {rdStr(a, 'requestId')}: {formatRequestRef(request)}
+                  </p>
                 </div>
                 <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', justifyContent: 'flex-end' }}>
                   <StatusBadge
@@ -1192,14 +1240,47 @@ export default function AdminRequestDetailPage() {
                   </p>
                 ) : (
                   <>
-                    {/* FIX 3 — the candidates arrive ranked best-first, so render
-                        the FULL sorted list (top emphasized). Only when there are
-                        many (>8) do we collapse to the first 8 with a show-all. */}
+                    {/* FIX 2 — search box over the ranked candidates. Every active
+                        volunteer arrives in this list, so a name filter makes each
+                        of them reachable. Mirrors the /admin/users search box. */}
+                    <div className="admin-search match-search">
+                      <Search size={16} aria-hidden="true" className="admin-search-icon" />
+                      <input
+                        type="search"
+                        value={candidateSearch}
+                        onChange={(e) => setCandidateSearch(e.target.value)}
+                        placeholder={m.searchPlaceholder}
+                        aria-label={m.searchPlaceholder}
+                        className="form-input admin-search-input"
+                        autoComplete="off"
+                        spellCheck={false}
+                        enterKeyHint="search"
+                      />
+                      {candidateSearch && (
+                        <button
+                          type="button"
+                          className="admin-search-clear"
+                          aria-label={t.common.cancel}
+                          onClick={() => setCandidateSearch('')}
+                        >
+                          <X size={16} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+
+                    {filteredCandidates.length === 0 ? (
+                      // No volunteer name matched the active search term.
+                      <p style={{ margin: 'var(--sp-3) 0 0', color: 'var(--gray-500)', fontSize: 'var(--fs-sm)' }}>
+                        {m.noMatches}
+                      </p>
+                    ) : (
+                      <>
+                    {/* The candidates arrive ranked best-first, so render the
+                        sorted list (top emphasized). With an active search ALL
+                        matches show; otherwise long lists collapse to the first 8
+                        with a show-all toggle. */}
                     <ul className="match-list">
-                      {(showAllCandidates || candidates.length <= 8
-                        ? candidates
-                        : candidates.slice(0, 8)
-                      ).map((c, i) => {
+                      {visibleCandidates.map((c, i) => {
                         const busy = assigningUid === c.uid
                         return (
                           <li
@@ -1239,8 +1320,9 @@ export default function AdminRequestDetailPage() {
                         )
                       })}
                     </ul>
-                    <div className="match-toggle-row">
-                      {candidates.length > 8 && (
+                    {/* Show-all only applies to the unsearched full list. */}
+                    {!candidateQuery && filteredCandidates.length > 8 && (
+                      <div className="match-toggle-row">
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm match-toggle"
@@ -1250,10 +1332,16 @@ export default function AdminRequestDetailPage() {
                           <ChevronDown size={14} aria-hidden="true" />
                           {showAllCandidates ? m.hideAll : m.showAll}
                         </button>
-                      )}
-                      {/* When reassigning an already-assigned request, offer a way
-                          back to the assigned summary without changing anyone. */}
-                      {reassigning && request.assignedVolunteerId && (
+                      </div>
+                    )}
+                      </>
+                    )}
+
+                    {/* When reassigning an already-assigned request, offer a way
+                        back to the assigned summary without changing anyone —
+                        available regardless of the search result. */}
+                    {reassigning && request.assignedVolunteerId && (
+                      <div className="match-toggle-row">
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm match-toggle"
@@ -1262,8 +1350,8 @@ export default function AdminRequestDetailPage() {
                         >
                           {m.cancelReassign}
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
