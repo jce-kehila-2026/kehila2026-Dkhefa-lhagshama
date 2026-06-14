@@ -14,6 +14,8 @@
  * Tunable constants live in WEIGHTS so the ranking stays explainable.
  */
 
+import { windowsCoverBefore } from './availability';
+
 export type PreferredLanguage = 'he' | 'am' | 'en';
 
 export interface AvailabilityWindow {
@@ -73,26 +75,15 @@ function norm(v: unknown): string {
 }
 
 /**
- * True when at least one recurring window starts on or before the request's
- * deadline date. With no deadline we treat any declared window as coverage.
- */
-function coversDeadline(windows: AvailabilityWindow[], deadline?: string | null): boolean {
-  if (windows.length === 0) return false;
-  if (!deadline) return true;
-  const t = Date.parse(deadline);
-  if (Number.isNaN(t)) return true;
-  // Any future-dated window before the deadline is "coverage" — the recurring
-  // weekly pattern means a window day always recurs before any non-past date.
-  return t >= Date.now();
-}
-
-/**
  * Score every candidate against the request and return them best-first.
  * Ties break by name ascending (locale-naive) so the order is deterministic.
+ * `now` is injected so the day-aware availability boost is deterministic/testable
+ * (default: current time — mirrors requestSort.ts's injected clock).
  */
 export function scoreVolunteers(
   request: MatchRequest,
   volunteers: MatchVolunteer[],
+  now: number = Date.now(),
 ): ScoredVolunteer[] {
   const cat = norm(request.category);
   const wantLang = norm(request.preferredLanguage);
@@ -123,8 +114,8 @@ export function scoreVolunteers(
     } else if (v.workStatus === 'working') {
       score += WEIGHTS.workStatusWorking;
     }
-    // 3b. Recurring window before the deadline (WS-7 hook).
-    if (coversDeadline(v.availabilityWindows, request.deadline)) {
+    // 3b. Day-aware recurring window before the deadline (WS-7).
+    if (windowsCoverBefore(v.availabilityWindows, request.deadline, now)) {
       score += WEIGHTS.availableBeforeDeadline;
       reasons.push({ key: 'availableBeforeDeadline' });
     }

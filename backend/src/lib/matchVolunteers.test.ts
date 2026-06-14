@@ -96,4 +96,28 @@ describe('scoreVolunteers', () => {
     expect(covered.score).toBeGreaterThan(none.score);
     expect(covered.reasons).toContainEqual({ key: 'availableBeforeDeadline' });
   });
+
+  it('does NOT boost when the only window is on a weekday that never recurs before the deadline', () => {
+    // now = Sunday 2026-06-14 (UTC). deadline = Monday 2026-06-15. The volunteer's
+    // sole window is Thursday (day=4), which does not fall in the Sun→Mon span.
+    const now = Date.parse('2026-06-14T00:00:00.000Z'); // Sunday
+    const req: MatchRequest = { ...baseReq, deadline: '2026-06-15T00:00:00.000Z' }; // Monday
+    const thursdayOnly = scoreVolunteers(
+      req,
+      [vol({ uid: 't', availabilityWindows: [{ day: 4, start: '09:00', end: '17:00' }] })],
+      now,
+    )[0];
+    expect(thursdayOnly.reasons).not.toContainEqual({ key: 'availableBeforeDeadline' });
+  });
+
+  it('boosts when a window weekday falls within the now→deadline span (day-aware)', () => {
+    const now = Date.parse('2026-06-14T00:00:00.000Z'); // Sunday
+    const req: MatchRequest = { ...baseReq, deadline: '2026-06-15T00:00:00.000Z' }; // Monday
+    const mondayWindow = scoreVolunteers(
+      req,
+      [vol({ uid: 'm', availabilityWindows: [{ day: 1, start: '09:00', end: '17:00' }] })],
+      now,
+    )[0];
+    expect(mondayWindow.reasons).toContainEqual({ key: 'availableBeforeDeadline' });
+  });
 });
