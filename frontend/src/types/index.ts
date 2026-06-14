@@ -140,6 +140,10 @@ export interface Volunteer {
   approvedCategories?: string[];
   /** Pending/decided category permission requests (req 15). */
   requestedCategories?: CategoryRequest[];
+  /** Recurring weekly availability windows (WS-7). */
+  availabilityWindows?: AvailabilityWindow[];
+  /** ISO date the volunteer expects to be free again; set when unavailable (WS-7). */
+  availableAgainOn?: string | null;
 }
 
 /**
@@ -448,11 +452,24 @@ export interface VolunteerInsights {
   currentLoad: number;
 }
 
+/** A recurring weekly availability window (WS-7). day: 0=Sun … 6=Sat. */
+export interface AvailabilityWindow {
+  day: number;
+  /** 24h "HH:MM". */
+  start: string;
+  /** 24h "HH:MM". */
+  end: string;
+}
+
 /** A volunteer's self profile bits (GET /api/volunteer/me). */
 export interface VolunteerMe {
   workStatus: 'free' | 'working' | 'unavailable';
   approvedCategories: string[];
   requestedCategories: CategoryRequest[];
+  /** Recurring weekly availability (WS-7). */
+  availabilityWindows: AvailabilityWindow[];
+  /** ISO date (YYYY-MM-DD) the volunteer expects to be free again; null otherwise. */
+  availableAgainOn: string | null;
 }
 
 /**
