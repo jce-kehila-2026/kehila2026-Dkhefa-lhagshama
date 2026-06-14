@@ -13,6 +13,7 @@ import { useCategories } from "../hooks/useCategories";
 import { apiJson } from "../lib/apiClient";
 import { safeHref } from "../lib/safeUrl";
 import { formatDate, truncate } from "../utils/helpers";
+import { formatRequestRef } from "../lib/requestRef";
 import type { CSSProperties, ReactNode } from "react";
 import type { CaughtError, TNode, Referral, Suggestion } from "@/types";
 
@@ -25,6 +26,8 @@ type Translations = TNode;
 // narrowed to the fields actually read at the call sites below.
 interface RequestRecord {
   id: string;
+  /** Friendly reference "REQ-####" (WS-3); falls back to a short UUID slice. */
+  displayId?: string | null;
   status: string;
   description?: string;
   category: string;
@@ -552,7 +555,7 @@ function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, focusRef 
                   color: "var(--ember-700)",
                   letterSpacing: "0.04em",
                 }}>
-                  {item.id}
+                  {formatRequestRef(item)}
                 </span>
               </MetaField>
               <MetaField label={tbl.urgency}>
