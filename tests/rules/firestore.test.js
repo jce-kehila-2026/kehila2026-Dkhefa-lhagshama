@@ -542,6 +542,38 @@ describe('/counters (server-only, fully denied to clients)', () => {
   });
 });
 
+// ── /volunteers — availability fields are server-only (WS-7) ────────────────
+describe('/volunteers availability (WS-7)', () => {
+  test('a volunteer reads their own doc with availability fields', async () => {
+    await seed((dbx) =>
+      setDoc(doc(dbx, 'volunteers/vol1'), {
+        active: true,
+        workStatus: 'unavailable',
+        availabilityWindows: [{ day: 1, start: '09:00', end: '17:00' }],
+        availableAgainOn: '2026-07-01',
+      }),
+    );
+    await assertSucceeds(getDoc(doc(asVolunteer(), 'volunteers/vol1')));
+  });
+
+  test('a volunteer cannot client-write availabilityWindows / availableAgainOn', async () => {
+    await seed((dbx) => setDoc(doc(dbx, 'volunteers/vol1'), { active: true }));
+    await assertFails(
+      setDoc(doc(asVolunteer(), 'volunteers/vol1'), {
+        availabilityWindows: [{ day: 2, start: '10:00', end: '12:00' }],
+      }),
+    );
+    await assertFails(
+      setDoc(doc(asVolunteer(), 'volunteers/vol1'), { availableAgainOn: '2026-08-01' }),
+    );
+  });
+
+  test('a volunteer cannot read another volunteer doc', async () => {
+    await seed((dbx) => setDoc(doc(dbx, 'volunteers/vol2'), { active: true }));
+    await assertFails(getDoc(doc(asVolunteer(), 'volunteers/vol2')));
+  });
+});
+
 // ── catch-all ───────────────────────────────────────────────────────────────
 describe('catch-all deny', () => {
   test('undeclared collection is fully denied', async () => {
