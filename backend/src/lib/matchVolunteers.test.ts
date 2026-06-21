@@ -21,6 +21,9 @@ function vol(p: Partial<MatchVolunteer> & { uid: string }): MatchVolunteer {
     workStatus: p.workStatus ?? 'free',
     openLoad: p.openLoad ?? 0,
     availabilityWindows: p.availabilityWindows ?? [],
+    city: p.city ?? null,
+    avgRating: p.avgRating ?? null,
+    ratingCount: p.ratingCount ?? 0,
   };
 }
 
@@ -127,5 +130,77 @@ describe('scoreVolunteers', () => {
     expect(busy.reasons).not.toContainEqual({ key: 'lowLoad', count: 0 });
     expect(busy.reasons.some((r) => r.key === 'lowLoad')).toBe(false);
     expect(idle.reasons).toContainEqual({ key: 'lowLoad', count: 0 });
+  });
+
+  // ── Tier B signals ──────────────────────────────────────────────
+
+  it('exposes a 0-100 matchPercent and gives a perfect candidate a high one', () => {
+    const req: MatchRequest = {
+      category: 'education',
+      preferredLanguage: 'am',
+      deadline: null,
+      city: 'Haifa',
+    };
+    const best = scoreVolunteers(req, [
+      vol({
+        uid: 'best',
+        approvedCategories: ['education'],
+        languages: ['am'],
+        city: 'Haifa',
+        avgRating: 5,
+        ratingCount: 4,
+        workStatus: 'free',
+      }),
+    ])[0];
+    expect(best.matchPercent).toBeGreaterThanOrEqual(0);
+    expect(best.matchPercent).toBeLessThanOrEqual(100);
+    expect(best.matchPercent).toBeGreaterThan(90);
+  });
+
+  it('boosts a same-city volunteer and emits the nearby reason', () => {
+    const req: MatchRequest = { ...baseReq, city: 'Haifa' };
+    const near = scoreVolunteers(req, [vol({ uid: 'near', city: 'haifa' })])[0];
+    const far = scoreVolunteers(req, [vol({ uid: 'far', city: 'Eilat' })])[0];
+    expect(near.score - far.score).toBe(WEIGHTS.sameCity);
+    expect(near.reasons).toContainEqual({ key: 'nearby' });
+    expect(far.reasons).not.toContainEqual({ key: 'nearby' });
+  });
+
+  it('boosts a highly-rated volunteer and emits the highlyRated reason', () => {
+    const rated = scoreVolunteers(baseReq, [vol({ uid: 'r', avgRating: 4.6, ratingCount: 5 })])[0];
+    const unrated = scoreVolunteers(baseReq, [vol({ uid: 'u', avgRating: null, ratingCount: 0 })])[0];
+    expect(rated.score).toBeGreaterThan(unrated.score);
+    expect(rated.reasons).toContainEqual({ key: 'highlyRated', rating: 4.6 });
+    expect(unrated.reasons.some((r) => r.key === 'highlyRated')).toBe(false);
+  });
+
+  it('never penalizes a low or absent rating (boost floors at zero)', () => {
+    const low = scoreVolunteers(baseReq, [vol({ uid: 'low', avgRating: 2, ratingCount: 3 })])[0];
+    const none = scoreVolunteers(baseReq, [vol({ uid: 'none' })])[0];
+    expect(low.score).toBe(none.score);
+  });
+
+  it('flags an at-capacity volunteer and sinks them below an equal one with room', () => {
+    // Two otherwise-identical volunteers; only the load differs. The capacity
+    // penalty must decide. (A category-matched volunteer can still legitimately
+    // win despite capacity — that is by design — so this test isolates load.)
+    const ranked = scoreVolunteers(baseReq, [
+      vol({ uid: 'capped', openLoad: WEIGHTS.capacityCeiling }),
+      vol({ uid: 'room', openLoad: 0 }),
+    ]);
+    expect(ranked.map((r) => r.uid)).toEqual(['room', 'capped']);
+    const capped = ranked.find((r) => r.uid === 'capped')!;
+    expect(capped.reasons).toContainEqual({ key: 'atCapacity', count: WEIGHTS.capacityCeiling });
+  });
+
+  it('amplifies the free-status advantage when the request is high urgency', () => {
+    const lowU: MatchRequest = { ...baseReq, urgency: 'low' };
+    const highU: MatchRequest = { ...baseReq, urgency: 'high' };
+    const gap = (req: MatchRequest) => {
+      const free = scoreVolunteers(req, [vol({ uid: 'f', workStatus: 'free' })])[0];
+      const idleUnavail = scoreVolunteers(req, [vol({ uid: 'u', workStatus: 'unavailable' })])[0];
+      return free.score - idleUnavail.score;
+    };
+    expect(gap(highU)).toBeGreaterThan(gap(lowU));
   });
 });

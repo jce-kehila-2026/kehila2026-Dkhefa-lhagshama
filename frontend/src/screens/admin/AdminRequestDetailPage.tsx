@@ -27,6 +27,7 @@ import {
   Sparkles,
   Languages,
   Gauge,
+  Star,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -132,18 +133,33 @@ interface ActiveVolunteer {
 
 // A ranked match candidate from GET /api/admin/requests/:id/candidates (WS-6).
 interface MatchReason {
-  key: 'sameCategory' | 'relatedArea' | 'speaksLanguage' | 'currentlyFree' | 'lowLoad' | 'availableBeforeDeadline'
+  key:
+    | 'sameCategory'
+    | 'relatedArea'
+    | 'speaksLanguage'
+    | 'currentlyFree'
+    | 'lowLoad'
+    | 'availableBeforeDeadline'
+    | 'nearby'
+    | 'highlyRated'
+    | 'atCapacity'
   lang?: string
   count?: number
+  rating?: number
 }
 interface Candidate {
   uid: string
   name: string
   score: number
+  /** 0-100 normalized match (Tier B) — shown in the UI instead of raw score. */
+  matchPercent: number
   reasons: MatchReason[]
   workStatus: string
   openLoad: number
   languages: string[]
+  city?: string | null
+  avgRating?: number | null
+  ratingCount?: number
   hasClaimed: boolean
 }
 
@@ -153,6 +169,7 @@ type MatchingCopy = {
   heading: string
   subtitle: string
   score: string
+  match: string
   why: string
   showAll: string
   hideAll: string
@@ -431,7 +448,7 @@ export default function AdminRequestDetailPage() {
   // preserved unchanged.
   const [assigningUid, setAssigningUid] = useState<string | null>(null)
   const m = a.reqDetail.matching as unknown as {
-    heading: string; subtitle: string; score: string; why: string
+    heading: string; subtitle: string; score: string; match: string; why: string
     showAll: string; hideAll: string; assign: string; assigning: string
     empty: string; loadError: string; claimedTag: string; openTasks: string
     reassign: string; cancelReassign: string
@@ -458,6 +475,10 @@ export default function AdminRequestDetailPage() {
       // The matcher only emits this for a genuinely idle volunteer (openLoad===0),
       // and the per-candidate load is shown separately, so render without a count.
       return m.reasons.lowLoad
+    }
+    if (r.key === 'highlyRated' && typeof r.rating === 'number') {
+      // Append the actual category-specific average (e.g. "Highly rated here · 4.6").
+      return `${m.reasons.highlyRated} · ${r.rating.toFixed(1)}`
     }
     return m.reasons[r.key] || r.key
   }
@@ -1300,17 +1321,21 @@ export default function AdminRequestDetailPage() {
                             <div className="match-card-body">
                               <span className="match-card-name">{c.name}</span>
                               <p className="match-card-meta">
-                                {m.score}: {c.score} · {c.openLoad} {m.openTasks}
+                                <span className="match-card-pct">{c.matchPercent}% {m.match}</span>
+                                {' · '}{c.openLoad} {m.openTasks}
                                 {c.hasClaimed ? ` · ${m.claimedTag}` : ''}
                               </p>
                               <div className="match-chips" aria-label={m.why}>
                                 {c.reasons.map((r, ri) => (
                                   <span
                                     key={`${r.key}-${ri}`}
-                                    className={`match-chip${r.key === 'sameCategory' ? ' match-chip--strong' : ''}`}
+                                    className={`match-chip${r.key === 'sameCategory' ? ' match-chip--strong' : ''}${r.key === 'atCapacity' ? ' match-chip--warn' : ''}`}
                                   >
                                     {r.key === 'speaksLanguage' && <Languages size={12} aria-hidden="true" />}
                                     {r.key === 'lowLoad' && <Gauge size={12} aria-hidden="true" />}
+                                    {r.key === 'nearby' && <MapPin size={12} aria-hidden="true" />}
+                                    {r.key === 'highlyRated' && <Star size={12} aria-hidden="true" />}
+                                    {r.key === 'atCapacity' && <AlertTriangle size={12} aria-hidden="true" />}
                                     {reasonChipLabel(r)}
                                   </span>
                                 ))}

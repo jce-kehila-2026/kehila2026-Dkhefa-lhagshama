@@ -54,7 +54,7 @@ const base = {
       track:       'מעקב בקשה',
       admin:       'ניהול',
       chats:       'צ׳אט',
-      submitBtn:   '+ הגש בקשה',
+      submitBtn:   '+ בקשת עזרה',
       openMenu:    'פתח תפריט',
       closeMenu:   'סגור תפריט',
       ariaMain:    'ניווט ראשי',
@@ -80,7 +80,7 @@ const base = {
       subtitle:  'עמותת דחיפה להגשמה מלווה את בני הקהילה האתיופית בישראל בחינוך, תעסוקה, סיוע משפטי ושילוב חברתי. אנחנו כאן בשבילך.',
       cta:       'בקשת עזרה',
       ctaVolunteer: 'התנדבות',
-      ctaStaff:  'כניסת צוות',
+      ctaStaff:  'כניסת מנהל',
       ctaSecondary: 'השירותים שלנו',
       stats: {
         beneficiaries: 'נהנו מהשירות',
@@ -554,6 +554,7 @@ const base = {
           heading:        'מתנדבים מומלצים',
           subtitle:       'מדורגים לפי התאמה לבקשה: שקוף, מבוסס כללים.',
           score:          'ציון התאמה',
+          match:          'התאמה',
           why:            'למה מתאים',
           showAll:        'הצגת כל המתנדבים',
           hideAll:        'הסתרת הרשימה המלאה',
@@ -576,6 +577,9 @@ const base = {
             currentlyFree:           'פנוי/ה כעת',
             lowLoad:                 'ללא משימות פתוחות',
             availableBeforeDeadline: 'זמין/ה לפני המועד האחרון',
+            nearby:                  'באותה עיר',
+            highlyRated:             'דירוג גבוה בתחום',
+            atCapacity:              'עומס מלא',
           },
           langLabels: { he: 'עברית', am: 'אמהרית', en: 'אנגלית' },
         },
@@ -958,6 +962,11 @@ const base = {
 
     // ── COMMON ────────────────────────────────────────────────
     common: {
+      insightsRange: {
+        label: 'טווח זמן',
+        d7: '7 ימים', d30: '30 ימים', d90: '90 ימים', m12: '12 חודשים', all: 'הכול', custom: 'מותאם',
+        from: 'מתאריך', to: 'עד תאריך',
+      },
       loading:    'טוען…',
       save:       'שמור',
       cancel:     'ביטול',
@@ -1344,7 +1353,7 @@ const base = {
       track:       'Track Request',
       admin:       'Admin',
       chats:       'Chat',
-      submitBtn:   '+ Submit Request',
+      submitBtn:   '+ Request Help',
       openMenu:    'Open menu',
       closeMenu:   'Close menu',
       ariaMain:    'Main navigation',
@@ -1369,7 +1378,7 @@ const base = {
       subtitle:       'Push for Fulfillment supports the Ethiopian community in Israel with education, employment, legal aid, and social integration. We are here for you.',
       cta:            'Request Help',
       ctaVolunteer:   'Volunteer',
-      ctaStaff:       'Staff login',
+      ctaStaff:       'Admin login',
       ctaSecondary:   'Our Services',
       stats: {
         beneficiaries: 'People Served',
@@ -1835,6 +1844,7 @@ const base = {
           heading:        'Recommended volunteers',
           subtitle:       'Ranked by fit for this request. Transparent and rule-based.',
           score:          'Match score',
+          match:          'match',
           why:            'Why a match',
           showAll:        'Show all volunteers',
           hideAll:        'Hide the full list',
@@ -1857,6 +1867,9 @@ const base = {
             currentlyFree:           'Currently free',
             lowLoad:                 'No open tasks',
             availableBeforeDeadline: 'Available before the deadline',
+            nearby:                  'Same city',
+            highlyRated:             'Highly rated here',
+            atCapacity:              'At capacity',
           },
           langLabels: { he: 'Hebrew', am: 'Amharic', en: 'English' },
         },
@@ -2233,6 +2246,11 @@ const base = {
     },
 
     common: {
+      insightsRange: {
+        label: 'Time range',
+        d7: '7 days', d30: '30 days', d90: '90 days', m12: '12 months', all: 'All', custom: 'Custom',
+        from: 'From', to: 'To',
+      },
       loading:    'Loading…',
       save:       'Save',
       cancel:     'Cancel',

@@ -2000,6 +2000,12 @@
   color: var(--gray-500);
   font-size: var(--fs-sm);
 }
+/* The normalized 0-100 match — the headline number on each candidate card. */
+.match-card-pct {
+  font-weight: 700;
+  color: var(--ember-700);
+  font-variant-numeric: tabular-nums;
+}
 .match-chips {
   display: flex;
   flex-wrap: wrap;
@@ -2023,6 +2029,12 @@
   background: var(--ember-soft);
   border-color: var(--ember-soft);
   color: var(--ember-700);
+}
+/* At-capacity is a caution, not a selling point — render it as a warning chip. */
+.match-chip--warn {
+  background: var(--warning-soft);
+  border-color: var(--warning-soft);
+  color: var(--warning);
 }
 /* FIX 2 — name filter over the candidate list. Reuses the .admin-search shell
    but fills the narrower action panel and sits just above the ranked list. */
