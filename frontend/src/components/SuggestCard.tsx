@@ -4,6 +4,7 @@ import { Sparkles, ExternalLink, Phone, Mail, ArrowLeft, ArrowRight, X } from "l
 import type { CSSProperties } from "react";
 import type { Suggestion } from "@/types";
 import { safeHref } from "@/lib/safeUrl";
+import { pickLang as pickShared } from "@/lib/bilingual";
 
 // ── Suggest-alternatives card (UC-01 A1, simple If-Then) ──────
 // Surfaces up to 3 approved community answers for a category. Bilingual text
@@ -29,9 +30,7 @@ function pickLangValue(
   value: Suggestion["title"],
   lang: string,
 ): string {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  return value[lang as "he" | "en"] || value.he || value.en || "";
+  return pickShared(value, lang);
 }
 
 export default function SuggestCard({ items, lang, heading, subtitle, openLabel, callLabel, emailLabel, directoryLabel, dismissLabel, onDismiss }: {

@@ -61,6 +61,7 @@
   align-items: baseline;
   gap: var(--sp-3);
   flex-wrap: wrap;
+  min-inline-size: 0;
 }
 
 .insights-stat-value {
@@ -70,6 +71,8 @@
   line-height: 1;
   color: var(--ember);
   font-variant-numeric: tabular-nums;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .insights-stat-unit {

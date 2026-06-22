@@ -199,8 +199,8 @@
   inset: 0;
   z-index: 1;
   background:
-    linear-gradient(to top, rgba(15,30,45,0.86) 0%, rgba(15,30,45,0.40) 46%, rgba(15,30,45,0.18) 100%),
-    linear-gradient(to var(--hero-scrim-dir, right), rgba(15,30,45,0.80) 0%, rgba(15,30,45,0.32) 52%, rgba(15,30,45,0.02) 100%);
+    linear-gradient(to top, rgba(15,30,45,0.90) 0%, rgba(15,30,45,0.56) 50%, rgba(15,30,45,0.24) 100%),
+    linear-gradient(to var(--hero-scrim-dir, right), rgba(15,30,45,0.86) 0%, rgba(15,30,45,0.44) 50%, rgba(15,30,45,0.06) 100%);
 }
 
 [dir="rtl"] .hero-bg-scrim { --hero-scrim-dir: left; }
@@ -273,26 +273,45 @@
 .areas-grid > * { min-inline-size: 0; }
 
 .area-item {
+  position: relative;
   inline-size: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 14px;
-  padding: clamp(20px, 2.5vw, 32px) 16px;
-  background: transparent;
-  border: 0;
+  align-items: flex-start;
+  text-align: start;
+  gap: 16px;
+  padding: clamp(24px, 2.4vw, 32px);
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-xs);
   cursor: pointer;
   touch-action: manipulation;
   border-radius: var(--radius-lg);
-  transition: transform var(--dur-3) var(--ease-out), background-color var(--dur-3) var(--ease-out);
+  overflow: hidden;
+  transition: transform var(--dur-3) var(--ease-out), box-shadow var(--dur-3) var(--ease-out), border-color var(--dur-3) var(--ease-out);
 }
 
+/* Ember accent rail that wipes in on hover — a quiet editorial flourish. */
+.area-item::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 3px;
+  background: var(--ember);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+
+[dir="rtl"] .area-item::before { transform-origin: right center; }
+
 /* Hover lift is gated to fine pointers so a touch tap does not leave the
-   tile stuck in its hover state. The colour fill still applies on tap. */
+   tile stuck in its hover state. */
 @media (hover: hover) and (pointer: fine) {
-  .area-item:hover { background: var(--sky-3); transform: translateY(-3px); }
-  .area-item:hover .area-icon { background: var(--ember); color: var(--white); transform: scale(1.08) rotate(-4deg); }
+  .area-item:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: transparent; }
+  .area-item:hover::before { transform: scaleX(1); }
+  .area-item:hover .area-icon { background: var(--ember); color: var(--white); transform: scale(1.06); }
 }
 
 /* Press feedback: it is a button, so acknowledge the press instantly. */
@@ -304,9 +323,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  inline-size: 76px;
-  block-size: 76px;
-  border-radius: 50%;
+  inline-size: 58px;
+  block-size: 58px;
+  border-radius: var(--radius);
   background: var(--ember-soft);
   color: var(--ember);
   transition: transform var(--dur-3) var(--ease-out), background-color var(--dur-3) var(--ease-out), color var(--dur-3) var(--ease-out);
@@ -314,7 +333,7 @@
 
 .area-title { font-family: var(--font-serif); font-size: var(--fs-h3); font-weight: 700; color: var(--ink); margin: 0; }
 
-.area-desc { font-size: var(--fs-sm); line-height: 1.6; color: var(--gray-600); margin: 0; max-inline-size: 28ch; }
+.area-desc { font-size: var(--fs-sm); line-height: 1.6; color: var(--gray-600); margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .area-item:hover,
@@ -543,6 +562,74 @@
 
 .volunteers-figure { position: relative; }
 
+.volunteers-panel {
+  position: relative;
+  inline-size: 100%;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(155deg, var(--ink) 0%, var(--ink-2) 100%);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(22px, 3vw, 34px);
+  padding: clamp(32px, 5vw, 56px);
+  text-align: center;
+}
+
+.volunteers-panel-glow {
+  position: absolute;
+  inline-size: 72%;
+  block-size: 72%;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  inset-block-start: -22%;
+  inset-inline-end: -22%;
+  background: radial-gradient(circle, rgba(185, 105, 78, 0.50) 0%, transparent 68%);
+}
+
+.volunteers-panel-glow--2 {
+  inset-block-start: auto;
+  inset-inline-end: auto;
+  inset-block-end: -28%;
+  inset-inline-start: -28%;
+  background: radial-gradient(circle, rgba(191, 211, 230, 0.22) 0%, transparent 70%);
+}
+
+.volunteers-panel-logo {
+  position: relative;
+  z-index: 1;
+  inline-size: min(56%, 210px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 5px solid rgba(244, 238, 224, 0.92);
+  box-shadow: var(--shadow-lg);
+}
+
+.volunteers-panel-logo img { inline-size: 100%; block-size: 100%; object-fit: cover; display: block; }
+
+.volunteers-panel-stat { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 6px; }
+
+.volunteers-panel-num {
+  font-family: var(--font-serif);
+  font-size: clamp(2.4rem, 1.8rem + 2vw, 3.2rem);
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.volunteers-panel-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(244, 238, 224, 0.72);
+}
+
 .volunteers-figure-badge {
   position: absolute;
   inset-block-end: -18px;
@@ -612,11 +699,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: clamp(20px, 4vw, 40px);
-  margin: 36px 0 0;
-  padding-block-start: 24px;
+  margin-block-start: 40px;
+  padding: clamp(16px, 2vw, 22px) clamp(22px, 3vw, 32px);
+  background: rgba(15, 30, 45, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(244, 238, 224, 0.18);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 18px 50px rgba(15, 30, 45, 0.35);
 }
 
-.hero-stat { min-inline-size: 0; }
+/* Stats size to their content and wrap naturally when the row runs out of
+   room — no fixed columns or per-child overrides. */
+.hero-stat { min-inline-size: max-content; }
 
 /* ── Section header wrappers (extracted from inline styles) ─────────────── */
 

@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson, apiFetch } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
+import ConfirmDialog from '@/components/feedback/ConfirmDialog'
 import Reveal from '../../components/motion/Reveal'
 import {
   StatCard,
@@ -58,6 +59,7 @@ export default function AdminVolunteersPage() {
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [busyCat, setBusyCat] = useState<string | null>(null)
+  const [confirmDeactivate, setConfirmDeactivate] = useState<{ uid?: string; name: string } | null>(null)
   const [query, setQuery] = useState('') // WS-9 client-side search (name + email)
 
   // WS-9 — honour a ?tab=active|pending deep-link (e.g. the dashboard KPI
@@ -377,11 +379,7 @@ export default function AdminVolunteersPage() {
                                 className="btn btn-danger btn-sm admin-vol-action"
                                 disabled={busyId === v.id}
                                 aria-label={`${a.vol.deactivate}: ${name}`}
-                                onClick={() => {
-                                  if (window.confirm(`${a.vol.deactivate}: ${name}`)) {
-                                    act(v.uid, 'deactivate')
-                                  }
-                                }}
+                                onClick={() => setConfirmDeactivate({ uid: v.uid, name: name ?? '' })}
                               >
                                 {a.vol.deactivate}
                               </button>
@@ -397,6 +395,21 @@ export default function AdminVolunteersPage() {
           </Reveal>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDeactivate}
+        variant="danger"
+        title={a.vol.deactivateConfirmTitle}
+        message={confirmDeactivate ? `${confirmDeactivate.name}: ${a.vol.deactivateConfirmBody}` : a.vol.deactivateConfirmBody}
+        confirmLabel={a.vol.deactivate}
+        cancelLabel={t.common.cancel}
+        busy={busyId === confirmDeactivate?.uid}
+        onConfirm={() => {
+          const target = confirmDeactivate
+          if (target) act(target.uid, 'deactivate').then(() => setConfirmDeactivate(null))
+        }}
+        onCancel={() => setConfirmDeactivate(null)}
+      />
     </AdminLayout>
   )
 }

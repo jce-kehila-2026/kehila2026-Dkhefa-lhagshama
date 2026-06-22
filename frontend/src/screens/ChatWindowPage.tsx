@@ -128,7 +128,7 @@ export default function ChatWindowPage() {
   // Only attach the listener once auth is resolved AND a user exists,
   // so logged-out visitors never trigger a permission-denied snapshot.
   const listenChatId = !authLoading && user && typeof chatId === "string" ? chatId : null;
-  const { messages, loading: msgsLoading, error: msgsError } = useMessages(listenChatId);
+  const { messages, loading: msgsLoading, error: msgsError, hasMore: msgsHasMore, loadMore: loadMoreMessages } = useMessages(listenChatId);
 
   // ── Live chat-doc projection (kind / title / active / membership) ──────
   // onSnapshot (not a one-shot read) so an admin pause, a participant change
@@ -142,6 +142,7 @@ export default function ChatWindowPage() {
   // when the id value actually changes.
   const [linkedRequest, setLinkedRequest] = useState<LinkedRequest | null>(null);
   const [markingDone, setMarkingDone] = useState(false);
+  const [confirmDone, setConfirmDone] = useState(false);
   const [linkedRequestId, setLinkedRequestId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -338,7 +339,6 @@ export default function ChatWindowPage() {
 
   async function handleMarkDone() {
     if (!linkedRequest || markingDone || !canMarkDone) return;
-    if (typeof window !== "undefined" && !window.confirm(lc.actions.markDoneConfirm)) return;
 
     const prevStatus = linkedRequest.status;
     setMarkingDone(true);
@@ -518,17 +518,16 @@ export default function ChatWindowPage() {
     setAddBusy(true);
     setAddError(null);
     try {
+      let failed = 0;
       for (const uid of uids) {
         const res = await apiFetch(`/api/chats/${chatId}/participants`, {
           method: "POST",
           body: JSON.stringify({ uid }),
         });
-        if (!res.ok) {
-          setAddError(c.addPersonError);
-          return;
-        }
+        if (!res.ok) failed++;
       }
-      setAddOpen(false);
+      if (failed > 0) setAddError(c.addPersonError);
+      else setAddOpen(false);
     } catch {
       setAddError(c.addPersonError);
     } finally {
@@ -589,15 +588,22 @@ export default function ChatWindowPage() {
   // the window, yanking the whole page down when a chat opens). Jump instantly
   // on first paint and under reduced motion; glide only for live arrivals.
   const didInitialScrollRef = useRef(false);
+  const nearBottomRef = useRef(true);
+  const handleFeedScroll = () => {
+    const feed = feedRef.current;
+    if (!feed) return;
+    nearBottomRef.current = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;
+  };
   useEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
+    const isFirst = !didInitialScrollRef.current;
+    didInitialScrollRef.current = true;
+    if (!isFirst && !nearBottomRef.current) return;
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const behavior: ScrollBehavior =
-      !didInitialScrollRef.current || prefersReduced ? "auto" : "smooth";
-    didInitialScrollRef.current = true;
+    const behavior: ScrollBehavior = isFirst || prefersReduced ? "auto" : "smooth";
     feed.scrollTo({ top: feed.scrollHeight, behavior });
   }, [messages]);
 
@@ -622,6 +628,7 @@ export default function ChatWindowPage() {
       }
 
       setInputText("");
+      nearBottomRef.current = true;
     } catch {
       setSendError("send_failed");
     } finally {
@@ -916,6 +923,7 @@ export default function ChatWindowPage() {
                 aria-live="polite"
                 aria-label={c.inlineHeader.eyebrow}
                 tabIndex={0}
+                onScroll={handleFeedScroll}
               >
                 {msgsLoading &&
                   renderFeedState({
@@ -944,6 +952,14 @@ export default function ChatWindowPage() {
                     icon: <MessagesSquare size={26} />,
                     body: c.noMessages,
                   })}
+
+                {msgsHasMore && !msgsLoading && messages.length > 0 && (
+                  <div style={{ display: "flex", justifyContent: "center", paddingBlock: "var(--sp-2)" }}>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={loadMoreMessages}>
+                      {c.loadEarlier}
+                    </button>
+                  </div>
+                )}
 
                 {messages.map((msg) => {
                   // System notes render as a centered muted line, not a bubble.
@@ -1106,14 +1122,14 @@ export default function ChatWindowPage() {
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder={c.inputPH}
-                  disabled={sending}
+                  disabled={sending || uploading}
                   aria-label={c.inputPH}
                   style={{ direction: isRtl ? "rtl" : "ltr" }}
                 />
                 <button
                   type="submit"
                   className="btn btn-ember"
-                  disabled={sending || !inputText.trim()}
+                  disabled={sending || uploading || !inputText.trim()}
                   style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexShrink: 0 }}
                 >
                   {sending ? c.sending : c.send}
@@ -1254,7 +1270,7 @@ export default function ChatWindowPage() {
                       <button
                         type="button"
                         className="btn btn-ember btn-sm"
-                        onClick={handleMarkDone}
+                        onClick={() => setConfirmDone(true)}
                         disabled={markingDone}
                         aria-busy={markingDone}
                       >
@@ -1374,6 +1390,20 @@ export default function ChatWindowPage() {
         onCancel={() => {
           if (!removeBusy) setRemoveTarget(null);
         }}
+      />
+
+      <ConfirmDialog
+        open={confirmDone}
+        title={lc.actions.markDone}
+        message={lc.actions.markDoneConfirm}
+        confirmLabel={lc.actions.markDone}
+        cancelLabel={t.common.cancel}
+        busy={markingDone}
+        onConfirm={() => {
+          setConfirmDone(false);
+          handleMarkDone();
+        }}
+        onCancel={() => setConfirmDone(false)}
       />
 
       {/* Add-participant picker (admin-only data source). */}

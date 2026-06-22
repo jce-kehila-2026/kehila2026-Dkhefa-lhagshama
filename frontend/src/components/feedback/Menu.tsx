@@ -225,6 +225,7 @@ export default function Menu({ trigger, align = 'end', label, children }: MenuPr
   }
 
   const onMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (itemCount === 0) return
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()

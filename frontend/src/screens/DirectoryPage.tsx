@@ -12,6 +12,7 @@ import { useCategories } from '../hooks/useCategories'
 import { apiJson } from '../lib/apiClient'
 import { safeHref } from '../lib/safeUrl'
 import type { CaughtError, TNode, Lang } from '@/types'
+import { pickLang as pickShared, pickLangArray as pickArrShared } from '@/lib/bilingual'
 
 const PER_PAGE = 6
 
@@ -93,18 +94,14 @@ export default function DirectoryPage() {
   // strings / missing values, so `.toLowerCase()`/`.map()` never throw on
   // live data.
   const L = useCallback(
-    (v: Bilingual): string => ((v && typeof v === 'object') ? (v[lang] ?? v.he ?? '') : (v ?? '')) as string,
+    (v: Bilingual): string => pickShared(v as Parameters<typeof pickShared>[0], lang),
     [lang],
   )
   // `tags` is `{ he: string[], en: string[] }` (or, defensively, a bare array).
-  const L_arr = useCallback((v: Bilingual): string[] => {
-    if (Array.isArray(v)) return v as string[]
-    if (v && typeof v === 'object') {
-      const arr = v[lang] ?? v.he
-      return Array.isArray(arr) ? (arr as string[]) : []
-    }
-    return []
-  }, [lang])
+  const L_arr = useCallback(
+    (v: Bilingual): string[] => pickArrShared(v as Parameters<typeof pickArrShared>[0], lang),
+    [lang],
+  )
 
   // ── DETAIL MODALS (Note 2) ────────────────────────────────────
   // The shared <Modal> (pages/_app.tsx) renders an object payload as
@@ -253,7 +250,7 @@ export default function DirectoryPage() {
     let data = businesses
     if (bizCat !== 'all') data = data.filter(b => b.category === bizCat)
     if (bizSearch.trim()) {
-      const q = bizSearch.toLowerCase()
+      const q = bizSearch.trim().toLowerCase()
       data = data.filter(b =>
         L(b.name).toLowerCase().includes(q) ||
         L(b.description).toLowerCase().includes(q) ||
@@ -831,7 +828,7 @@ export default function DirectoryPage() {
                       }
                       aria-hidden="true"
                     >
-                      {!photo && <BannerIcon size={52} color="var(--cream)" strokeWidth={1.5} />}
+                      {!photo && <BannerIcon size={52} color="var(--ink-2)" strokeWidth={1.5} />}
                       {biz.featured && (
                         <span className="dir-biz-featured">
                           <Star size={10} fill="var(--ember)" color="var(--ember)" aria-hidden="true" /> {d.featured}

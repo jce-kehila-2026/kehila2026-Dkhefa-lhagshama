@@ -23,11 +23,14 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
   const { t } = useLanguage()
   const v = t.volunteerApp
   const c = v.calendar
+  const ws = v.dash.workStatus
 
   const [windows, setWindows] = useState<AvailabilityWindow[]>([])
   const [availableAgainOn, setAvailableAgainOn] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [savingStatus, setSavingStatus] = useState(false)
+  const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   // Hydrate local editor state whenever the parent's `me` changes.
   useEffect(() => {
@@ -37,6 +40,24 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
   }, [me])
 
   const isUnavailable = me?.workStatus === 'unavailable'
+
+  const setStatus = async (next: 'free' | 'working' | 'unavailable') => {
+    if (next === me?.workStatus) return
+    setSavingStatus(true)
+    setStatusMsg(null)
+    try {
+      const updated = await apiJson<VolunteerMe>('/api/volunteer/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ workStatus: next }),
+      })
+      onSaved(updated)
+      setStatusMsg({ kind: 'ok', text: ws.saved })
+    } catch {
+      setStatusMsg({ kind: 'err', text: ws.error })
+    } finally {
+      setSavingStatus(false)
+    }
+  }
 
   const addWindow = () =>
     setWindows((ws) => [...ws, { day: 0, start: '09:00', end: '17:00' }])
@@ -94,6 +115,34 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
   const days = c.days as readonly string[]
 
   return (
+    <>
+    <section className="card volapp-panel">
+      <h2 className="volapp-panel-title">{ws.title}</h2>
+      <p className="volapp-panel-sub">{ws.subtitle}</p>
+      <div className="volapp-status-group" role="group" aria-label={ws.title}>
+        {(['free', 'working', 'unavailable'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            className={`btn btn-sm ${me?.workStatus === s ? 'btn-primary' : 'btn-outline'}`}
+            disabled={savingStatus}
+            aria-pressed={me?.workStatus === s}
+            onClick={() => setStatus(s)}
+          >
+            {ws[s]}
+          </button>
+        ))}
+      </div>
+      {statusMsg && (
+        <p
+          className={`volapp-inline-msg${statusMsg.kind === 'err' ? ' is-error' : ''}`}
+          role={statusMsg.kind === 'err' ? 'alert' : 'status'}
+        >
+          {statusMsg.text}
+        </p>
+      )}
+    </section>
+
     <section className="card volapp-panel">
       <h2 className="volapp-panel-title">{c.availabilityTitle}</h2>
       <p className="volapp-panel-sub">{c.availabilitySub}</p>
@@ -197,5 +246,6 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
         </p>
       )}
     </section>
+    </>
   )
 }

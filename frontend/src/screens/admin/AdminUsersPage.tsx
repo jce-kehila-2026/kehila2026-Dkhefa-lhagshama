@@ -48,6 +48,7 @@ export default function AdminUsersPage() {
   // Disabling an account is destructive (locks them out), so it goes through a
   // branded confirm dialog. Re-enabling is non-destructive and stays one-click.
   const [confirmDisableUid, setConfirmDisableUid] = useState<string | null>(null)
+  const [confirmAdminUid, setConfirmAdminUid] = useState<string | null>(null)
   const [query, setQuery] = useState('') // WS-9 client-side search (name + email + role label)
 
   const load = useCallback(async () => {
@@ -129,6 +130,8 @@ export default function AdminUsersPage() {
 
   const confirmTarget = confirmDisableUid ? items.find((u) => u.uid === confirmDisableUid) : null
   const confirmName = confirmTarget?.displayName || confirmTarget?.email || confirmDisableUid || ''
+  const confirmAdminTarget = confirmAdminUid ? items.find((u) => u.uid === confirmAdminUid) : null
+  const confirmAdminName = confirmAdminTarget?.displayName || confirmAdminTarget?.email || confirmAdminUid || ''
 
   return (
     <AdminLayout title={a.userMgmt.title} subtitle={a.userMgmt.subtitle}>
@@ -264,7 +267,11 @@ export default function AdminUsersPage() {
                                 className="form-select admin-inline-select"
                                 value={role}
                                 disabled={busy}
-                                onChange={(e) => changeRole(u.uid, e.target.value)}
+                                onChange={(e) => {
+                                  const next = e.target.value
+                                  if (next === 'admin') setConfirmAdminUid(u.uid)
+                                  else changeRole(u.uid, next)
+                                }}
                                 aria-label={`${a.userMgmt.colRole}: ${name}`}
                               >
                                 {ROLES.map((r) => (
@@ -315,6 +322,21 @@ export default function AdminUsersPage() {
           if (uid) toggleDisabled(uid, false).then(() => setConfirmDisableUid(null))
         }}
         onCancel={() => setConfirmDisableUid(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmAdminUid}
+        variant="danger"
+        title={a.userMgmt.grantAdminConfirmTitle}
+        message={confirmAdminName ? `${confirmAdminName}: ${a.userMgmt.grantAdminConfirmBody}` : a.userMgmt.grantAdminConfirmBody}
+        confirmLabel={a.userMgmt.grantAdmin}
+        cancelLabel={t.common.cancel}
+        busy={busyId === confirmAdminUid}
+        onConfirm={() => {
+          const uid = confirmAdminUid
+          if (uid) changeRole(uid, 'admin').then(() => setConfirmAdminUid(null))
+        }}
+        onCancel={() => setConfirmAdminUid(null)}
       />
     </AdminLayout>
   )

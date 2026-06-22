@@ -98,9 +98,9 @@ export default function AssetImage({
 
   // If the image is already cached, the load event may not fire — sync it.
   useEffect(() => {
-    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
-      setLoaded(true)
-    }
+    setFailed(false)
+    const cached = !!imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0
+    setLoaded(cached)
   }, [asset?.src])
 
   if (!asset) {

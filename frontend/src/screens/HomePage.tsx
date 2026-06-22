@@ -12,6 +12,7 @@ import AssetImage from '@/components/layout/AssetImage'
 import type { AssetSlotKey } from '@/assets/manifest'
 import Reveal from '../components/motion/Reveal'
 import MagneticButton from '../components/motion/MagneticButton'
+import { pickLang as pickShared } from '@/lib/bilingual'
 
 // A partner org as fetched for the homepage marquee. Built from the real
 // `answers` catalog (orgType=partner), the same source the /directory page uses
@@ -30,9 +31,7 @@ interface MarqueePartner {
 // strings on legacy docs); render the active-language value.
 type BilingualValue = string | { he?: string; en?: string } | null | undefined
 function pickLang(value: BilingualValue, lang: string): string {
-  if (!value) return ''
-  if (typeof value === 'string') return value
-  return (lang === 'he' ? value.he : value.en) || value.he || value.en || ''
+  return pickShared(value, lang)
 }
 
 const useNavigate = () => {
@@ -214,13 +213,17 @@ export default function HomePage() {
         <div className="page-container impact-grid">
           <Reveal delay={0.1} y={32}>
             <div className="volunteers-figure">
-              <AssetImage
-                slot="volunteerInvite"
-                ratio="4 / 5"
-                rounded="var(--radius-lg)"
-                shadow="var(--shadow-lg)"
-                border="1px solid var(--hair)"
-              />
+              <div className="volunteers-panel">
+                <span className="volunteers-panel-glow" aria-hidden="true" />
+                <span className="volunteers-panel-glow volunteers-panel-glow--2" aria-hidden="true" />
+                <div className="volunteers-panel-logo">
+                  <img src="/logo.jpg" alt="" />
+                </div>
+                <div className="volunteers-panel-stat">
+                  <span className="volunteers-panel-num">{mockStats.volunteers}+</span>
+                  <span className="volunteers-panel-label">{t.hero.stats.volunteers}</span>
+                </div>
+              </div>
               <span className="volunteers-figure-badge" aria-hidden="true">
                 <HeartHandshake size={26} />
               </span>

@@ -98,7 +98,7 @@ export default function VolunteerPoolPage() {
 
   const items = useMemo(() => {
     const all = data?.items ?? []
-    return activeCat ? all.filter((i) => i.category === activeCat) : all
+    return activeCat ? all.filter((i) => (i.category ?? 'uncategorized') === activeCat) : all
   }, [data, activeCat])
 
   const claim = async (item: PoolItem, note?: string) => {

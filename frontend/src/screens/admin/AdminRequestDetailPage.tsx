@@ -445,6 +445,8 @@ export default function AdminRequestDetailPage() {
       // FIX 2 — flip the aside back to the assigned summary; the silent reload
       // (FIX 1) has already refreshed request.assignedVolunteerId.
       setReassigning(false)
+      setCandidateSearch('')
+      setShowAllCandidates(false)
       toast(a.claims.assignSuccess, 'success')
     } else toast(a.claims.assignError, 'error')
   }
@@ -472,6 +474,8 @@ export default function AdminRequestDetailPage() {
     if (ok) {
       // FIX 2 — assigning a claimant also flips the aside to the summary.
       setReassigning(false)
+      setCandidateSearch('')
+      setShowAllCandidates(false)
       toast(a.claims.assignSuccess, 'success')
     } else toast(a.claims.assignError, 'error')
   }
@@ -513,7 +517,6 @@ export default function AdminRequestDetailPage() {
             })
       if (!res.ok) {
         const msg = res.status === 409 || res.status === 422 ? lc.actions.illegalTransition : copy.error
-        setError(msg)
         toast(msg, 'error')
         return
       }
@@ -522,7 +525,6 @@ export default function AdminRequestDetailPage() {
       await load({ silent: true })
       toast(copy.success, 'success')
     } catch {
-      setError(copy.error)
       toast(copy.error, 'error')
     } finally {
       setSaving(false)
@@ -565,7 +567,6 @@ export default function AdminRequestDetailPage() {
       })
       if (!res.ok) {
         const msg = res.status === 409 || res.status === 422 ? lc.actions.illegalTransition : lc.referral.error
-        setError(msg)
         toast(msg, 'error')
         return
       }
@@ -576,7 +577,6 @@ export default function AdminRequestDetailPage() {
       setReferAnswerId('')
       setReferNote('')
     } catch {
-      setError(lc.referral.error)
       toast(lc.referral.error, 'error')
     } finally {
       setReferring(false)
@@ -740,7 +740,7 @@ export default function AdminRequestDetailPage() {
         {a.reqDetail.back}
       </Link>
 
-      {error && (
+      {error && !request && (
         <div style={{ marginBlockStart: 'var(--sp-4)' }}>
           <ErrorState message={error} onRetry={() => load()} retryLabel={a.ui.retry} />
         </div>
@@ -1346,7 +1346,11 @@ export default function AdminRequestDetailPage() {
                           type="button"
                           className="btn btn-ghost btn-sm match-toggle"
                           disabled={saving}
-                          onClick={() => setReassigning(false)}
+                          onClick={() => {
+                            setReassigning(false)
+                            setCandidateSearch('')
+                            setShowAllCandidates(false)
+                          }}
                         >
                           {m.cancelReassign}
                         </button>

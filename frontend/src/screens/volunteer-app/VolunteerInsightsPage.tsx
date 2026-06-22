@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
 import {
   ResponsiveContainer,
   AreaChart,
@@ -12,7 +11,6 @@ import {
   Tooltip,
   Cell,
 } from 'recharts'
-import type { TooltipContentProps } from 'recharts'
 import { useReducedMotion } from 'motion/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
@@ -21,45 +19,7 @@ import type { VolunteerInsights } from '@/types'
 import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
 import Reveal from '@/components/motion/Reveal'
 import { ErrorState, EmptyState } from '@/components/admin/AdminUI'
-
-// Editorial palette pulled from tokens.css — recharts needs literal color
-// strings (it cannot read CSS custom properties through SVG fills).
-const COLOR_INK = '#0F1E2D' // --ink
-const COLOR_INK_2 = '#2C3D52' // --ink-2
-const COLOR_EMBER = '#B9694E' // --ember
-const COLOR_EMBER_700 = '#9C5440' // --ember-700
-const COLOR_SKY = '#BFD3E6' // --sky
-const COLOR_SKY_2 = '#DCE7F0' // --sky-2
-const COLOR_HAIR = 'rgba(15,30,45,0.10)' // --hair
-
-// One color per status — kept identical to AdminInsights so both dashboards
-// match and stay within the locked brand palette (no rainbow defaults). Falls
-// back to ink-2 for any status not in the map.
-const STATUS_COLORS: Record<string, string> = {
-  pending: COLOR_SKY,
-  in_progress: COLOR_INK_2,
-  awaiting_review: COLOR_EMBER,
-  closed: COLOR_INK,
-  rejected: COLOR_EMBER_700,
-  referred: COLOR_SKY_2,
-}
-
-function makeTooltip(valueLabel: string) {
-  const TooltipContent = (props: TooltipContentProps) => {
-    const { active, payload, label } = props
-    if (!active || !payload || payload.length === 0) return null
-    const value = payload[0]?.value
-    return (
-      <div className="insights-tooltip" role="presentation">
-        {label != null && <span className="insights-tooltip-label">{label as ReactNode}</span>}
-        <span className="insights-tooltip-value">
-          {value} <span className="insights-tooltip-unit">{valueLabel}</span>
-        </span>
-      </div>
-    )
-  }
-  return TooltipContent
-}
+import { COLOR_INK_2, COLOR_EMBER, COLOR_SKY, COLOR_HAIR, STATUS_COLORS, makeTooltip } from '@/components/charts/insightsChrome'
 
 export default function VolunteerInsightsPage() {
   const { t, lang, isRTL } = useLanguage()
@@ -233,8 +193,8 @@ export default function VolunteerInsightsPage() {
           <h2 className="insights-card-title">{ins.avgResolution}</h2>
           {data!.avgResolutionDays != null ? (
             <p className="insights-stat">
-              <span className="insights-stat-value">{data!.avgResolutionDays}</span>
-              <span className="insights-stat-unit">{ins.days(data!.avgResolutionDays)}</span>
+              <span className="insights-stat-value">{Math.round(data!.avgResolutionDays)}</span>
+              <span className="insights-stat-unit">{ins.days(Math.round(data!.avgResolutionDays))}</span>
             </p>
           ) : (
             <p className="insights-nodata">{ins.noData}</p>

@@ -65,7 +65,6 @@ export default function Footer() {
               { to:'/requests', label: t.nav.requests },
               { to:'/directory', label: t.nav.directory },
               { to:'/volunteer', label: t.nav.volunteers },
-              { to:'/track', label: t.nav.track },
             ].map(l => (
               <div key={l.to} style={{ marginBottom:'9px' }}>
                 <Link to={l.to} style={linkStyle}
@@ -116,26 +115,11 @@ export default function Footer() {
         {/* BOTTOM BAR */}
         <div style={{
           padding:'20px 0',
-          display:'flex', justifyContent:'space-between', alignItems:'center',
+          display:'flex', justifyContent:'center', alignItems:'center',
           flexWrap:'wrap', gap:'12px',
           fontSize:'12.5px',
         }}>
           <div>{f.rights}</div>
-          <div style={{ display:'flex', gap:'16px', alignItems:'center' }}>
-            <span style={{ color:'rgba(244,238,224,0.3)' }}>|</span>
-            <Link to="/privacy" style={{ color:'rgba(244,238,224,0.55)', textDecoration:'none' }}
-              onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
-              onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.55)'}
-            >{f.privacy}</Link>
-            <Link to="/terms" style={{ color:'rgba(244,238,224,0.55)', textDecoration:'none' }}
-              onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
-              onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.55)'}
-            >{f.terms}</Link>
-            <Link to="/accessibility" style={{ color:'rgba(244,238,224,0.55)', textDecoration:'none' }}
-              onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
-              onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.55)'}
-            >{f.accessibility}</Link>
-          </div>
         </div>
         <div style={{ textAlign:'center', padding:'12px 0 20px', fontSize:'11.5px', color:'rgba(244,238,224,0.35)' }}>
           {f.reg}

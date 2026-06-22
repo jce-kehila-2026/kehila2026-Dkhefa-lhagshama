@@ -163,7 +163,7 @@ export default function ChatListPage() {
           }
         })
         .catch(() => {
-          // Permission/network error — absent key is treated as active.
+          reqStatusRequested.current.delete(rid);
         });
     });
   }, [chats, user]);
