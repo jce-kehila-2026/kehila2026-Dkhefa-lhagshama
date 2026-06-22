@@ -1,3 +1,12 @@
+/*
+ * AdminRequestDetailPage — admin-side single-request case view (UC-05 admin governance).
+ * Thin presentational shell: all data fetching, mutations and derived state live in
+ * the useRequestDetail(id) hook; this component only wires hook output into the
+ * two-column layout (RequestSummary + ActionPanel) plus three overlays
+ * (former-volunteer notice, transition confirm, refer-to-partner dialog).
+ * Routed as /admin/requests/[id]; the id comes from the next router query.
+ * Bilingual (HE/EN) and RTL-aware via useLanguage; category labels via useCategories.
+ */
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react'
@@ -19,8 +28,11 @@ export default function AdminRequestDetailPage() {
   const { labelFor } = useCategories()
   const router = useRouter()
   const { id } = router.query
+  // back-arrow direction follows reading order (RTL points right).
   const BackArrow = isRTL ? ArrowRight : ArrowLeft
 
+  // single source of truth for this screen — data, mutations, derived flags and
+  // copy bundles (a/lc/m). everything below is forwarded straight into children.
   const {
     a, lc, m,
     request, volunteers, loading, error, saving, load,

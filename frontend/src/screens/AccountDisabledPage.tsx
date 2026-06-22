@@ -17,6 +17,7 @@ import Reveal from '../components/motion/Reveal'
 export default function AccountDisabledPage() {
   const { t, isRTL } = useLanguage()
   const d = t.accountDisabled
+  // back-arrow points toward the start edge: rightward in RTL (he), leftward in LTR (en)
   const ArrowIcon = isRTL ? ArrowRight : ArrowLeft
 
   return (

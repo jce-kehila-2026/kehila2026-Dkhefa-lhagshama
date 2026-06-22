@@ -1,3 +1,16 @@
+/**
+ * AdminCategoriesPage — admin CRUD screen for the shared category taxonomy
+ * (route /admin/categories). This one list governs the request form, admin
+ * triage, volunteer permissions, directory NGO-area filters and both insights
+ * charts, so edits here ripple across the whole app via the public categories
+ * cache (refreshed on every mutation through refreshCategories()).
+ *
+ * Behaviour to know: the id is a slug derived server-side from nameEn; archive
+ * is the safe removal path (old requests keep resolving), while hard delete is
+ * backend-gated (409 category_in_use when anything still references the id).
+ * Collaborates with apiJson (Express /api/admin/categories), AdminLayout/AdminUI
+ * for chrome, and CategoryFormDialog (below) for create/edit.
+ */
 import { useEffect, useState, useCallback } from 'react'
 import { Tags, Plus, Pencil, Trash2, Archive, ArchiveRestore } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'

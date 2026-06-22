@@ -1,3 +1,15 @@
+// AdminDirectoryPage — /admin/directory CRUD console for the two community
+// catalogs: `answers` (partner orgs: עמותות + שותפים) and `businesses`. Unlike
+// the approvals queue it lists rows of EVERY status, and lets admins create /
+// edit / delete on top of the /api/admin/directory/:catalog REST routes.
+// Used by the admin staff only (AdminLayout gates access). Key collaborators:
+// useCategories (live answer-category taxonomy, shared with /directory + the
+// request form), t.admin.directoryMgmt (bilingual strings), apiClient.apiJson.
+// Invariants worth knowing: answer fields are bilingual ({he,en}); business
+// fields are flat strings stored identically in both langs by the backend;
+// status is only editable when editing an existing row (create defaults to
+// 'approved'); client-side validators here mirror the backend zod rules so
+// admins see precise inline errors instead of a generic 400 toast.
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Building2, Store, Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -29,6 +41,7 @@ const STATUSES = ['pending', 'approved', 'rejected', 'needs_changes'] as const
 // Bilingual field as returned by the API: `{ he, en }` or a plain string.
 type Bilingual = string | { he?: string; en?: string } | null | undefined
 
+// One partner-org row as returned by GET /api/admin/directory/answers.
 interface AnswerRow {
   id: string
   title: Bilingual
@@ -45,6 +58,7 @@ interface AnswerRow {
   createdAt: string | null
 }
 
+// One community-business row as returned by GET /api/admin/directory/businesses.
 interface BusinessRow {
   id: string
   name: Bilingual
@@ -510,6 +524,8 @@ export default function AdminDirectoryPage() {
     return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US')
   }
 
+  // Persist the dialog: PATCH when editing an existing row, POST to create.
+  // On success closes the dialog and re-fetches both catalogs.
   const saveDialog = async (payload: Record<string, unknown>) => {
     if (!dialog) return
     setBusy(true)
@@ -536,6 +552,7 @@ export default function AdminDirectoryPage() {
     }
   }
 
+  // Hard-delete the confirmed row via DELETE, then re-fetch.
   const doDelete = async () => {
     if (!confirmDelete) return
     setBusy(true)
@@ -564,6 +581,8 @@ export default function AdminDirectoryPage() {
 
   const q = query.trim().toLowerCase()
   const baseRows: DirectoryRow[] = tab === 'answers' ? answers : businesses
+  // Active-tab rows after the bilingual client-side search (title/name +
+  // resolved category label + source/owner). Empty query returns all rows.
   const rows: DirectoryRow[] = useMemo(() => {
     if (!q) return baseRows
     return baseRows.filter((row) => {

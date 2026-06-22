@@ -1,3 +1,16 @@
+/**
+ * AdminDashboard — the staff landing screen inside the admin area (WS-4).
+ *
+ * actions-first layout: a "needs attention" queue of actionable counts on top,
+ * then a compact KPI strip below. every count/tile is a deep-link into its
+ * filtered list (requests/volunteers/approvals/insights) so admins jump
+ * straight to the work. all numbers come from a single GET /api/admin/stats
+ * call (a flat Record<string, number>); reads counts defensively via n() so a
+ * missing index / partial stats payload renders 0 instead of crashing.
+ *
+ * collaborators: AdminLayout (shell), AdminUI StatCard/ErrorState, apiClient,
+ * LanguageContext (HE/EN + RTL). bilingual + RTL-safe.
+ */
 import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -23,6 +36,7 @@ import { StatCard, ErrorState, adminErrorMessage } from '@/components/admin/Admi
 import Reveal from '../../components/motion/Reveal'
 import styles from './AdminDashboard.module.css'
 
+// One KPI tile: a stat key to read out of the stats payload + its deep-link.
 interface KpiItem {
   key: string
   label: string
@@ -42,6 +56,7 @@ interface AttentionItem {
   cta: string
 }
 
+// state: stats (null until first fetch), loading, error. no props.
 export default function AdminDashboard() {
   const { t, lang, isRTL } = useLanguage()
   const a = t.admin
@@ -50,6 +65,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // fetch the flat stats payload; on failure surface a localized message + Retry.
   const load = async () => {
     setLoading(true)
     setError(null)
@@ -63,11 +79,13 @@ export default function AdminDashboard() {
     }
   }
 
+  // load once on mount; load is stable enough to omit from deps here.
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // defensive count reader: 0 until stats arrive and 0 for any absent key.
   const n = (key: string): number => (stats ? stats[key] ?? 0 : 0)
 
   // ── KPI strip — every number links to its filtered list (WS-4). ──────────

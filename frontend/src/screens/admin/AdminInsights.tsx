@@ -1,3 +1,18 @@
+/**
+ * AdminInsights — the admin "Insights" analytics screen (UC-05 reporting).
+ *
+ * Fetches aggregated request analytics from GET /api/admin/insights (filtered by
+ * the selected time range) and renders them as a scalar KPI strip plus four
+ * recharts visuals: requests-over-time (hero area), by-category + by-status
+ * bars, per-volunteer workload, and beneficiary age distribution (req 24).
+ * Fully bilingual/RTL: status + category ids resolve through the localized
+ * lifecycle map and the admin-managed category taxonomy before reaching recharts.
+ *
+ * Rendered inside AdminLayout; data shape is InsightsData. Charts are client-only
+ * (mounted gate) to avoid recharts SSR hydration mismatches, and honor
+ * prefers-reduced-motion. Backend-optional fields (ageStats/kpis) are guarded so
+ * an older backend renders gracefully rather than crashing.
+ */
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
@@ -103,10 +118,14 @@ export default function AdminInsights() {
     setMounted(true)
   }, [])
 
+  // fetch + map the insights payload for the current range/dates into state.
+  // re-runnable as the ErrorState retry handler and on every range change.
   const load = async () => {
     setLoading(true)
     setError(null)
     try {
+      // custom range sends explicit from/to (omitting the query entirely when
+      // neither bound is set yet); presets send the ?range=<preset> shorthand.
       const params =
         range === 'custom' ? (from || to ? `?from=${from}&to=${to}` : '') : `?range=${range}`
       const res = await apiFetch('/api/admin/insights' + params)
@@ -164,6 +183,8 @@ export default function AdminInsights() {
     [data, labelFor],
   )
 
+  // true if any series/scalar has something to show; gates the whole body
+  // between the EmptyState and the charts so an all-zero payload reads as empty.
   const hasData = useMemo(() => {
     if (!data) return false
     return (
@@ -217,6 +238,7 @@ export default function AdminInsights() {
     },
   ]
 
+  // body state machine: error → skeleton (loading or pre-mount) → empty → charts.
   const renderBody = () => {
     if (error) {
       return <ErrorState message={error} onRetry={load} retryLabel={t.admin.ui.retry} />

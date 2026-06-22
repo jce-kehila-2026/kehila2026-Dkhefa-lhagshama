@@ -1,3 +1,16 @@
+/**
+ * AdminRequestsListPage — the staff console for browsing/triaging every request.
+ *
+ * Renders the admin requests table: status/archived tabs, a Newest/Priority
+ * server sort, live client-side search + column sort over the loaded rows, an
+ * interested-volunteer column, and per-row deep links into request + volunteer
+ * drill-downs. Data comes from GET /api/admin/requests (filter/sort/volunteerId
+ * applied server-side; search + column sort happen client-side on items[]).
+ *
+ * State is seeded from the URL (?status/?claims/?sort/?volunteerId) so the view
+ * is deep-linkable from the dashboard/roster, and the active filters are mirrored
+ * back into the URL via replaceState. Bilingual (HE/EN, RTL-safe) throughout.
+ */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { Inbox, ChevronLeft, ChevronRight, Plus, HandHeart, X, Search, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'

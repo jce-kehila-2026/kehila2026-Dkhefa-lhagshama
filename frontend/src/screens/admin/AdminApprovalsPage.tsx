@@ -1,3 +1,17 @@
+/*
+ * AdminApprovalsPage — UC-05 approval queue inside the admin shell.
+ *
+ * Lists pending businesses + answers (orgs live in `answers` now, so there is no
+ * separate organizations entity) and lets an admin approve / reject / request
+ * changes on each. Reads from GET /api/admin/pending, writes via the matching
+ * POST /api/admin/{approve|reject|request-changes} endpoints. Bilingual: every
+ * translatable field arrives as a { he, en } object and is rendered through `L`.
+ *
+ * Invariants: a successful action removes the item from the local list (no
+ * refetch); every destructive action funnels through a ConfirmDialog before it
+ * fires; the active entity filter is purely client-side over the loaded items.
+ * Collaborators: AdminLayout (shell), ConfirmDialog, AdminUI states, apiClient.
+ */
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
 import { CheckCircle, XCircle, MessageSquare, Store, Lightbulb, Layers, ClipboardCheck } from 'lucide-react'
@@ -77,10 +91,6 @@ const ENTITY_VISUAL: Record<string, EntityVisual> = {
   all:        { Icon: Layers,    fg: 'var(--ember)',   bg: 'var(--ember-soft)' },
 }
 
-/**
- * Approval queue rendered inside the admin shell. Reuses the existing
- * /api/admin/pending + approve|reject|request-changes endpoints (UC-05).
- */
 export default function AdminApprovalsPage() {
   const { t, lang } = useLanguage()
   const a = t.admin
@@ -115,9 +125,12 @@ export default function AdminApprovalsPage() {
     load()
   }, [load])
 
+  // Fire the confirmed action, then optimistically drop the item from the list
+  // (no refetch) and surface a toast. Failure leaves the item in place.
   const act = async (item: ApprovalItem, action: ApprovalAction) => {
     setBusyId(item.id)
     try {
+      // action enum uses underscore (request_changes) but the route is hyphenated.
       const endpoint = action.replace('_', '-')
       const res = await apiFetch(`/api/admin/${endpoint}`, {
         method: 'POST',
@@ -335,6 +348,7 @@ export default function AdminApprovalsPage() {
         variant={pendingCopy?.variant}
         busy={!!pending && busyId === pending.item.id}
         onConfirm={() => pending && act(pending.item, pending.action)}
+        // ignore cancel while an action is in flight so the dialog can't be dismissed mid-request
         onCancel={() => { if (!busyId) setPending(null) }}
       />
     </AdminLayout>

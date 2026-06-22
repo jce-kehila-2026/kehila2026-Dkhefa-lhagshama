@@ -1,3 +1,16 @@
+/**
+ * AdminChatsPage — the /admin/chats oversight console (feedback round 2).
+ *
+ * Lists every conversation on the platform (request-bound chats + direct staff
+ * chats) in one admin-only table, fed by GET /api/admin/chats. Per row an admin
+ * can OPEN the chat read-only (/chats/:id) and pause/resume it via a confirmed
+ * PATCH /api/admin/chats/:id { active }. Collaborates with AdminLayout (shell),
+ * the shared AdminUI primitives (cards/badges/states), ConfirmDialog (gated
+ * toggle), and i18n through t.admin.chats. Renders inside pages/admin/chats.tsx.
+ *
+ * Invariant: resume can be refused by the backend (409 request_terminal) when
+ * the linked request has ended, so the UI surfaces that as a distinct reason.
+ */
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { MessagesSquare, MessageCircle, ExternalLink, PauseCircle, PlayCircle } from 'lucide-react'
@@ -50,10 +63,10 @@ function requestRef(row: AdminChatRow): string {
 }
 
 /**
- * /admin/chats — admin oversight of every conversation (feedback round 2):
- * request chats + direct staff chats, with an active/paused toggle per chat
- * (PATCH /api/admin/chats/:id). Admins may OPEN any chat read-only; they join
- * as a participant from the chat window itself before posting.
+ * Default-exported screen for /admin/chats. Owns the row list + load/error/busy
+ * state, derives the summary metrics, and routes the pause/resume action through
+ * ConfirmDialog. Opening a chat is read-only here; an admin joins as a
+ * participant from the chat window itself before they can post.
  */
 export default function AdminChatsPage() {
   const { t, lang } = useLanguage()
@@ -114,11 +127,14 @@ export default function AdminChatsPage() {
     }
   }
 
+  // Summary-strip metrics, derived from the loaded rows (no separate request).
   const total = items.length
   const activeCount = items.filter((r) => r.active).length
   const pausedCount = items.filter((r) => !r.active).length
   const directCount = items.filter((r) => r.kind === 'direct').length
 
+  // Human label for the confirm dialog: prefer an explicit title, else the
+  // request ref for request chats, else the participant summary for direct ones.
   const confirmName =
     confirmTarget?.title ||
     (confirmTarget?.requestId
