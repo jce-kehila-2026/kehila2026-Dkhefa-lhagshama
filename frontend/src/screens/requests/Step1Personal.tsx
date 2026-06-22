@@ -1,3 +1,13 @@
+/**
+ * Step1Personal - step 1 of 4 in the UC-01 Submit Request wizard ("personal details").
+ *
+ * pure controlled presentational component: all form state lives in the parent
+ * RequestForm (values/errors/handleChange come down as props, nothing is held here).
+ * collects name, id (type-driven: israeli_id / passport / none), contact, city, age, gender.
+ * bilingual via useLanguage (t.request + t.stream2); role==='volunteer' switches the
+ * title to the on-behalf wording. "fill from profile" (#67) and the id-type picker (#66)
+ * are the two non-trivial bits; everything else is plain bound fields.
+ */
 import { Sparkles } from 'lucide-react'
 import { FormGroup, Label, Input, Select, FormRow } from '@/components/forms/FormElements'
 import HelpTooltip from '@/components/feedback/HelpTooltip'
@@ -14,6 +24,9 @@ interface Step1PersonalProps {
   fillFromProfile: () => void
 }
 
+// renders the step-1 fieldset. key props: values/errors (controlled state owned by parent),
+// handleChange (single shared input handler), profileLoading+fillFromProfile (auto-fill #67),
+// role (gates the on-behalf title). holds no local state.
 export default function Step1Personal({
   role,
   values,
@@ -23,6 +36,7 @@ export default function Step1Personal({
   fillFromProfile,
 }: Step1PersonalProps) {
   const { t, lang } = useLanguage()
+  // rq = generic request copy, s2 = stream-2 copy (auto-fill + id-type strings); both bilingual
   const rq = t.request
   const s2 = t.stream2
 
@@ -84,6 +98,8 @@ export default function Step1Personal({
         </div>
       </FormGroup>
 
+      {/* id fields are driven by the selected idType: israeli_id -> required 9-digit number; */}
+      {/* passport -> optional free-text number + note; none -> note only */}
       {values.idType === 'israeli_id' && (
         <FormGroup>
           <Label htmlFor="idNumber" required>{rq.step1.idNumber}</Label>

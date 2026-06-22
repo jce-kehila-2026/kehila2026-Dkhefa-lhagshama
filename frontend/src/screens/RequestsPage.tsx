@@ -1,6 +1,21 @@
+/*
+ * RequestsPage — UC-01 "Submit Request" screen (beneficiary intake).
+ *
+ * Orchestrator for the 4-step request wizard: it owns the shared form state,
+ * validation/navigation between steps, draft persistence, profile prefill and
+ * the final POST /api/requests; the per-step UI lives in ./requests/Step1..4
+ * rendered inside RequestFormShell. Used by signed-in beneficiaries (and by
+ * volunteers submitting on-behalf); admins are blocked with an AdminNotice.
+ *
+ * Key invariants: requestId is a client-generated UUID stable for the whole
+ * form session (also used as the storage path prefix for uploads); category
+ * must be an active admin-taxonomy id at submit time (stale draft ids are
+ * scrubbed); the draft is always saved before any redirect so nothing is lost.
+ */
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import type { ChangeEvent } from 'react'
 import { useRouter } from 'next/router'
+// thin react-router→next/router shim so ported components can keep calling navigate(to)
 const useNavigate = () => {
   const router = useRouter()
   return (to: string) => router.push(to)
@@ -77,6 +92,7 @@ export default function RequestsPage() {
     return window.crypto.randomUUID()
   }, [])
 
+  // UI gender code (M/F/O) → canonical DB value the backend expects on submit
   const toCanonicalGender = useCallback((g: string) => {
     const GENDER_MAP: Record<string, string> = { M: 'male', F: 'female', O: 'other', '': '' }
     return GENDER_MAP[g] ?? ''
@@ -231,6 +247,8 @@ export default function RequestsPage() {
   }, [user])
 
   // ── Validation / navigation ─────────────────────────────────
+  // Validate the current step; on errors set field errors + focus the first
+  // invalid control and stay put, otherwise advance (or submit on step 4).
   const goNext = () => {
     let errs: Record<string, string> = {}
     // The validators live in JS, so TS infers concrete (index-signature-free)
@@ -262,6 +280,10 @@ export default function RequestsPage() {
   }
 
   // ── Submit ────────────────────────────────────────────────────
+  // POST /api/requests with the assembled payload. Guards: in-flight (submitting)
+  // and a missing requestId (no crypto.randomUUID). Handles 401 (save draft +
+  // re-login) and 400 archived-category (bounce to step 2) specially; on success
+  // clears the draft, stashes a save-to-profile offer, and replaces to /my-requests.
   const submitForm = async () => {
     if (submitting || !requestId) return
     setSubmitting(true)
@@ -285,7 +307,7 @@ export default function RequestsPage() {
         deadline:  values.deadline || undefined,
         preferredLanguage: values.preferredLanguage || null,
         attachmentPaths: [idPath, supportPath].filter(Boolean),
-        onBehalf:  role === 'volunteer',
+        onBehalf:  role === 'volunteer', // volunteers file on behalf of a beneficiary
       }
       const res = await apiFetch('/api/requests', {
         method: 'POST',

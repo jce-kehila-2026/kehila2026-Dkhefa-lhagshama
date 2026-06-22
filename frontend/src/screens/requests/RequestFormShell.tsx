@@ -1,3 +1,12 @@
+/**
+ * RequestFormShell — presentational chrome for the multi-step "Submit Request" flow (UC-01).
+ *
+ * Wraps the active step's fields ({children}) with the page header + step indicator,
+ * contextual banners (email-not-verified reminder, volunteer on-behalf notice), the
+ * back/next/submit nav, and a trust strip. It owns NO request state: step number, role,
+ * verification flags, and the next/back handlers are passed in by the page that drives
+ * the form. Bilingual (HE/EN) via useLanguage; step 4 is the final/submit step.
+ */
 import type { ReactNode } from 'react'
 import { CheckCircle, Users, AlertTriangle, ShieldCheck, Clock, Lock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -6,6 +15,8 @@ import StepIndicator from '@/components/forms/StepIndicator'
 import { useLanguage } from '@/contexts/LanguageContext'
 import styles from './RequestFormShell.module.css'
 
+// props are fully controlled by the parent form page; this shell renders, it does not own state.
+// BackArrow/NextArrow are injected so the arrow direction can flip for RTL.
 interface RequestFormShellProps {
   step: number
   steps: string[]
@@ -35,6 +46,7 @@ export default function RequestFormShell({
   NextArrow,
   children,
 }: RequestFormShellProps) {
+  // shell layout + chrome for the request form; children are the per-step fields.
   const { t, lang } = useLanguage()
   const rq = t.request
   // #86 — t.auth.verifyBanner strings

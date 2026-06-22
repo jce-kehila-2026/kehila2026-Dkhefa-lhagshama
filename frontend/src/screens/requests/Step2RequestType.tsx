@@ -1,3 +1,14 @@
+/**
+ * Step2RequestType — step 2 of the 4-step UC-01 "submit request" wizard.
+ *
+ * Presentational/controlled: the parent request-form screen owns all state and
+ * passes values/errors/handlers down; this file only renders the category picker
+ * + the request detail fields (description, urgency, deadline, preferred language).
+ * Category tiles come from the admin-managed taxonomy (categories/labelFor); the
+ * local CAT_STYLE map only adds per-slug icon/color, falling back to a neutral
+ * DEFAULT so new admin categories still render. preferredLanguage feeds the
+ * volunteer matcher (WS-6). Bilingual via useLanguage; RTL-safe through shared CSS.
+ */
 import { GraduationCap, Briefcase, Scale, Users, AlertTriangle, Sparkles, Home, HeartPulse, HeartHandshake, Globe, HandHeart } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Reveal from '@/components/motion/Reveal'
@@ -44,6 +55,9 @@ interface Step2RequestTypeProps {
   NextArrow: LucideIcon
 }
 
+// controlled step-2 renderer. key props: values/errors (parent-owned form state),
+// setValue (tile selection) + handleChange (inputs), categories/labelFor/catsLoading
+// (taxonomy), orgSuggestions (matching community orgs for the chosen category).
 export default function Step2RequestType({
   values,
   errors,

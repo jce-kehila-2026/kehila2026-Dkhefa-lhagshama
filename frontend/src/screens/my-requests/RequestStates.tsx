@@ -1,10 +1,20 @@
+/*
+ * RequestStates — non-data UI states for the beneficiary "my requests" screen.
+ *
+ * three small presentational components covering the page's edge states:
+ * loading (skeleton), load failure, and empty (no requests yet). the parent
+ * my-requests screen picks one of these to render; the happy path (the actual
+ * request list) lives elsewhere. all copy is i18n-driven via the shared
+ * Translations object (HE/EN), so these are pure stateless render functions.
+ */
 import Link from "next/link";
 import { AlertCircle, FileText, Plus } from "lucide-react";
 
 import type { Translations } from "./shared";
 import styles from "./RequestStates.module.css";
 
-// ── Loading skeleton (three placeholder cards) ────────────────
+// loading placeholder: three static skeleton cards while requests fetch.
+// aria-busy/aria-label announce the loading state to screen readers.
 export function LoadingSkeleton({ t }: { t: Translations }) {
   return (
     <div aria-busy="true" aria-label={t.myRequests.loading} className={styles.skeletonGrid}>
@@ -27,7 +37,8 @@ export function LoadingSkeleton({ t }: { t: Translations }) {
   );
 }
 
-// ── Load-error state ──────────────────────────────────────────
+// shown when the requests fetch fails; the refresh button does a hard reload
+// (full reload rather than a soft refetch, so any stale auth/session is reset).
 export function LoadErrorState({ t }: { t: Translations }) {
   return (
     <div className={`card ${styles.errorCard}`}>
@@ -47,7 +58,8 @@ export function LoadErrorState({ t }: { t: Translations }) {
   );
 }
 
-// ── Empty state (no requests yet) ─────────────────────────────
+// fetch succeeded but the user has no requests; CTA deep-links to /requests
+// (the submit-a-request flow) to drive first-request creation.
 export function EmptyState({ t }: { t: Translations }) {
   return (
     <div className={`card ${styles.emptyCard}`}>

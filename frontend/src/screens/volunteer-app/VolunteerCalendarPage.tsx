@@ -1,3 +1,15 @@
+/**
+ * VolunteerCalendarPage — the /volunteer-hub/calendar screen.
+ *
+ * Renders a volunteer's month at a glance: a 6x7 grid overlaying their assigned
+ * requests' deadlines (per day) and their recurring weekly working-hours windows
+ * (per weekday), plus a text deadlines list, a work-status toggle, and the
+ * recurring-availability editor. Data comes from two backend reads on mount:
+ * GET /api/volunteer/me (windows + status) and /api/volunteer/assigned (deadlines).
+ * Fully bilingual/RTL-aware; chevrons mirror in RTL so "previous" always points
+ * to the reading-start. `me` is the shared source of truth that the status and
+ * availability child controls write back through.
+ */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
@@ -12,6 +24,8 @@ import AvailabilityEditor from '@/components/volunteer-app/AvailabilityEditor'
 import WorkStatusControl from '@/components/volunteer-app/WorkStatusControl'
 import styles from './VolunteerCalendarPage.module.css'
 
+// one assigned request as returned by /api/volunteer/assigned; only deadline +
+// the labels needed to render a calendar entry are used here.
 interface AssignedItem {
   id: string
   displayId?: string | null
@@ -21,6 +35,7 @@ interface AssignedItem {
   deadline?: string | null
 }
 
+// shape of /api/volunteer/assigned.
 interface AssignedResponse {
   items: AssignedItem[]
 }
@@ -45,6 +60,8 @@ export default function VolunteerCalendarPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
 
+  // fetch profile (windows/status) + assigned deadlines together; any failure
+  // surfaces the shared load-error and the ErrorState offers a retry.
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)

@@ -1,3 +1,16 @@
+/**
+ * VolunteerAssignedPage — the volunteer's "my assigned cases" screen inside the
+ * Volunteer Hub. Lists the requests this volunteer currently owns (via
+ * GET /api/volunteer/assigned) and exposes the per-case actions: edit
+ * urgency/deadline (PATCH /api/volunteer/requests/:id), mark done
+ * (POST /api/requests/:id/done), self-drop with a hand-off report
+ * (POST /api/volunteer/requests/:id/drop), and a deep link into the request
+ * chat where the mutual-consent close handshake happens.
+ *
+ * Bilingual (HE/EN) via useLanguage; category labels come from the
+ * admin-managed taxonomy (useCategories). Client-side search + sort run over
+ * the loaded items; every mutation refetches via load() to stay in sync.
+ */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -161,6 +174,8 @@ export default function VolunteerAssignedPage() {
     try {
       const res = await apiFetch(`/api/volunteer/requests/${id}/drop`, {
         method: 'POST',
+        // only include the non-empty report fields; the backend dropSchema
+        // validates each as an optional string, so omit rather than send ''.
         body: JSON.stringify({
           ...(done && { done }),
           ...(reached && { reached }),

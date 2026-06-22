@@ -1,3 +1,10 @@
+// shared types, constants, and style tokens for the my-requests screen
+// (the beneficiary's "my submitted requests" view, HE/EN). this module is the
+// single source of truth co-imported by the my-requests page + its sub-views:
+// the api-shaped record/event types they narrow against, the cross-page
+// save-to-profile handoff contract (sessionStorage key + payload shape), and
+// the small presentational helpers (eyebrow label style, lifecycle status pill
+// palette). pure data/style only, no react/runtime logic here.
 import type { CSSProperties } from "react";
 import type { TNode, Referral } from "@/types";
 

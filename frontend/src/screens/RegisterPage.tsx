@@ -1,13 +1,21 @@
 /**
- * RegisterPage — Beneficiary / Volunteer tab toggle.
+ * RegisterPage — the public sign-up screen (route /register, rendered by
+ * pages/register.tsx). Bilingual (HE/EN via LanguageContext), two account paths
+ * behind a tab toggle. The default export is the orchestrator: it owns the
+ * tab + volunteer-step state machine and dispatches to one of three sub-forms.
  *
- * Tab "Beneficiary" (default): original single-step sign-up → calls
- *   Firebase createUser + POST /api/auth/register (sets `beneficiary` claim).
+ * Tab "Beneficiary" (default): single-step sign-up → useAuth().register
+ *   (Firebase createUser + POST /api/auth/register, which sets the `beneficiary`
+ *   claim) → toast verify-email → redirect to validated `next`.
  *
  * Tab "Volunteer": two-step flow
- *   Step 1 — email + password (same Firebase sign-up)
- *   Step 2 — volunteer details form → POST /api/volunteers/apply
+ *   Step 1 — email + password (same Firebase sign-up policy as beneficiary)
+ *   Step 2 — volunteer details + optional avatar → register (beneficiary claim)
+ *            then POST /api/volunteers/apply (admin promotes to volunteer later)
  *   On success → redirect to /register/volunteer/thanks
+ *
+ * Invariant: both tabs share one password policy (min 8 chars + >=1 digit) since
+ * both hit the same Firebase createUser; the volunteer path must never be weaker.
  *
  * Issue #69.
  */
@@ -143,6 +151,9 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 }
 
 // ── BENEFICIARY FORM (original flow) ─────────────────────────────────────────
+// Single-step sign-up form. Validates the password policy client-side, then
+// register() → verify-email toast → redirect to the validated `next` param.
+// Maps Firebase email-already-in-use to a friendly field error.
 function BeneficiaryForm({ t }: { t: Translations }) {
   const { register } = useAuth()
   const { toast } = useApp()
@@ -235,6 +246,9 @@ function BeneficiaryForm({ t }: { t: Translations }) {
 }
 
 // ── VOLUNTEER FORM — step 1 (account) ────────────────────────────────────────
+// Collects + validates credentials only (no account is created here). On valid
+// input it hands { email, password } up via onNext so the parent advances to
+// step 2; the Firebase sign-up is deferred until the step-2 submit.
 function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthRegister; lang: string; onNext: (data: AccountData) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -307,6 +321,10 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
 }
 
 // ── VOLUNTEER FORM — step 2 (details) ────────────────────────────────────────
+// Volunteer details form + the multi-stage submit: create the Firebase account
+// (once, via accountCreatedRef), refresh claims, optionally upload the avatar
+// (non-blocking), then POST /api/volunteers/apply and redirect to /thanks.
+// accountData carries the step-1 credentials; isRTL flips the back-arrow icon.
 function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: VolunteerSignup; a: AuthRegister; lang: string; isRTL: boolean; accountData: AccountData; onBack: () => void }) {
   const { register, refreshClaims } = useAuth()
   const router = useRouter()
@@ -575,6 +593,10 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
+// Orchestrator: owns tab ('beneficiary' | 'volunteer'), volStep (1 | 2) and the
+// step-1 accountData, and renders the matching sub-form. Also renders the brand
+// aside + form heading. Preselects the volunteer tab when arriving via the
+// /volunteer "Apply" CTA (/register?role=volunteer).
 export default function RegisterPage() {
   const { t, lang, isRTL } = useLanguage()
   const v = t.volunteerSignup
@@ -599,6 +621,8 @@ export default function RegisterPage() {
     volunteer:   v.tabVolunteer,
   }
 
+  // Switching tabs resets the volunteer flow so a half-entered step-2 (and its
+  // captured credentials) never leak across tabs.
   const switchTab = (next: string) => {
     setTab(next)
     setVolStep(1)

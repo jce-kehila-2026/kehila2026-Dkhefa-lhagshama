@@ -1,3 +1,12 @@
+/**
+ * AdminNotice — interstitial shown on the request-submission flow (UC-01) when an
+ * admin/staff account lands on the beneficiary "submit a request" screen. Requests
+ * are beneficiary-only, so instead of the form we render a notice telling the staff
+ * user to switch to a beneficiary account and offer a way back home.
+ *
+ * Pure presentational: all copy comes from LanguageContext (HE/EN), navigation is
+ * delegated to the parent via the `navigate` prop. No data fetching or local state.
+ */
 import { AlertTriangle } from 'lucide-react'
 import Reveal from '@/components/motion/Reveal'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -7,10 +16,11 @@ interface AdminNoticeProps {
   navigate: (to: string) => void
 }
 
+// `navigate`: parent-supplied router push (used for the "back home" CTA).
 export default function AdminNotice({ navigate }: AdminNoticeProps) {
   const { t } = useLanguage()
-  const rq = t.request
-  const s2 = t.stream2
+  const rq = t.request // shared compact-header copy reused across the request screens
+  const s2 = t.stream2 // submit-request (UC-01) namespace; holds the adminNotice strings
 
   return (
     <>
