@@ -1,0 +1,125 @@
+/* Footer — component-scoped styles (was inline style={{}} + JS style objects). */
+
+.footer {
+  background: var(--ink);
+  color: rgba(244, 238, 224, 0.78);
+  padding-block-start: 56px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 40px;
+  padding-block-end: 48px;
+  border-block-end: 1px solid rgba(244, 238, 224, 0.12);
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-end: 16px;
+}
+
+.logo {
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--cream);
+}
+
+.brandName {
+  color: var(--cream);
+  font-family: 'Frank Ruhl Libre', serif;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.tagline {
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin-block-end: 20px;
+}
+
+.social {
+  display: flex;
+  gap: 10px;
+}
+
+.colHead {
+  color: var(--cream);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-block-end: 18px;
+}
+
+.linkRow {
+  margin-block-end: 9px;
+}
+
+.link {
+  color: rgba(244, 238, 224, 0.78);
+  font-size: 13.5px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  color: var(--ember);
+}
+
+.contactRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-block-end: 10px;
+}
+
+.contactIcon {
+  color: var(--ember);
+  margin-block-start: 3px;
+  flex-shrink: 0;
+}
+
+.contactText {
+  font-size: 13.5px;
+}
+
+.bottomBar {
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12.5px;
+}
+
+.legal {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.sep {
+  color: rgba(244, 238, 224, 0.3);
+}
+
+.legalLink {
+  color: rgba(244, 238, 224, 0.55);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.legalLink:hover {
+  color: var(--ember);
+}
+
+.reg {
+  text-align: center;
+  padding: 12px 0 20px;
+  font-size: 11.5px;
+  color: rgba(244, 238, 224, 0.35);
+}
