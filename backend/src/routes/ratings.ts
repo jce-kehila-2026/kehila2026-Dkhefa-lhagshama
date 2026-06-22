@@ -9,6 +9,10 @@
  *   previous score). When the request has an assigned volunteer we maintain a
  *   running aggregate (count + sum + average) on `volunteers/{uid}`.
  *
+ * GET /api/ratings/:requestId
+ *   Authenticated. Returns the caller's own rating (admin may also read) so the
+ *   UI can show an "already rated" state.
+ *
  * All writes go through the Admin SDK (which bypasses Firestore rules). Clients
  * never write to `ratings` directly — rules `allow create, update: if false`.
  */

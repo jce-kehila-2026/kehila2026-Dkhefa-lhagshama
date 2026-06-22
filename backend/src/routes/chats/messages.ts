@@ -1,6 +1,15 @@
 /**
- * POST /api/chats/:id/messages — Send a message. The caller must be a
- * participant in the chat. Inactive chats are read-only (409).
+ * chats/messages — the message-send endpoint for the internal chat (UC-04).
+ *
+ * Owns POST /api/chats/:id/messages: writes one message into the top-level
+ * `messages` collection, bumps the parent chat's lastMessageAt, and (best
+ * effort) emails the beneficiary when a volunteer/admin replies on a
+ * request-linked chat. Mounted by the chats router; collaborates with the
+ * shared chat helpers (chatIsActive / throttle constant) and lib/notify.
+ *
+ * Invariants: only chat participants may post; inactive chats are read-only
+ * (409); message content is 1..4000 chars; reply notifications are throttled
+ * per-chat and are fire-and-forget so they can never fail the send.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';
@@ -11,6 +20,10 @@ import { notifyBeneficiaryOfRequest } from '@/lib/notify';
 
 import { chatIsActive, REPLY_NOTIFY_THROTTLE_MS } from './helpers';
 
+// POST /api/chats/:id/messages — handler. Validates body { content } (1..4000
+// chars), checks the chat exists, the caller is a participant, and the chat is
+// active, then persists the message. Responds 201 { messageId } on success;
+// 401/400/404/403/409 on the respective guard failures (checked in that order).
 export async function sendMessage(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });

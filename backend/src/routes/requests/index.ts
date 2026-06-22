@@ -40,6 +40,9 @@ export type { RequestStatus };
 
 const router = Router();
 
+// every route is auth-gated; per-handler role checks live in the handler modules.
+// order matters: the literal /:id/* routes must be registered before the bare
+// /:id catch-all so express does not swallow them as an :id param value.
 router.post('/', authenticate, createRequest);
 router.get('/mine', authenticate, listMine);
 router.post('/:id/done', authenticate, markDone);

@@ -16,6 +16,10 @@ import { mintSignedReadUrl } from '@/lib/signedUrl';
 
 import { findUnknownUids, mutateParticipants, participantSideEffects } from './helpers';
 
+// POST /api/chats/:id/participants — add { uid } to a chat's participants.
+// Validates the body uid, rejects uids unknown to the system, then delegates the
+// authz/transaction to mutateParticipants. Responds { ok, added } (added=false
+// when the uid was already a participant, i.e. no-op).
 export async function addParticipant(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });
@@ -56,6 +60,10 @@ export async function addParticipant(req: Request, res: Response): Promise<void>
   }
 }
 
+// DELETE /api/chats/:id/participants/:uid — remove a participant.
+// uid comes from the path (no body to validate); authz/transaction lives in
+// mutateParticipants. Responds { ok, removed } (removed=false when the uid was
+// not a participant, i.e. no-op).
 export async function removeParticipant(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });
@@ -83,12 +91,13 @@ export async function removeParticipant(req: Request, res: Response): Promise<vo
   }
 }
 
-// Participant identity for the chat UI (Note 11): photo + name for each
-// participant, so the volunteer's face is visible to the beneficiary (trust).
-// Participant-only, with an admin read bypass (oversight — admins may LOOK at
-// any chat but must join as a participant before posting).
-// `avatarUrl` is a short-lived signed URL minted from users/{uid}.photoURL,
-// or null when the user has no photo.
+// GET /api/chats/:id/participants — participant identity for the chat UI
+// (Note 11): photo + name for each participant, so the volunteer's face is
+// visible to the beneficiary (trust). Participant-only, with an admin read
+// bypass (oversight: admins may LOOK at any chat but must join as a participant
+// before posting). Responds an array of { uid, displayName, avatarUrl } where
+// avatarUrl is a short-lived signed URL minted from users/{uid}.photoURL, or
+// null when the user has no photo.
 export async function listParticipants(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });

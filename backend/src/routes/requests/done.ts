@@ -1,8 +1,22 @@
 /**
- * POST /api/requests/:id/done — volunteer-scoped "mark as done" (Note 6).
+ * markDone — the volunteer-facing "mark as done" handler for one request
+ * (mounted as POST /api/requests/:id/done in the requests router).
  *
- * Mechanical extraction from the former single-file routes/requests.ts —
- * the handler logic is unchanged.
+ * Responsibility: drive the single status transition in_progress ->
+ * awaiting_review on behalf of the assigned volunteer (or an admin), atomically
+ * and idempotently-safe via a Firestore transaction. The legal-transition rule
+ * lives in lib/requestTransitions.canTransition (not duplicated here); ownership
+ * and auth are enforced inline before the write.
+ *
+ * Collaborators: lib/firebaseAdmin (db), lib/requestTransitions (canTransition),
+ * lib/requestEvents + lib/audit (post-commit bookkeeping), ./helpers
+ * (TransitionError -> http status mapping).
+ *
+ * Invariant: the status write and its guards run inside one runTransaction, so a
+ * concurrent update aborts (Firestore code 10 -> 409 concurrent_update) rather
+ * than racing. Event/audit writes happen after commit and never fail the response.
+ *
+ * Extracted verbatim from the former single-file routes/requests.ts; logic unchanged.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';
@@ -15,10 +29,10 @@ import { canTransition } from '@/lib/requestTransitions';
 import { TransitionError } from './helpers';
 
 // ── POST /api/requests/:id/done ──────────────────────────────────────────
-// Volunteer-scoped "mark as done" (Note 6). ASSIGNED-HANDLER ONLY: the caller
-// must be the request's assignedVolunteerId or handler (admins also allowed).
-// Valid only for the transition in_progress → awaiting_review. Writes a
-// timestamped requestEvent and returns the updated request.
+// ASSIGNED-HANDLER ONLY: a non-admin caller must be the request's
+// assignedVolunteerId or handler; admins are always allowed. Only valid for
+// in_progress → awaiting_review. Returns the updated request (timestamps as
+// ISO strings); 401/403/404/409/500 on the respective failure paths.
 export async function markDone(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });

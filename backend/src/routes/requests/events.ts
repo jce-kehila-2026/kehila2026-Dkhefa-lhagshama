@@ -1,8 +1,18 @@
 /**
- * GET /api/requests/:id/events — timeline events for a single request (#68).
+ * Request timeline events (#68): the read side of the per-request audit trail.
  *
- * Mechanical extraction from the former single-file routes/requests.ts —
- * the handler logic is unchanged.
+ * Exposes one handler, listEvents, mounted by the requests router as
+ * GET /api/requests/:id/events. It reads the requestEvents collection (written
+ * elsewhere when a request is created/claimed/assigned/closed/etc.) and returns
+ * an ordered timeline for the requester's "my requests" detail view and the
+ * admin/volunteer request rail.
+ *
+ * Key invariant: a caller only sees events whose visibility they're allowed to
+ * see. Owners (beneficiaries) get public events; handlers and admins also get
+ * 'internal' ones. Access to events first requires access to the parent request.
+ *
+ * Extracted as-is from the former single-file routes/requests.ts; handler logic
+ * is unchanged.
  */
 import { type Request, type Response } from 'express';
 

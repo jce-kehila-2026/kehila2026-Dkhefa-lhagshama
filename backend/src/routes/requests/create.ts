@@ -1,8 +1,16 @@
 /**
  * POST /api/requests — UC-01 Submit Assistance Request.
  *
- * Mechanical extraction from the former single-file routes/requests.ts —
- * the handler logic is unchanged.
+ * The single write path that turns a validated intake form into a `requests`
+ * Firestore doc. Beneficiaries submit for themselves; volunteers may submit
+ * on behalf of a known uid. Allocates the human-friendly displayId (REQ-####),
+ * reconciles pre-uploaded attachments, then fires the audit log + timeline
+ * event. Collaborators: ./schemas (zod validation incl. async category check),
+ * ./helpers (displayId counter + Storage attachment rebuild), lib/audit,
+ * lib/requestEvents. Invariant: the UUID `requestId` is the durable doc key
+ * (create() guards against duplicates); displayId is a parallel display label.
+ *
+ * Extracted unchanged from the former single-file routes/requests.ts.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';

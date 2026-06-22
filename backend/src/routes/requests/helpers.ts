@@ -1,8 +1,12 @@
 /**
- * Shared helpers for /api/requests handlers.
- *
- * Mechanical extraction from the former single-file routes/requests.ts —
- * the logic is unchanged.
+ * Shared helpers for the /api/requests Express handlers (UC-01 request intake +
+ * lifecycle). Three concerns: rebuilding the `attachments` array on a request
+ * from Storage objects, a transaction-scoped error type used to abort a state
+ * transition with a specific HTTP status, and allocating the friendly REQ-####
+ * reference. Collaborates with Firestore + Storage (firebaseAdmin) and the
+ * displayId formatter; imported by the route modules under routes/requests/.
+ * Mechanical extraction from the former single-file routes/requests.ts, logic
+ * unchanged.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 

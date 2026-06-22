@@ -1,6 +1,12 @@
 /**
- * POST /api/requests/:id/close — beneficiary side of the mutual-consent
- * close handshake (req 25).
+ * POST /api/requests/:id/close — beneficiary side of the mutual-consent close
+ * handshake (req 25). Thin Express handler: it auth-gates, validates the action
+ * (propose/approve/decline), delegates the actual state machine to
+ * lib/closeConsent.applyCloseConsent, then records timeline/audit side-effects.
+ *
+ * The volunteer side and the shared close logic live elsewhere: the assigned
+ * volunteer hits its own route, and both routes call the same applyCloseConsent.
+ * Response shape: { ok, closed, closeRequest }.
  *
  * Mechanical extraction from the former single-file routes/requests.ts —
  * the handler logic is unchanged.
@@ -46,10 +52,14 @@ export async function closeRequest(req: Request, res: Response): Promise<void> {
   }
 
   if (result.status !== 'ok') {
+    // map the consent state-machine status (not_found/forbidden/invalid_state)
+    // to its HTTP code; unknown status falls back to 500.
     res.status(CLOSE_HTTP[result.status] ?? 500).json({ error: result.status });
     return;
   }
 
+  // side-effects below are best-effort: the close/handshake write already
+  // committed in applyCloseConsent, so a failure here is logged but not surfaced.
   if (result.closed) {
     try {
       await writeRequestEvent({

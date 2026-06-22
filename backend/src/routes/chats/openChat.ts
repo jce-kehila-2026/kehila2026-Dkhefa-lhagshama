@@ -1,7 +1,15 @@
 /**
- * POST /api/chats — Open (or retrieve) a chat for a given requestId.
- * Auto-creates the chat document if one doesn't exist yet.
- * Only the request's beneficiaryId or handler (assignedTo) may open a chat.
+ * openChat — express handler backing POST /api/chats.
+ *
+ * idempotent "open or create" for the per-request chat thread: given a requestId,
+ * return the existing chat for that request, or create one on first open. one chat
+ * per request is the core invariant (lookup is keyed on requestId).
+ *
+ * authorization: only people tied to the request (beneficiary, handler, assigned
+ * volunteer) or an admin may open it. participants on the created chat doc mirror
+ * that set, so firestore rules and the matching ui both see who is allowed in.
+ * collaborates with the requests collection (source of truth for membership) and
+ * the chats collection (this handler is the only writer that bootstraps a thread).
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';
@@ -38,6 +46,8 @@ export async function openChat(req: Request, res: Response): Promise<void> {
     assignedVolunteerId?: string | null;
   };
 
+  // membership is derived from the request, not the chat (the chat may not exist yet).
+  // admins bypass the participant check.
   const uid = req.user.uid;
   const isParticipant =
     uid === requestData.beneficiaryId ||
@@ -49,7 +59,8 @@ export async function openChat(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Check if a chat for this requestId already exists.
+  // idempotency: reuse the existing thread if one was already opened for this request.
+  // 200 (reused) vs 201 (created below) lets callers distinguish the two.
   const existing = await db()
     .collection('chats')
     .where('requestId', '==', requestId)

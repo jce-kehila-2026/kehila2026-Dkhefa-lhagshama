@@ -1,9 +1,14 @@
 /**
- * GET /api/requests/:id/attachments/:name — re-mint a short-lived signed read
- * URL for a single attachment (Note 1).
+ * Attachment download brokering for a single request.
  *
- * Mechanical extraction from the former single-file routes/requests.ts —
- * the handler logic is unchanged.
+ * Firebase Storage stays client-read denied; this is the ONLY path that hands
+ * out (short-lived) read links to request attachments, so every download is
+ * gated through the server's auth + visibility checks here. Used by staff
+ * (admin / assigned volunteer) reviewing a case; the owning beneficiary is not
+ * served here. Responds { url, expiresAt }.
+ *
+ * Mechanical extraction from the former single-file routes/requests.ts; the
+ * handler logic is unchanged.
  */
 import { type Request, type Response } from 'express';
 

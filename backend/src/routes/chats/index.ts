@@ -42,6 +42,7 @@ const router = Router();
 router.post('/', authenticate, openChat);
 
 // ── POST /api/chats/direct ────────────────────────────────────────────────
+// admin-only: only staff may spin up direct (staff/group) chats outside a request.
 router.post('/direct', authenticate, requireRole('admin'), createDirectChat);
 
 // ── Participant management ────────────────────────────────────────────────
@@ -55,6 +56,8 @@ router.post('/:id/messages', authenticate, sendMessage);
 router.get('/:id/participants', authenticate, listParticipants);
 
 // ── POST /api/chats/:id/attachments ──────────────────────────────────────────
+// raw body (any content-type, 12mb cap) so the handler streams bytes straight to
+// Storage; must precede uploadAttachment so req.body is the file buffer, not JSON.
 router.post(
   '/:id/attachments',
   authenticate,

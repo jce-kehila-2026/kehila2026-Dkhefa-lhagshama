@@ -30,11 +30,19 @@ const AVATAR_MIME_EXT: Record<string, string> = {
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 // ── POST /api/profile/avatar ────────────────────────────────────────────────
+// auth-only raw image upload. validates content-type → mime → non-empty body →
+// size, in that order (cheapest/most-specific reject first), then writes to
+// Storage + records the path on the user doc.
+// responses: 200 { ok, avatarUrl } | 400 validation | 401 not_authenticated |
+// 413 file_too_large | 415 unsupported_media_type | 500 internal.
+// express.raw limit (6mb) is the transport cap; MAX_AVATAR_BYTES is the
+// business cap and is checked explicitly after the body is buffered.
 router.post(
   '/avatar',
   authenticate,
   express.raw({ type: '*/*', limit: '6mb' }),
   async (req: Request, res: Response) => {
+    // authenticate sets req.user; guard for the type-narrowing + defensive 401.
     if (!req.user) {
       res.status(401).json({ error: 'not_authenticated' });
       return;
@@ -69,6 +77,8 @@ router.post(
       return;
     }
 
+    // fixed per-user path: overwrites the previous avatar so each user keeps at
+    // most one object (no orphan accumulation), and the path stays stable.
     const uid = req.user.uid;
     const path = `avatars/${uid}/avatar.${ext}`;
     const bucketFile = storage().file(path);

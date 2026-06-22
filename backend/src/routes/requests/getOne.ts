@@ -2,8 +2,15 @@
  * GET /api/requests/:id — defense-in-depth read of a single request, with a
  * role-scoped projection (F2).
  *
- * Mechanical extraction from the former single-file routes/requests.ts —
- * the handler logic is unchanged.
+ * Authorizes owner/handler/assigned-volunteer/admin, then returns a per-role
+ * view of the doc: owners get a beneficiary-safe subset (staff working data
+ * stripped), staff get the doc minus the national-ID + with a task-aware
+ * attachment filter, admin sees everything. Consumed by my-requests, the
+ * chat rail, and the close-consent handshake in ChatWindowPage; mirrors the
+ * projection rules in GET /api/requests/mine + volunteerApp.ts.
+ *
+ * Mechanical extraction from the former single-file routes/requests.ts; the
+ * handler logic is unchanged.
  */
 import { type Request, type Response } from 'express';
 
