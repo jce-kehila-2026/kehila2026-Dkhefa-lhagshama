@@ -69,6 +69,7 @@ plus seeded demo logins `demo.vol1@pff.test`, `demo.vol2@pff.test`, `demo.bene1@
 - **Credentials:** the function uses the runtime service account's Application Default Credentials — no key file is shipped. `firebaseAdmin.ts` drops `GOOGLE_APPLICATION_CREDENTIALS` if the file is missing (so a stray local value can't break the cloud boot).
 - **`firebase.json`** — `functions` codebase `api` (source `backend`, runtime `nodejs20`) + `hosting` with the `/api/**` → function rewrite and rewrites for the three client-rendered dynamic routes (`/chats/*`, `/admin/requests/*`, `/admin/volunteers/*`) so deep-links/refreshes resolve.
 - **`frontend/.env.production.local`** — sets `NEXT_PUBLIC_API_BASE_URL=` (empty → relative `/api`) for production builds.
+- **Frontend env files are gitignored** (`.env*` except `.env.example`). `.env.production` is **no longer tracked** — its `NEXT_PUBLIC_*` values are public client config, but env files don't belong in git. A fresh clone/CI build supplies them via a local `.env.production.local` or CI env vars; `frontend/.env.example` documents every key.
 
 ## Notes
 

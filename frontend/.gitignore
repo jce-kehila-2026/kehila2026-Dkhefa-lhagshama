@@ -22,9 +22,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
-.env.local
+# local env files — ignore ALL env files except the documented example.
+# (NEXT_PUBLIC_* values are public client config, not secrets, but env files
+# still don't belong in git: provide them via .env*.local or CI env vars.)
+.env*
+!.env.example
 
 # typescript
 *.tsbuildinfo
