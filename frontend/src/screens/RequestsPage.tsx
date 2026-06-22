@@ -6,26 +6,7 @@ const useNavigate = () => {
   return (to: string) => router.push(to)
 }
 
-// The intake form's field set (shape of `useForm` values for this page).
-interface RequestFormValues {
-  firstName: string; lastName: string;
-  idType: string; idNumber: string; idNote: string;
-  phone: string; email: string;
-  city: string; age: string; gender: string;
-  category: string; description: string; urgency: string;
-  deadline: string;
-  preferredLanguage: string;
-  consent: boolean;
-}
-
-import { CheckCircle, ArrowLeft, ArrowRight, GraduationCap, Briefcase, Scale, Users, AlertTriangle, ShieldCheck, Sparkles, Clock, Lock, Home, HeartPulse, HeartHandshake, Globe, HandHeart } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import Reveal from '../components/motion/Reveal'
-import SuggestCard from '@/components/SuggestCard'
-import StepIndicator from '@/components/forms/StepIndicator'
-import UploadArea from '@/components/forms/UploadArea'
-import { FormGroup, Label, Input, Select, Textarea, FormRow } from '@/components/forms/FormElements'
-import HelpTooltip from '@/components/feedback/HelpTooltip'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useApp } from '../contexts/AppContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -36,50 +17,14 @@ import { useCategories } from '../hooks/useCategories'
 import { validateStep1, validateStep2, validateStep3, validateStep4 } from '../utils/validators'
 import { apiFetch, apiJson } from '../lib/apiClient'
 import type { Suggestion } from '@/types'
-
-// ── Constants ──────────────────────────────────────────────────
-// Category LIST comes from the admin-managed taxonomy (useCategories); only
-// the per-tile icon/color treatment stays local, keyed by the well-known slug
-// ids. Any id without an entry gets the neutral DEFAULT treatment so a brand
-// new admin category still renders a coherent tile.
-const CAT_STYLE: Record<string, { Icon: LucideIcon; bg: string; color: string }> = {
-  education:  { Icon: GraduationCap, bg:'#EBF3FF', color:'#1A5EA0' },
-  employment: { Icon: Briefcase,     bg:'#E8F5EC', color:'#15803D' },
-  legal:      { Icon: Scale,         bg:'#FBF0C8', color:'#7C5F00' },
-  social:     { Icon: Users,         bg:'#F5EBF8', color:'#6D28D9' },
-  housing:    { Icon: Home,          bg:'#EBF3FF', color:'#1A5EA0' },
-  health:     { Icon: HeartPulse,    bg:'#E8F5EC', color:'#15803D' },
-  welfare:    { Icon: HeartHandshake,bg:'var(--ember-soft)', color:'var(--ember)' },
-  community:  { Icon: Users,         bg:'#F5EBF8', color:'#6D28D9' },
-  youth:      { Icon: Sparkles,      bg:'#FBF0C8', color:'#7C5F00' },
-  absorption: { Icon: Globe,         bg:'#EBF3FF', color:'#1A5EA0' },
-}
-const DEFAULT_CAT_STYLE = { Icon: HandHeart, bg: 'var(--ember-soft)', color: 'var(--ember)' }
-
-// localStorage key for draft persistence (#93)
-const DRAFT_KEY = 'rq_draft_v1'
-
-// sessionStorage key for the post-submit "save to profile" offer (#67).
-// The submit redirect unmounts this page in the same tick, so any in-form
-// offer could never render; instead the submitted personal fields are
-// stashed here and MyRequestsPage shows the offer (and clears the stash on
-// save or dismiss, so the details do not outlive the offer).
-const SAVE_PROFILE_OFFER_KEY = 'pff:saveProfileOffer'
-
-function loadDraft() {
-  try {
-    const raw = typeof window !== 'undefined' && window.localStorage?.getItem(DRAFT_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
-}
-
-function saveDraft(values: RequestFormValues) {
-  try { window.localStorage?.setItem(DRAFT_KEY, JSON.stringify(values)) } catch { /* noop */ }
-}
-
-function clearDraft() {
-  try { window.localStorage?.removeItem(DRAFT_KEY) } catch { /* noop */ }
-}
+import type { RequestFormValues } from './requests/types'
+import Step1Personal from './requests/Step1Personal'
+import Step2RequestType from './requests/Step2RequestType'
+import Step3Documents from './requests/Step3Documents'
+import Step4Summary from './requests/Step4Summary'
+import AdminNotice from './requests/AdminNotice'
+import RequestFormShell from './requests/RequestFormShell'
+import { SAVE_PROFILE_OFFER_KEY, loadDraft, saveDraft, clearDraft } from './requests/draft'
 
 // ── Component ─────────────────────────────────────────────────
 export default function RequestsPage() {
@@ -418,534 +363,74 @@ export default function RequestsPage() {
 
   // #90 — Admin notice: block admins from submitting
   if (role === 'admin') {
-    return (
-      <>
-        {/* ── COMPACT INLINE HEADER — eyebrow → serif title → lede (start-aligned) ── */}
-        <section className="req-header">
-          <div className="page-container req-header-container">
-            <Reveal>
-              <div className="req-header-inner">
-                <span className="eyebrow req-header-eyebrow">{rq.inlineHeader.eyebrow}</span>
-                <h1 className="section-display-bold req-header-title">{rq.inlineHeader.title}</h1>
-                <p className="section-lede req-header-lede">{rq.inlineHeader.lede}</p>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-        <div className="page-container req-admin-shell">
-          <Reveal>
-            <div className="card" style={{ padding:'clamp(32px, 5vw, 48px)', textAlign:'center', boxShadow:'var(--shadow-lg)' }}>
-              <div aria-hidden="true" style={{
-                width:'68px', height:'68px',
-                background:'var(--ember-soft)',
-                borderRadius:'var(--radius-lg)',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                marginInline:'auto', marginBlockEnd:'var(--sp-5)',
-              }}>
-                <AlertTriangle size={30} color="var(--ember)" />
-              </div>
-              <h2 style={{
-                fontFamily:'Frank Ruhl Libre, Georgia, serif',
-                fontSize:'var(--fs-h2)', fontWeight:400, color:'var(--ink)',
-                lineHeight:1.18, letterSpacing:'-0.01em', marginBlockEnd:'var(--sp-3)', textWrap:'balance',
-              }}>
-                {s2.adminNotice.title}
-              </h2>
-              <p style={{ color:'var(--gray-600)', fontSize:'var(--fs-body)', marginBlockEnd:'var(--sp-6)', lineHeight:1.7 }}>
-                {s2.adminNotice.body}
-              </p>
-              <button className="btn btn-outline" onClick={() => navigate('/')}>
-                {s2.adminNotice.switchBtn}
-              </button>
-            </div>
-          </Reveal>
-        </div>
-      </>
-    )
+    return <AdminNotice navigate={navigate} />
   }
 
-  // #86 — t.auth.verifyBanner strings
-  const vb = t.auth.verifyBanner
-
-  // Reassurance items shown beneath the form — quiet, brand-aligned trust signals.
-  const trustItems = [
-    { Icon: Clock,       text: lang === 'he' ? 'נציג חוזר אליך תוך 48 שעות' : 'A representative replies within 48 hours' },
-    { Icon: Lock,        text: lang === 'he' ? 'הפרטים שלך מאובטחים ומוצפנים' : 'Your details are encrypted and secure' },
-    { Icon: ShieldCheck, text: lang === 'he' ? 'הטיוטה נשמרת אוטומטית' : 'Your draft is saved automatically' },
-  ]
-
   return (
-    <>
-      {/* ── COMPACT INLINE HEADER — eyebrow → serif title → lede + step indicator (start-aligned) ── */}
-      <section className="req-header">
-        <div className="page-container req-header-container req-header-container-compact">
-          <Reveal>
-            <div className="req-header-inner">
-              <span className="eyebrow req-header-eyebrow">{rq.inlineHeader.eyebrow}</span>
-              <h1 className="section-display-bold req-header-title">{rq.inlineHeader.title}</h1>
-              <p className="section-lede req-header-lede">{rq.inlineHeader.lede}</p>
-            </div>
-          </Reveal>
-          <div className="req-header-stepper">
-            <StepIndicator steps={steps} currentStep={step} progressLabel={rq.progressLabel} />
-          </div>
-        </div>
-      </section>
-
-      <div className="page-container req-shell-compact">
-        {/* #86 — email-not-verified banner; shown only when user is signed in but unverified */}
-        {!emailVerified && (
-          <div className="form-banner form-banner-info req-banner" role="status">
-            <AlertTriangle size={16} aria-hidden="true" />
-            <span className="req-banner-text">{vb.text}</span>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={handleResendVerification}
-              disabled={resendSent}
-            >
-              {resendSent ? vb.sent : vb.resend}
-            </button>
-          </div>
-        )}
-
-        {/* FEATURE 1 — volunteer on-behalf banner */}
-        {role === 'volunteer' && (
-          <div className="form-banner form-banner-info req-banner" role="status">
-            <Users size={16} aria-hidden="true" />
-            <span className="req-banner-text">{rq.onBehalf.banner}</span>
-          </div>
-        )}
-
-        <Reveal>
-        <div className="card" style={{ overflow:'hidden', boxShadow:'var(--shadow-lg)' }}>
-          <div className="card-body" style={{ padding:'clamp(24px, 4vw, 40px)' }}>
-
+    <RequestFormShell
+      step={step}
+      steps={steps}
+      role={role}
+      emailVerified={emailVerified}
+      resendSent={resendSent}
+      handleResendVerification={handleResendVerification}
+      submitting={submitting}
+      setStep={setStep}
+      goNext={goNext}
+      BackArrow={BackArrow}
+      NextArrow={NextArrow}
+    >
         {/* STEP 1 — PERSONAL DETAILS */}
         {step === 1 && (
-          <div className="req-step" key="step1">
-            <div className="req-step-head req-step-head--split">
-              <div style={{ minWidth:0 }}>
-                <span className="eyebrow req-step-eyebrow">
-                  {lang === 'he' ? `שלב 1 מתוך 4` : `Step 1 of 4`}
-                </span>
-                <h2 className="req-step-title">{role === 'volunteer' ? rq.onBehalf.step1Title : rq.step1.title}</h2>
-              </div>
-              {/* #67 — auto-fill button */}
-              <button
-                type="button"
-                className={`btn btn-ghost btn-sm req-fill-btn${profileLoading ? ' is-loading' : ''}`}
-                onClick={fillFromProfile}
-                disabled={profileLoading}
-                aria-busy={profileLoading}
-              >
-                <Sparkles size={14} aria-hidden="true" /> {s2.autoFill.fillBtn}
-              </button>
-            </div>
-
-            <FormRow>
-              <FormGroup>
-                <Label htmlFor="firstName" required>{rq.step1.firstName}</Label>
-                <Input id="firstName" name="firstName" value={values.firstName} onChange={handleChange}
-                  autoComplete="given-name" aria-invalid={!!errors.firstName}
-                  placeholder={rq.step1.firstNamePH} error={errors.firstName} />
-              </FormGroup>
-              <FormGroup>
-                <Label htmlFor="lastName" required>{rq.step1.lastName}</Label>
-                <Input id="lastName" name="lastName" value={values.lastName} onChange={handleChange}
-                  autoComplete="family-name" aria-invalid={!!errors.lastName}
-                  placeholder={rq.step1.lastNamePH} error={errors.lastName} />
-              </FormGroup>
-            </FormRow>
-
-            {/* #66 — ID type selector */}
-            <FormGroup>
-              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <Label required>{s2.idType.label}</Label>
-                <HelpTooltip text={s2.idType.tip} label={s2.idType.tipLabel} />
-              </span>
-              <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
-                {[
-                  ['israeli_id', s2.idType.israeliId],
-                  ['passport',   s2.idType.passport],
-                  ['none',       s2.idType.none],
-                ].map(([val, label]) => (
-                  <label key={val} className={`opt-pill${values.idType === val ? ' is-on' : ''}`}>
-                    <input type="radio" name="idType" value={val}
-                      checked={values.idType === val}
-                      onChange={handleChange} />
-                    {label}
-                  </label>
-                ))}
-              </div>
-            </FormGroup>
-
-            {values.idType === 'israeli_id' && (
-              <FormGroup>
-                <Label htmlFor="idNumber" required>{rq.step1.idNumber}</Label>
-                <Input id="idNumber" name="idNumber" value={values.idNumber} onChange={handleChange}
-                  inputMode="numeric" autoComplete="off" spellCheck={false} aria-invalid={!!errors.idNumber}
-                  placeholder={rq.step1.idPH} maxLength={9} error={errors.idNumber} />
-              </FormGroup>
-            )}
-
-            {(values.idType === 'passport' || values.idType === 'none') && (
-              <FormRow>
-                {values.idType === 'passport' && (
-                  <FormGroup>
-                    <Label htmlFor="idNumber">{rq.step1.idNumber}</Label>
-                    <Input id="idNumber" name="idNumber" value={values.idNumber} onChange={handleChange}
-                      autoComplete="off" spellCheck={false} aria-invalid={!!errors.idNumber}
-                      placeholder={rq.step1.passportPH} maxLength={40} error={errors.idNumber} />
-                  </FormGroup>
-                )}
-                <FormGroup style={values.idType === 'none' ? {} : {}}>
-                  <Label htmlFor="idNote">{s2.idType.noteLabel}</Label>
-                  <Input id="idNote" name="idNote" value={values.idNote || ''} onChange={handleChange}
-                    placeholder={s2.idType.notePH} maxLength={400} />
-                </FormGroup>
-              </FormRow>
-            )}
-
-            <FormRow>
-              <FormGroup>
-                <Label htmlFor="phone" required>{rq.step1.phone}</Label>
-                <Input id="phone" name="phone" type="tel" value={values.phone} onChange={handleChange}
-                  inputMode="tel" autoComplete="tel" aria-invalid={!!errors.phone}
-                  placeholder={rq.step1.phonePH} error={errors.phone} />
-              </FormGroup>
-              <FormGroup>
-                <Label htmlFor="email" required>{rq.step1.email}</Label>
-                <Input id="email" name="email" type="email" value={values.email} onChange={handleChange}
-                  inputMode="email" autoComplete="email" spellCheck={false} aria-invalid={!!errors.email}
-                  placeholder={rq.step1.emailPH} error={errors.email}
-                  hint={s2.autoFill.emailNote} />
-              </FormGroup>
-            </FormRow>
-
-            <FormRow>
-              <FormGroup>
-                <Label htmlFor="city" required>{rq.step1.city}</Label>
-                <Select id="city" name="city" value={values.city} onChange={handleChange}
-                  autoComplete="address-level2" aria-invalid={!!errors.city} error={errors.city}>
-                  <option value="">{lang === 'he' ? 'בחר עיר…' : 'Select city…'}</option>
-                  {rq.cities.map(c => <option key={c} value={c}>{c}</option>)}
-                </Select>
-              </FormGroup>
-              <FormGroup>
-                <Label htmlFor="age">{rq.step1.age}</Label>
-                <Input id="age" name="age" type="number" value={values.age} onChange={handleChange}
-                  inputMode="numeric" autoComplete="off"
-                  placeholder={rq.step1.agePH} min={1} max={120} />
-              </FormGroup>
-            </FormRow>
-
-            <FormGroup>
-              <Label>{rq.step1.gender}</Label>
-              <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-                {[['M', rq.step1.genderM], ['F', rq.step1.genderF], ['O', rq.step1.genderO]].map(([val, label]) => (
-                  <label key={val} className={`opt-pill${values.gender === val ? ' is-on' : ''}`}>
-                    <input type="radio" name="gender" value={val}
-                      checked={values.gender === val}
-                      onChange={handleChange} />
-                    {label}
-                  </label>
-                ))}
-              </div>
-            </FormGroup>
-          </div>
+          <Step1Personal
+            role={role}
+            values={values}
+            errors={errors}
+            handleChange={handleChange}
+            profileLoading={profileLoading}
+            fillFromProfile={fillFromProfile}
+          />
         )}
 
         {/* STEP 2 — REQUEST TYPE */}
         {step === 2 && (
-          <div className="req-step" key="step2">
-            <span className="eyebrow req-step-eyebrow">
-              {lang === 'he' ? `שלב 2 מתוך 4` : `Step 2 of 4`}
-            </span>
-            <h2 className="req-step-title">{rq.step2.title}</h2>
-            <p className="req-step-intro">{rq.step2.subtitle}</p>
-            <div
-              id="category"
-              className="choice-grid"
-              role="radiogroup"
-              aria-label={rq.step2.title}
-              aria-invalid={!!errors.category}
-              aria-describedby={errors.category ? 'category-error' : undefined}
-              tabIndex={errors.category ? -1 : undefined}
-              style={{ marginBottom:'24px' }}
-            >
-              {catsLoading
-                ? // Brief skeleton tiles while the taxonomy loads — same grid
-                  // cell footprint as a tile, so there is no layout jump.
-                  [0, 1, 2, 3].map((i) => (
-                    <span
-                      key={i}
-                      className="skeleton"
-                      style={{ minHeight:'76px', borderRadius:'var(--radius-lg)' }}
-                      aria-hidden="true"
-                    />
-                  ))
-                : categories.map(({ id }) => {
-                    const { Icon, bg, color } = CAT_STYLE[id] ?? DEFAULT_CAT_STYLE
-                    // Labels come from the category doc (labelFor); the legacy
-                    // static map only still contributes the optional hint line.
-                    const hint = (rq.step2.cats as Record<string, { label?: string; hint?: string }>)[id]?.hint
-                    const selected = values.category === id
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        className="choice-tile"
-                        role="radio"
-                        aria-checked={selected}
-                        onClick={() => setValue('category', id)}
-                      >
-                        <span className="choice-tile-icon" aria-hidden="true" style={{ background:bg, color }}>
-                          <Icon size={20} />
-                        </span>
-                        <span style={{ minWidth:0 }}>
-                          <span className="choice-tile-title">{labelFor(id)}</span>
-                          {hint && <span className="choice-tile-hint">{hint}</span>}
-                        </span>
-                      </button>
-                    )
-                  })}
-            </div>
-            {errors.category && <div id="category-error" role="alert" className="form-error" style={{ marginBottom:'14px' }}>{errors.category}</div>}
-
-            {/* Taxonomy failed to load (backend down / unseeded): without
-                tiles step 2 is a dead end, so surface the failure + a retry
-                (useCategories never caches failures, so retry refetches). */}
-            {!catsLoading && categories.length === 0 && (
-              <div className="form-banner form-banner-info" role="alert" style={{ marginBottom:'24px' }}>
-                <AlertTriangle size={16} aria-hidden="true" />
-                <span style={{ flex:1 }}>{rq.step2.catsLoadError}</span>
-                <button type="button" className="btn btn-outline btn-sm" onClick={() => refreshCats()}>
-                  {rq.step2.catsRetry}
-                </button>
-              </div>
-            )}
-
-            {/* Matching organizations helper — community answers in the chosen category */}
-            {!orgSuggestionsDismissed && orgSuggestions.length > 0 && (
-              <Reveal>
-                <SuggestCard
-                  items={orgSuggestions}
-                  lang={lang}
-                  heading={rq.step2.suggestHeading}
-                  subtitle={rq.step2.suggestSubtitle}
-                  openLabel={t.myRequests.suggest.open}
-                  callLabel={t.directory.modal.call}
-                  emailLabel={t.directory.modal.email}
-                  directoryLabel={t.myRequests.suggest.directory}
-                  dismissLabel={t.myRequests.suggest.dismiss}
-                  onDismiss={() => setOrgSuggestionsDismissed(true)}
-                />
-              </Reveal>
-            )}
-
-            {/* Link to the full directory, pre-filtered by the chosen category —
-                gated on orgSuggestions.length > 0 so it only renders when the
-                category actually has at least one matching organization
-                (suggestions query both org types). This stops the CTA from
-                promising "all organizations that can help" and then landing the
-                beneficiary on an empty directory for categories with no orgs
-                (e.g. absorption/youth in the current dataset). No `tab` param:
-                DirectoryPage picks whichever org tab holds the category. */}
-            {values.category && orgSuggestions.length > 0 && (
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                style={{ marginBottom:'24px' }}
-                onClick={() => navigate(`/directory?category=${encodeURIComponent(values.category)}`)}
-              >
-                {rq.step2.seeAllOrgs} · {labelFor(values.category)}
-                <NextArrow size={14} aria-hidden="true" />
-              </button>
-            )}
-
-            <FormGroup>
-              <Label htmlFor="description" required>{rq.step2.description}</Label>
-              <Textarea id="description" name="description" value={values.description}
-                onChange={handleChange} placeholder={rq.step2.descPH}
-                rows={4} aria-invalid={!!errors.description} error={errors.description} />
-            </FormGroup>
-            <FormRow>
-              <FormGroup>
-                <Label htmlFor="urgency">{rq.step2.urgency}</Label>
-                <Select id="urgency" name="urgency" value={values.urgency} onChange={handleChange}>
-                  <option value="low">{rq.step2.urgencyLow}</option>
-                  <option value="medium">{rq.step2.urgencyMed}</option>
-                  <option value="high">{rq.step2.urgencyHigh}</option>
-                </Select>
-              </FormGroup>
-              {/* #68 — deadline picker */}
-              <FormGroup>
-                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <Label htmlFor="deadline">{s2.deadline.label}</Label>
-                  <HelpTooltip text={s2.deadline.tip} label={s2.deadline.tipLabel} />
-                </span>
-                <Input
-                  id="deadline" name="deadline" type="date"
-                  value={values.deadline || ''}
-                  onChange={handleChange}
-                  min={new Date().toISOString().split('T')[0]}
-                  hint={s2.deadline.hint}
-                />
-              </FormGroup>
-              {/* WS-6 — preferred language; drives the volunteer matcher */}
-              <FormGroup>
-                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <Label htmlFor="preferredLanguage">{rq.step2.prefLang}</Label>
-                  <HelpTooltip text={rq.step2.prefLangHint} label={rq.step2.prefLang} />
-                </span>
-                <Select
-                  id="preferredLanguage"
-                  name="preferredLanguage"
-                  value={values.preferredLanguage}
-                  onChange={handleChange}
-                >
-                  <option value="">{rq.step2.prefLangNone}</option>
-                  <option value="he">{rq.step2.prefLangHe}</option>
-                  <option value="am">{rq.step2.prefLangAm}</option>
-                  <option value="en">{rq.step2.prefLangEn}</option>
-                </Select>
-              </FormGroup>
-            </FormRow>
-          </div>
+          <Step2RequestType
+            values={values}
+            errors={errors}
+            handleChange={handleChange}
+            setValue={setValue}
+            catsLoading={catsLoading}
+            categories={categories}
+            labelFor={labelFor}
+            refreshCats={refreshCats}
+            orgSuggestions={orgSuggestions}
+            orgSuggestionsDismissed={orgSuggestionsDismissed}
+            setOrgSuggestionsDismissed={setOrgSuggestionsDismissed}
+            navigate={navigate}
+            NextArrow={NextArrow}
+          />
         )}
 
         {/* STEP 3 — DOCUMENTS */}
         {step === 3 && (
-          <div className="req-step" key="step3">
-            <span className="eyebrow req-step-eyebrow">
-              {lang === 'he' ? `שלב 3 מתוך 4` : `Step 3 of 4`}
-            </span>
-            <h2 className="req-step-title">{rq.step3.title}</h2>
-            <p className="req-step-intro">{rq.step3.subtitle}</p>
-            <FormGroup>
-              <UploadArea
-                label={rq.step3.idLabel}
-                hint={rq.step3.idHint}
-                formats={rq.step3.idFormats}
-                required
-                requestId={requestId}
-                onUpload={(r) => {
-                  setIdUploaded(!!r)
-                  setIdPath(r?.path || '')
-                }}
-                error={errors.idDoc}
-              />
-            </FormGroup>
-            <FormGroup>
-              <UploadArea
-                label={rq.step3.supportLabel}
-                hint={rq.step3.supportHint}
-                formats={rq.step3.supportFormats}
-                requestId={requestId}
-                onUpload={(r) => {
-                  setSupportPath(r?.path || '')
-                }}
-              />
-            </FormGroup>
-            <div className="soft-note" style={{ marginTop:'16px' }}>
-              <ShieldCheck size={18} className="soft-note-icon" aria-hidden="true" />
-              <p>{rq.step3.security}</p>
-            </div>
-          </div>
+          <Step3Documents
+            errors={errors}
+            requestId={requestId}
+            setIdUploaded={setIdUploaded}
+            setIdPath={setIdPath}
+            setSupportPath={setSupportPath}
+          />
         )}
 
         {/* STEP 4 — SUMMARY + CONSENT */}
         {step === 4 && (
-          <div className="req-step" key="step4">
-            <span className="eyebrow req-step-eyebrow">
-              {lang === 'he' ? `שלב 4 מתוך 4` : `Step 4 of 4`}
-            </span>
-            <h2 className="req-step-title" style={{ marginBlockEnd:'var(--sp-5)' }}>{rq.step4.title}</h2>
-            <div className="review-panel" style={{ marginBottom:'24px' }}>
-              <dl className="review-grid">
-                {[
-                  [rq.step4.fullName,  `${values.firstName} ${values.lastName}`],
-                  [rq.step4.phone,     values.phone],
-                  [rq.step4.city,      values.city],
-                  [rq.step4.category,  values.category ? labelFor(values.category) : '—'],
-                  [rq.step4.urgency,   values.urgency === 'high' ? rq.step2.urgencyHigh : values.urgency === 'medium' ? rq.step2.urgencyMed : rq.step2.urgencyLow],
-                  ...(values.deadline ? [[t.myRequests.table.deadline, values.deadline]] : []),
-                  ...(values.preferredLanguage
-                    ? [[rq.step2.prefLang, ({ he: rq.step2.prefLangHe, am: rq.step2.prefLangAm, en: rq.step2.prefLangEn } as Record<string, string>)[values.preferredLanguage] ?? values.preferredLanguage]]
-                    : []),
-                ].map(([label, val]) => (
-                  <div key={label} className="review-item">
-                    <dt>{label}</dt>
-                    <dd>{val || '—'}</dd>
-                  </div>
-                ))}
-              </dl>
-              {values.description && (
-                <div className="review-note">
-                  <div style={{ fontSize:'12px', color:'var(--gray-500)', marginBottom:'4px' }}>{rq.step4.description}</div>
-                  <div style={{ fontSize:'14px', color:'var(--gray-700)', lineHeight:1.7 }}>{values.description}</div>
-                </div>
-              )}
-            </div>
-
-            <FormGroup>
-              <label className="consent-row">
-                <input
-                  type="checkbox" name="consent"
-                  checked={values.consent}
-                  onChange={handleChange}
-                  aria-invalid={!!errors.consent}
-                  aria-describedby={errors.consent ? 'consent-error' : undefined}
-                />
-                <span>{rq.step4.consent}</span>
-              </label>
-              {errors.consent && <div id="consent-error" role="alert" className="form-error" style={{ marginTop:'8px' }}>{errors.consent}</div>}
-            </FormGroup>
-          </div>
+          <Step4Summary
+            values={values}
+            errors={errors}
+            handleChange={handleChange}
+            labelFor={labelFor}
+          />
         )}
-
-          </div>
-        </div>
-        </Reveal>
-
-        {/* NAV BUTTONS */}
-        <div className="req-nav">
-          {step > 1 ? (
-            <button className="btn btn-outline" onClick={() => setStep(s => s - 1)} disabled={submitting}>
-              <BackArrow size={16} aria-hidden="true" /> {rq.nav.back}
-            </button>
-          ) : <span />}
-          {/* #86 — email verification is a gentle reminder (banner above), NOT a
-              hard block: an unverified user can still submit a request. */}
-          <button
-            className={`btn ${step === 4 ? 'btn-ember' : 'btn-primary'} btn-lg${submitting ? ' is-loading' : ''}`}
-            onClick={goNext}
-            disabled={submitting}
-            aria-busy={submitting}
-          >
-            {step === 4 ? (
-              <><CheckCircle size={16} aria-hidden="true" /> {rq.nav.submit}</>
-            ) : (
-              <>{rq.nav.next} <NextArrow size={16} aria-hidden="true" /></>
-            )}
-          </button>
-        </div>
-
-        {/* Quiet reassurance strip — sets expectations and signals trust. */}
-        <Reveal delay={0.1}>
-          <ul className="req-trust">
-            {trustItems.map(({ Icon, text }, i) => (
-              <li key={i} className="req-trust-item">
-                <span className="req-trust-icon" aria-hidden="true">
-                  <Icon size={18} />
-                </span>
-                <span className="req-trust-text">{text}</span>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
-      </div>
-    </>
+    </RequestFormShell>
   )
 }
