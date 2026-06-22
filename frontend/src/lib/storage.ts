@@ -22,6 +22,9 @@ export interface UploadHandle {
   task: XMLHttpRequest;
 }
 
+// starts an authed multipart-less POST upload of `file` to the backend uploads route.
+// returns synchronously with an UploadHandle so the caller can wire progress/cancel
+// before the async auth-token fetch + xhr.send actually fires (see the IIFE below).
 export function uploadAttachment(file: File, requestId: string): UploadHandle {
   // The caller (UploadArea) already passes a File whose name was run through the
   // shared `sanitizeFilename` (utils/sanitizeFilename.ts), and the backend
@@ -32,6 +35,8 @@ export function uploadAttachment(file: File, requestId: string): UploadHandle {
   const path = `requests/${requestId}/${file.name}`;
   const listeners = new Set<(p: number) => void>();
   const xhr = new XMLHttpRequest();
+  // captured out of the Promise executor so the deferred IIFE can reject `done`
+  // for failures that happen before the xhr is even opened (e.g. missing token).
   let rejectDone: (reason?: unknown) => void = () => {};
 
   const done = new Promise<{ path: string; downloadURL: string }>((resolve, reject) => {
@@ -50,6 +55,8 @@ export function uploadAttachment(file: File, requestId: string): UploadHandle {
         return;
       }
 
+      // prefer the server-authoritative path/url; fall back to the optimistic path
+      // if the body is missing fields or isn't JSON (2xx with no/odd body still succeeds).
       try {
         const body = JSON.parse(xhr.responseText) as { path?: string; downloadURL?: string };
         resolve({ path: body.path || path, downloadURL: body.downloadURL || '' });
@@ -62,6 +69,8 @@ export function uploadAttachment(file: File, requestId: string): UploadHandle {
     xhr.onabort = () => reject(new Error('upload_failed: aborted'));
   });
 
+  // deferred so the handle is returned first; fetches the auth token then opens+sends
+  // the request. `void` because we drive completion through `done`, not this promise.
   void (async () => {
     try {
       const idToken = await getIdToken();

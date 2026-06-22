@@ -1,11 +1,19 @@
+/**
+ * Custom 404 page (Next.js Pages Router special route).
+ * Next renders this for any unmatched URL; it has no data deps and runs client-side.
+ * Fully bilingual: all copy comes from the shared LanguageContext (t.notFound), and
+ * direction (LTR/RTL) drives the home-link arrow so it always points "back" into the app.
+ */
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import styles from './404.module.css'
 
+// static, translation-driven not-found panel; aria role="status"/live region so SRs
+// announce it on soft (client-side) navigations to a missing route.
 export default function Custom404() {
   const { t, isRTL } = useLanguage()
-  // Home points "back" into the app; mirror the arrow for RTL.
+  // home points "back" into the app, so mirror the arrow direction for RTL (Hebrew).
   const HomeArrow = isRTL ? ArrowRight : ArrowLeft
   return (
     <main className={`page-enter ${styles.main}`}>

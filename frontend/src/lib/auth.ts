@@ -1,8 +1,12 @@
 /**
- * Auth helpers — thin wrappers around the Firebase Web SDK.
+ * Auth helpers - thin client-side wrappers around the Firebase Web SDK plus the
+ * backend role-assignment handshake. Consumed by AuthContext and the login /
+ * register pages; the only place the app touches Firebase Auth directly.
  *
- * The Express backend handles role assignment via custom claims; this module
- * only deals with the Firebase Auth client surface.
+ * Division of responsibility: Firebase owns identity (sign-up/in/out, ID
+ * tokens), the Express backend owns roles via custom claims. After any call
+ * that can change a claim (register/ensureRoleAssigned) the caller must
+ * force-refresh the ID token so the new claim is visible client-side.
  */
 import {
   createUserWithEmailAndPassword,
@@ -55,10 +59,12 @@ export async function registerWithEmail(email: string, password: string): Promis
   return cred;
 }
 
+/** Sign in an existing user with email + password. Roles come from the token's claims, set server-side. */
 export function loginWithEmail(email: string, password: string): Promise<UserCredential> {
   return signInWithEmailAndPassword(firebaseAuth, email, password);
 }
 
+/** Sign the current user out of Firebase Auth (clears the local session). */
 export function logout(): Promise<void> {
   return fbSignOut(firebaseAuth);
 }

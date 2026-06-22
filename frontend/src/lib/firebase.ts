@@ -1,10 +1,16 @@
 /**
- * Firebase Web SDK initialization (client-side).
+ * Firebase Web SDK initialization (client-side singletons).
  *
- * Reads NEXT_PUBLIC_FIREBASE_* values from frontend/.env.local — pulled from
- * Firebase Console → Project Settings → Your apps → Web app → SDK config.
+ * The one place the browser app boots Firebase. Exports the shared `firebaseApp`,
+ * `firebaseAuth` (login / ID-token / session: auth context, route guards, the
+ * api client that attaches the bearer token), and `firebaseDb` (Firestore reads
+ * + realtime listeners, e.g. chat). Server-trusted writes go through Express
+ * (Admin SDK), not these handles.
  *
- * Next.js hot-reloads modules in dev; guard against re-initializing.
+ * config reads NEXT_PUBLIC_FIREBASE_* from frontend/.env.local (Firebase Console
+ * -> Project Settings -> Your apps -> Web app -> SDK config). Invariant: init runs
+ * at most once per app instance; Next.js re-evaluates modules on hot-reload, so the
+ * getApps() guard reuses the existing app instead of throwing on re-init.
  */
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
@@ -19,6 +25,7 @@ const config = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// reuse the already-initialized app on hot-reload; only initialize on first load.
 export const firebaseApp: FirebaseApp = getApps().length === 0 ? initializeApp(config) : getApp();
 export const firebaseAuth: Auth = getAuth(firebaseApp);
 export const firebaseDb: Firestore = getFirestore(firebaseApp);
