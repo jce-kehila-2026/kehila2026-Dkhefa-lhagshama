@@ -1,3 +1,17 @@
+/**
+ * Navbar — the app-wide top navigation, rendered on every page via the layout.
+ *
+ * Responsibility: present a role-aware + auth-aware nav. Link set, the primary
+ * CTA, and the account menu all branch on auth state (useAuth: user/role/loading)
+ * so each role only sees surfaces that work for them (beneficiaries submit
+ * requests; volunteers/admins go to their workspace, never a refusal/empty page).
+ * Bilingual via useLanguage (t/lang/setLang) with a built-in HE/EN switcher.
+ *
+ * Renders two parallel trees from the same `links`/`primaryCta` data: a desktop
+ * group (with a centered logo badge between links and controls) and a mobile menu
+ * (flat list, no nested popovers) toggled by `menuOpen`. Collaborates with the
+ * shared Menu primitive for the desktop language/account dropdowns.
+ */
 import type { ComponentProps, ReactNode } from "react";
 import { ChevronDown, Globe, LogOut, Menu as MenuIcon, Shield, User as UserIcon, X } from "lucide-react";
 import Link from "next/link";

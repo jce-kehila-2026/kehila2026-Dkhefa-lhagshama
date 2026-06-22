@@ -13,12 +13,17 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import styles from './RatingForm.module.css'
 
 interface RatingFormProps {
+  // parent owns the network call (POST /api/ratings); we just hand back (stars, trimmed comment)
   onSubmit?: (stars: number, comment: string) => void
   submitting?: boolean
+  // initial* let the form render an already-submitted rating (read-back/edit case)
   initialStars?: number
   initialComment?: string
 }
 
+// the star-button styles are injected once at runtime (not in the css module) because
+// they need the global brand tokens and the :hover/:focus-visible/reduced-motion states
+// applied to plain <button> elements rendered inside the radiogroup below.
 const STYLE_ID = 'rating-form-styles'
 function ensureStyles() {
   if (typeof document === 'undefined') return
@@ -58,13 +63,16 @@ export default function RatingForm({ onSubmit, submitting = false, initialStars 
   const [comment, setComment] = useState(initialComment)
   const [error, setError] = useState('')
 
+  // inject the global star styles on first client render (no-op on server / if already present)
   if (typeof document !== 'undefined') ensureStyles()
 
+  // hover preview wins over the committed value, so the row fills as the pointer moves
   const shown = hover || stars
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
+    // require a star selection before delegating to onSubmit
     if (stars < 1) {
       setError(r.pickStars)
       return
@@ -72,6 +80,7 @@ export default function RatingForm({ onSubmit, submitting = false, initialStars 
     onSubmit?.(stars, comment.trim())
   }
 
+  // arrow keys nudge the rating within 1..5; number keys 1-5 jump straight to a value (radiogroup pattern)
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
       e.preventDefault()
@@ -92,6 +101,7 @@ export default function RatingForm({ onSubmit, submitting = false, initialStars 
         onKeyDown={onKeyDown}
         className={styles.starGroup}
       >
+        {/* one radio button per star; roving tabindex keeps only the checked star (or star 1 when empty) tabbable */}
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}

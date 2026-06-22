@@ -1,3 +1,11 @@
+/**
+ * AvailabilityEditor — volunteer-hub panel for editing recurring weekly availability
+ * windows plus an optional "available again on" return date when the volunteer is
+ * unavailable. Used inside the volunteer calendar/hub; persists via
+ * PATCH /api/volunteer/me and hands the fresh VolunteerMe back through `onSaved`
+ * so the parent stays the source of truth. Local edits hydrate from `me` and
+ * stay client-side until a save button is pressed. Bilingual via useLanguage().
+ */
 import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -10,8 +18,11 @@ interface AvailabilityEditorProps {
   onSaved: (updated: VolunteerMe) => void
 }
 
+// 24h HH:MM matcher used to validate the native <input type="time"> values
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
+// a window is valid when day is 0..6 (sun..sat), both times are HH:MM, and end is
+// strictly after start (compared as minutes-since-midnight). mirrors the backend check.
 function validWindow(w: AvailabilityWindow): boolean {
   if (w.day < 0 || w.day > 6) return false
   if (!HHMM.test(w.start) || !HHMM.test(w.end)) return false
@@ -20,14 +31,16 @@ function validWindow(w: AvailabilityWindow): boolean {
   return eh * 60 + em > sh * 60 + sm
 }
 
+// props: `me` is the current volunteer profile (parent-owned); `onSaved` receives the
+// server's updated VolunteerMe after a successful PATCH so the parent can re-sync.
 export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorProps) {
   const { t } = useLanguage()
   const v = t.volunteerApp
-  const c = v.calendar
+  const c = v.calendar // calendar i18n bucket (labels, day names, messages)
 
   const [windows, setWindows] = useState<AvailabilityWindow[]>([])
   const [availableAgainOn, setAvailableAgainOn] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(false) // disables save buttons while a PATCH is in flight
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   // Hydrate local editor state whenever the parent's `me` changes.
@@ -37,6 +50,7 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
     setAvailableAgainOn(me.availableAgainOn ?? '')
   }, [me])
 
+  // gates the return-date sub-section; only shown when the volunteer is unavailable
   const isUnavailable = me?.workStatus === 'unavailable'
 
   const addWindow = () =>
@@ -45,11 +59,13 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
   const removeWindow = (idx: number) =>
     setWindows((ws) => ws.filter((_, i) => i !== idx))
 
+  // immutably merge a partial change into the window at `idx`
   const patchWindow = (idx: number, patch: Partial<AvailabilityWindow>) =>
     setWindows((ws) => ws.map((w, i) => (i === idx ? { ...w, ...patch } : w)))
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = new Date().toISOString().slice(0, 10) // min for the return-date picker (no past dates)
 
+  // validate every window, then PATCH the full windows array; bubbles result via onSaved/msg
   const saveWindows = async () => {
     const bad = windows.find((w) => !validWindow(w))
     if (bad) {
@@ -72,6 +88,7 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
     }
   }
 
+  // PATCH the unavailable status + return date; empty input clears the date (null)
   const saveReturnDate = async () => {
     setBusy(true)
     setMsg(null)

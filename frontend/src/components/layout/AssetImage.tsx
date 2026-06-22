@@ -3,9 +3,10 @@
  *
  * A lazy, layout-stable image bound to an asset "slot" from
  * `src/assets/manifest.ts`. While the bytes load it shows a shimmering skeleton
- * (respecting `prefers-reduced-motion`); if a slot has no artwork — or the load
- * fails — it shows a calm tinted placeholder with the brand mark. Alt text is
- * pulled bilingually from the manifest.
+ * (respecting `prefers-reduced-motion`); if a slot has no artwork (or the load
+ * fails) it shows a calm tinted placeholder with the brand mark. Alt text is
+ * pulled bilingually from the manifest. Used across the marketing/auth/hub pages
+ * wherever a manifest-backed image goes.
  *
  * Usage:
  *   <AssetImage slot="heroBackground" />
@@ -18,6 +19,8 @@ import { getAssetSlot } from '@/assets/manifest'
 import type { AssetSlotKey } from '@/assets/manifest'
 
 // Inject the shimmer keyframes + reduced-motion guard once per session.
+// Self-contained CSS (rather than a global stylesheet) keeps the component
+// drop-in; SSR-safe via the `document === undefined` guard, idempotent via STYLE_ID.
 const STYLE_ID = 'asset-image-styles'
 function ensureStyles() {
   if (typeof document === 'undefined') return
@@ -70,14 +73,19 @@ interface AssetImageProps {
   /** Asset slot key from the manifest. */
   slot: AssetSlotKey
   rounded?: string
+  /** css aspect-ratio override; falls back to the manifest ratio, then 16/9. */
   ratio?: string
   className?: string
   style?: CSSProperties
   border?: string
   shadow?: string
+  /** above-the-fold (e.g. hero): eager-loads, no skeleton, no fade-in. */
   priority?: boolean
 }
 
+// renders a manifest-bound image inside a fixed-aspect shell. state: `loaded`
+// drives the fade-in, `failed` falls back to the placeholder. returns null for
+// an unknown slot key (warns in dev).
 export default function AssetImage({
   slot,
   rounded = 'var(--radius, 12px)',
@@ -96,7 +104,9 @@ export default function AssetImage({
 
   useEffect(() => { ensureStyles() }, [])
 
-  // If the image is already cached, the load event may not fire — sync it.
+  // if the image is already cached the browser may not fire `load`, leaving the
+  // fade-in stuck; re-sync `loaded` from the img's complete/naturalWidth state.
+  // re-runs when the slot's src changes.
   useEffect(() => {
     if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
       setLoaded(true)
@@ -104,8 +114,7 @@ export default function AssetImage({
   }, [asset?.src])
 
   if (!asset) {
-    // Unknown slot key — fail loud in dev, render nothing in prod.
-
+    // unknown slot key: warn in dev, render nothing in prod.
     if (process.env.NODE_ENV !== 'production') console.warn(`[AssetImage] unknown slot "${slot}"`)
     return null
   }

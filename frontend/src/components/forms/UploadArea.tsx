@@ -1,3 +1,17 @@
+/**
+ * UploadArea.tsx — single-file attachment field for the request forms.
+ *
+ * Bridges the UC-01 "Submit Request" form to Firebase Storage: a beneficiary
+ * drops/picks one file, it is validated client-side (MIME allowlist + 10MB,
+ * mirroring storage.rules), uploaded under `requests/{requestId}/{filename}`
+ * via `uploadAttachment`, and the resulting Storage path is handed back to the
+ * parent form through `onUpload` to be stored on the request's attachmentPaths.
+ * Used by the request-form pages; collaborates with `@/lib/storage` (upload +
+ * cancellable handle) and `@/utils/sanitizeFilename`.
+ *
+ * Invariant: without a `requestId` the upload is SIMULATED (no network), so the
+ * field stays usable in isolation/storybook-style previews.
+ */
 import { useEffect, useRef, useState } from 'react'
 import type { DragEvent, MouseEvent, ChangeEvent, ReactNode } from 'react'
 import { Upload, CheckCircle, X, FileText } from 'lucide-react'
@@ -88,7 +102,7 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
     setPercent(0)
     try {
       const handle = uploadAttachment(f, requestId)
-      handleRef.current = handle
+      handleRef.current = handle // keep ref so unmount/remove can cancel it
       const unsub = handle.onProgress(setPercent)
       const result = await handle.done
       unsub()
@@ -118,6 +132,8 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
     if (onUpload) onUpload(null)
   }
 
+  // hidden <input type=file> is driven by clicking the drop zone; id is derived
+  // from the label so each instance on a page targets its own input.
   const inputId = `file-${label}`
   const openPicker = () => document.getElementById(inputId)?.click()
 

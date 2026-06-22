@@ -1,14 +1,22 @@
+/*
+ * Footer.tsx — global site footer rendered on every page (via the shared layout).
+ * Presentational only: no data fetching, no state. All copy comes from the shared
+ * i18n table (LanguageContext `t`), so the footer flips HE/EN with the rest of the app;
+ * the brand name and a couple of literals are inlined per-language where there's no t key.
+ * Columns: brand+socials, quick links, services (driven by t.services.items), contact, legal/reg.
+ */
 import type { ComponentProps, ReactNode } from 'react'
 import NextLink from 'next/link'
 import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import styles from './Footer.module.css'
 
-// Shim: prototype used react-router's <Link to="...">.
-// We forward `to` → `href` and render next/link so the rest of the JSX is unchanged.
+// shim: prototype used react-router's <Link to="...">. forward `to` → next/link `href`
+// so the ported JSX below stays unchanged. local-only, not exported.
 type LinkProps = Omit<ComponentProps<typeof NextLink>, 'href'> & { to: string; children?: ReactNode }
 const Link = ({ to, children, ...rest }: LinkProps) => <NextLink href={to} {...rest}>{children}</NextLink>
 
+// site footer. `f` is the footer i18n slice; other slices (nav, services) read directly off `t`.
 export default function Footer() {
   const { t } = useLanguage()
   const f = t.footer
@@ -60,6 +68,7 @@ export default function Footer() {
           {/* SERVICES */}
           <div>
             <h4 className={styles.colHead}>{f.services}</h4>
+            {/* one link per service in the i18n table; all point at /requests (no per-service deep link) */}
             {Object.values(t.services.items).map((s, i) => (
               <div key={i} className={styles.linkRow}>
                 <Link to="/requests" className={styles.link}>{s.title}</Link>
@@ -78,6 +87,7 @@ export default function Footer() {
             ].map(({ Icon, text, href }, i) => (
               <div key={i} className={styles.contactRow}>
                 <Icon size={14} className={styles.contactIcon} />
+                {/* rows with an href (tel:/mailto:) render as links; address/hours are plain text */}
                 {href ? (
                   <a href={href} className={styles.link}>{text}</a>
                 ) : (

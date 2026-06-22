@@ -12,10 +12,15 @@ import GateLoading from '@/components/gates/GateLoading'
 export default function VolunteerGate({ children }: { children: ReactNode }) {
   const { t } = useLanguage()
   const v = t.volunteerApp
+  // admin is not listed here on purpose: hasRole treats admin as a superset of
+  // volunteer inside useRouteGuard, so 'volunteer' already admits admins too.
   const status = useRouteGuard({
     allow: ['volunteer'],
     roleMismatchToast: v.ui.roleMismatchToast,
   })
+  // covers both the transient 'pending' (auth resolving) and 'denied' (redirect
+  // already kicked off) states; render the loader so children never flash for
+  // unauthorized users while the redirect runs.
   if (status !== 'allowed') return <GateLoading label={v.ui.loading} />
   return <>{children}</>
 }

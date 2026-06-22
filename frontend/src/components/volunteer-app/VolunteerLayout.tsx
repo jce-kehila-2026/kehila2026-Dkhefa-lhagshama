@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import VolunteerSidebar from './VolunteerSidebar'
 
+// all props optional so callers can render the bare shell (sidebar + content)
+// without a header; pass ReactNode (not just string) to allow inline icons/markup.
 interface VolunteerLayoutProps {
   title?: ReactNode
   subtitle?: ReactNode
@@ -19,6 +21,8 @@ export default function VolunteerLayout({ title, subtitle, actions, children }: 
     <div className="admin-shell volapp-shell">
       <VolunteerSidebar />
       <div className="admin-main">
+        {/* header only renders when there's a title or actions; subtitle alone
+            does not trigger it (subtitle is a child of the title block). */}
         {(title || actions) && (
           <header className="admin-header">
             <div className="admin-header-text">

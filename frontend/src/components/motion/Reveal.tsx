@@ -1,11 +1,13 @@
 /**
  * Reveal.
  *
- * Scroll-reveal wrapper — content performs an energetic enter as it meets the
- * viewport. A generous negative bottom margin means the reveal fires a bit
- * BEFORE the element is fully in view, so nothing stays blank on fast scroll
- * or full-page capture. Under `prefers-reduced-motion` we skip the offset
- * entirely and render fully visible (no whileInView dependency at all).
+ * Shared scroll-reveal wrapper used across the marketing/home screens: content
+ * fades + slides up as it meets the viewport. Built on motion/react's
+ * whileInView. A negative bottom viewport margin fires the reveal a bit BEFORE
+ * the element is fully in view, so nothing stays blank on fast scroll or
+ * full-page capture; a timeout safety net (below) guarantees content un-hides
+ * even when the in-view trigger never fires. Under prefers-reduced-motion we
+ * bypass motion entirely and render plain, fully-visible markup.
  *
  * Usage:
  *   <Reveal>...</Reveal>
@@ -17,8 +19,8 @@ import { motion, useReducedMotion } from 'motion/react'
 
 interface RevealProps {
   children?: ReactNode
-  delay?: number
-  y?: number
+  delay?: number // seconds added to the enter transition (stagger sibling reveals)
+  y?: number // initial downward offset in px the content slides up from
   className?: string
   style?: CSSProperties
 }
@@ -33,6 +35,7 @@ export default function Reveal({ children, delay = 0, y = 24, className, style }
     const id = setTimeout(() => setRevealed(true), 1200)
     return () => clearTimeout(id)
   }, [])
+  // reduced-motion: render a plain div, no animation and no in-view dependency.
   if (reduce) {
     return (
       <div className={className} style={style}>
@@ -46,6 +49,8 @@ export default function Reveal({ children, delay = 0, y = 24, className, style }
       style={style}
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
+      // safety-net override: once the timeout flips `revealed`, force the visible
+      // state regardless of whileInView so content is never left invisible.
       animate={revealed ? { opacity: 1, y: 0 } : undefined}
       viewport={{ once: true, amount: 0.15, margin: '0px 0px -12% 0px' }}
       transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}

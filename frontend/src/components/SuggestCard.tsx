@@ -15,6 +15,8 @@ import styles from "./SuggestCard.module.css";
 // Visual classes (`card`, `myreq-suggest-dismiss`) are styled globally in
 // src/styles/screens/my-requests.css — do not duplicate them.
 
+// resolve a bilingual `{ he, en }` field (or plain string) to the active-lang
+// string, falling back to he → en → "" so a row never renders blank.
 function pickLangValue(
   value: Suggestion["title"],
   lang: string,
@@ -24,6 +26,10 @@ function pickLangValue(
   return value[lang as "he" | "en"] || value.he || value.en || "";
 }
 
+// dismissible card listing up to 3 suggested answers; each row renders its
+// available contact CTAs (open/call/email) or a directory deep-link fallback.
+// stateless — `onDismiss` lifts visibility control to the caller; all copy
+// strings are props so different call sites can phrase the card themselves.
 export default function SuggestCard({ items, lang, heading, subtitle, openLabel, callLabel, emailLabel, directoryLabel, dismissLabel, onDismiss }: {
   items: Suggestion[];
   lang: string;
