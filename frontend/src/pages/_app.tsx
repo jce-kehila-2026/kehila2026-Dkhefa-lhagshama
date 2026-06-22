@@ -1,3 +1,13 @@
+/*
+ * Custom Next.js App root — wraps every page (Pages Router). Responsibilities:
+ *  - imports all global CSS exactly once (tokens/base/utilities + per-component + per-screen),
+ *    so order here is the cascade order for the whole app.
+ *  - mounts the app-wide context stack (Language → Auth → App) that every page reads from.
+ *  - renders the shared chrome (skip link, Navbar, Footer, Toast, Modal) around the active page,
+ *    except on /admin and /volunteer-hub which provide their own sidebar shell.
+ * Invariant: providers must wrap the page tree, and SkipLink must sit below LanguageProvider
+ * (it calls useLanguage). Nothing here is route-specific beyond the hideChrome decision.
+ */
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext'

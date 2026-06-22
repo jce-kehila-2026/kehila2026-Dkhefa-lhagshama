@@ -15,9 +15,12 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import Reveal from '@/components/motion/Reveal'
 import styles from './thanks.module.css'
 
+// terminal confirmation screen for the volunteer signup flow; pure
+// presentational (no data fetch, no side effects), state is only the hover nudge.
 export default function VolunteerThanksPage() {
   const { t, isRTL } = useLanguage()
   const v = t.volunteerSignup
+  // home arrow points back toward content: left in LTR, right in RTL.
   const HomeArrow = isRTL ? ArrowRight : ArrowLeft
 
   // Subtle directional nudge on the primary action, RTL-aware.

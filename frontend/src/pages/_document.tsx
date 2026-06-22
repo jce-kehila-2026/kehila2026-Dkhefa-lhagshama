@@ -1,5 +1,15 @@
+/**
+ * Custom Next.js (Pages Router) document. Renders the outer <html>/<body> shell
+ * once per server render and is the only place we can set markup before React
+ * hydrates and before LanguageContext mounts. Responsibilities: (1) set the
+ * initial lang/dir for this bilingual HE/EN app, (2) run a tiny inline script
+ * that reads the saved 'pff-lang' preference pre-paint to avoid an RTL->LTR
+ * flash, (3) preconnect/load the brand fonts and preload the logo.
+ * Invariant: the static default (he/rtl) must mirror DEFAULT_LANG in LanguageContext.
+ */
 import { Html, Head, Main, NextScript } from 'next/document'
 
+// document shell; runs server-side per render, never re-renders on client navigation
 export default function Document() {
   // Default to Hebrew RTL on first render. LanguageContext updates lang/dir at runtime.
   return (
