@@ -1,3 +1,20 @@
+/**
+ * Attachment upload route (mounted under /api/uploads).
+ *
+ * Single endpoint: raw-body binary upload of a file to a request's Storage
+ * folder (`requests/<requestId>/<filename>`). Owns the trust boundary for
+ * attachment writes: Firebase Storage rules deliberately delegate write-auth
+ * here. Hardening lives in this file: MIME allowlist, 10MB size cap, per-request
+ * file quota, owner/handler/volunteer/admin ownership gate (#84/F1), filename
+ * sanitization (#96), and short-lived signed URLs (F4).
+ *
+ * Key invariant: in the UC-01 beneficiary flow uploads happen at step 3, BEFORE
+ * the request doc exists (created at the step-4 POST /api/requests). The client
+ * generates the v4-UUID requestId and uses it as the path prefix; the per-file
+ * `volunteerVisible` flag is stamped onto the STORAGE OBJECT metadata because
+ * the Firestore `attachments` write throws NOT_FOUND pre-doc and is swallowed;
+ * POST /api/requests later rebuilds `attachments` by listing these objects.
+ */
 import { randomUUID } from 'node:crypto';
 
 import express, { Router, type Request, type Response } from 'express';
@@ -27,6 +44,11 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_FILES_PER_REQUEST = 5;
 // ───────────────────────────────────────────────────────────────────────────
 
+// POST /requests/:requestId — upload one attachment (raw binary body, filename
+// in ?filename, MIME from Content-Type). Validates: auth, v4-UUID id, ownership
+// (if doc exists), MIME allowlist, size cap, per-request quota. On success saves
+// to Storage, best-effort updates requests.attachments, and returns 201
+// { path, downloadURL } (1h signed read URL).
 router.post('/requests/:requestId', authenticate, express.raw({ type: '*/*', limit: '12mb' }), async (req: Request, res: Response) => {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });

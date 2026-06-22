@@ -4,6 +4,11 @@
  *   POST  /requests/:id/drop   — drop back to the pool (req 18)
  *   POST  /requests/:id/close  — mutual-consent close handshake (req 25 + 27)
  *
+ * Shared invariant: the router already gates these to volunteer/admin; each
+ * handler additionally re-checks that the caller is the assigned volunteer
+ * (admins bypass). All mutations go through the firebase-admin SDK and emit a
+ * requestEvent (visibility 'all', so the beneficiary's timeline updates) plus
+ * an audit log; those side-effects are best-effort and never fail the response.
  * Extracted verbatim from the original single-file router.
  */
 import { FieldValue } from 'firebase-admin/firestore';
@@ -125,6 +130,8 @@ export async function dropRequest(req: Request, res: Response): Promise<void> {
   const volunteerName = await volunteerDisplayName(uid, req.user!.email);
 
   try {
+    // transaction so a concurrent claim/edit aborts (firestore code 10 →
+    // 409 below) rather than silently clobbering the assignment.
     await db().runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (!snap.exists) {

@@ -41,6 +41,8 @@ import { getInsights } from './insights';
 
 const router = Router();
 
+// router-level guard: every endpoint below requires auth + role volunteer.
+// requireAnyRole treats admin as a superset, so admins pass too.
 router.use(authenticate, requireAnyRole('volunteer'));
 
 router.get('/me', getMe);

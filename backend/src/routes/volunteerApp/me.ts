@@ -1,7 +1,16 @@
 /**
- * GET + PATCH /api/volunteer/me — the caller's volunteer profile bits.
+ * volunteer self-service profile: GET + PATCH /api/volunteer/me.
  *
- * Extracted verbatim from the original single-file router.
+ * the authenticated volunteer reads and updates their own `volunteers/{uid}` doc:
+ * workStatus (free/working/unavailable + return date), recurring availability
+ * windows, and category-permission requests (queued for admin approval). collaborates
+ * with categoriesCache (taxonomy validation), lib/availability (window/return-date
+ * helpers), and writeAuditLog. mounted by the volunteerApp router; req.user is set
+ * upstream by auth middleware (uid is trusted, never read from the body).
+ *
+ * invariant: workStatus is auto-healed on read — an "unavailable" volunteer whose
+ * availableAgainOn has passed flips back to "free" (and the flip is persisted), so
+ * there is no separate cron and the roster/matcher never see a stale unavailable state.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';

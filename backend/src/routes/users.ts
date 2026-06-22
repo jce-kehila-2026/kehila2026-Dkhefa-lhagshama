@@ -52,6 +52,8 @@ function defaultProfile(user: NonNullable<Request['user']>) {
   };
 }
 
+// Shape a stored profile for the wire: expose the doc id as `uid` and convert
+// Firestore Timestamps to ISO strings (null when unset).
 function serialize(id: string, data: FirebaseFirestore.DocumentData) {
   return {
     uid: id,

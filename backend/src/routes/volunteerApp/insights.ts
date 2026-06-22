@@ -1,8 +1,14 @@
 /**
- * GET /api/volunteer/insights (req 14b) — aggregates over the caller's
- * assigned requests (archived included). Robust to missing fields.
+ * Volunteer self-insights handler for the Volunteer Hub insights page.
  *
- * Extracted verbatim from the original single-file router.
+ * Backs GET /api/volunteer/insights (req 14b): aggregates the authenticated
+ * volunteer's own assigned requests (archived included) into chart-ready
+ * series. Read-only; every field defaults sensibly so missing/legacy data
+ * never throws. Collaborates with resolveRange (parses the ?range query into a
+ * [sinceMs, untilMs] window) and the requestEvents collection (refines close
+ * timestamps for the avg-resolution metric). Caller identity comes from the
+ * auth middleware via req.user.uid. Extracted verbatim from the original
+ * single-file router; mounted by the volunteerApp router with auth applied.
  */
 import { type Request, type Response } from 'express';
 
@@ -11,9 +17,11 @@ import { resolveRange } from '@/lib/insightsRange';
 
 import { toIso } from './shared';
 
-// ── GET /api/volunteer/insights (req 14b) ────────────────────────────────────
-// Aggregates over the caller's assigned requests (archived included). Robust to
-// missing fields: everything defaults sensibly.
+// GET /api/volunteer/insights — scopes to assignedVolunteerId == caller, applies
+// the time window from ?range, and responds:
+//   { overTime: [{date,count}], byCategory: [{category,count}],
+//     byStatus: [{status,count}], avgResolutionDays: number|null, currentLoad: number }
+// 500 { error: 'internal_error' } on unexpected failure.
 export async function getInsights(req: Request, res: Response): Promise<void> {
   const uid = req.user!.uid;
   const { sinceMs, untilMs } = resolveRange(req.query, Date.now());
@@ -82,6 +90,7 @@ export async function getInsights(req: Request, res: Response): Promise<void> {
           if (ev.type === 'status_changed' && ev.details?.to === 'closed') {
             const evIso = toIso(ev.createdAt);
             const evMs = evIso ? Date.parse(evIso) : null;
+            // keep the latest close event (a request may be reopened/reclosed)
             if (evMs !== null) closedAtMs = closedAtMs === null ? evMs : Math.max(closedAtMs, evMs);
           }
         }

@@ -12,10 +12,14 @@ import { db } from '@/lib/firebaseAdmin';
 
 const router = Router();
 
+// required `?category=<enum key>` query param; bounded to keep the firestore
+// equality filter cheap.
 const querySchema = z.object({
   category: z.string().trim().min(1).max(80),
 });
 
+// GET /api/suggestions?category= — public read; validates `category`, returns
+// up to 3 approved same-category answers as `{ items }` (answers.ts shape).
 router.get('/', async (req: Request, res: Response) => {
   const parsed = querySchema.safeParse(req.query);
   if (!parsed.success) {

@@ -1,8 +1,13 @@
 /**
- * GET /api/volunteer/assigned — all requests assigned to the caller,
- * priority-sorted, PII-stripped cards.
+ * Volunteer Hub: the "assigned to me" tab of the volunteer dashboard.
  *
- * Extracted verbatim from the original single-file router.
+ * Single Express handler backing GET /api/volunteer/assigned. Returns every
+ * request currently assigned to the authenticated volunteer, ordered by the
+ * shared priority rule (urgency/deadline/previously-taken) and projected to a
+ * PII-stripped card via toAssignedCard. Collaborates with requestSort (ranking)
+ * and ./shared (card shape, kept consistent with the pool/claimed tabs).
+ * Invariant: caller identity comes from req.user (auth middleware), never the
+ * body, so a volunteer only ever sees their own assignments.
  */
 import { type Request, type Response } from 'express';
 
@@ -11,8 +16,8 @@ import { sortByPriority, type SortableRequest } from '@/lib/requestSort';
 
 import { toAssignedCard } from './shared';
 
-// ── GET /api/volunteer/assigned ──────────────────────────────────────────────
-// All requests assigned to the caller, priority-sorted, PII-stripped cards.
+// GET /api/volunteer/assigned -> { items: AssignedCard[] }
+// requires auth; filters requests by assignedVolunteerId == caller uid.
 export async function getAssigned(req: Request, res: Response): Promise<void> {
   const uid = req.user!.uid;
   try {
@@ -21,7 +26,8 @@ export async function getAssigned(req: Request, res: Response): Promise<void> {
       .where('assignedVolunteerId', '==', uid)
       .get();
 
-    // Sort raw docs by priority first, then project to card shape.
+    // project to the minimal shape sortByPriority needs (raw doc kept on _doc
+    // so we can rank first, then build the full card only for the sorted order).
     const sortable = snap.docs.map((d) => {
       const data = d.data();
       return {

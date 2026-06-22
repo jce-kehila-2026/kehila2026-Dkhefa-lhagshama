@@ -1,7 +1,10 @@
 /**
- * GET /api/volunteer/pool + POST /api/volunteer/pool/:id/claim.
- *
- * Extracted verbatim from the original single-file router.
+ * Volunteer pool handlers: the open queue of unassigned requests volunteers can
+ * browse and claim. Mounted under /api/volunteer by the volunteerApp router.
+ *  - getPool          GET  /pool            list available requests as privacy-safe cards
+ *  - claimPoolRequest POST /pool/:id/claim  volunteer self-registers interest in a request
+ * Cards are built via toPoolCard (shared) so requester PII never leaks to the pool.
+ * Claiming is transactional so concurrent volunteers can't double-claim the same request.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';
@@ -17,7 +20,7 @@ import { toPoolCard, OpError } from './shared';
 
 // ── GET /api/volunteer/pool ──────────────────────────────────────────────────
 // All requests with poolStatus === 'available', priority-sorted + privacy-safe
-// cards, plus a per-category breakdown.
+// cards, plus a per-category breakdown. Response: { items, byCategory }.
 export async function getPool(req: Request, res: Response): Promise<void> {
   const uid = req.user!.uid;
   try {
@@ -26,6 +29,7 @@ export async function getPool(req: Request, res: Response): Promise<void> {
       .where('poolStatus', '==', 'available')
       .get();
 
+    // keep the raw doc alongside the sort keys so we can rebuild cards in priority order.
     const sortable = snap.docs.map((d) => {
       const data = d.data();
       return {
@@ -59,6 +63,8 @@ const claimSchema = z.object({
   note: z.string().trim().max(2000).optional(),
 });
 
+// Returns 400 invalid_input / 404 not_found / 409 (not_available | already_claimed |
+// concurrent_update) / 500, else { ok: true }.
 export async function claimPoolRequest(req: Request, res: Response): Promise<void> {
   const parsed = claimSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -108,6 +114,7 @@ export async function claimPoolRequest(req: Request, res: Response): Promise<voi
       res.status(err.httpStatus).json({ error: err.code, ...err.extra });
       return;
     }
+    // firestore ABORTED (gRPC code 10): transaction lost a retry race -> surface as 409.
     const code = (err as { code?: number }).code;
     if (code === 10) {
       res.status(409).json({ error: 'concurrent_update' });

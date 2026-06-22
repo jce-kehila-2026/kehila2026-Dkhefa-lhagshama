@@ -1,8 +1,13 @@
 /**
- * Shared zod schemas + constants for /api/requests handlers.
+ * Validation contract for the /api/requests handlers (UC-01 Submit Request +
+ * the close handshake). Owns the zod schemas the route layer parses incoming
+ * bodies against, plus the close-action status map.
  *
- * Mechanical extraction from the former single-file routes/requests.ts —
- * the schema/validation logic is unchanged.
+ * Collaborators: routes/requests/* (the handlers that import these),
+ * lib/categoriesCache (live admin taxonomy, queried in the async refine).
+ * Key invariant: createRequestSchema must be parsed with safeParseAsync — its
+ * category check is async (Firestore-backed). Extracted verbatim from the
+ * former single-file routes/requests.ts; validation logic is unchanged.
  */
 import { z } from 'zod';
 
@@ -93,13 +98,17 @@ export const createRequestSchema = z
     }
   });
 
+// Parsed+defaulted shape the POST /api/requests handler consumes (post-validation).
 export type CreateRequestInput = z.infer<typeof createRequestSchema>;
 
 // ── Close handshake (req 25) ────────────────────────────────────────────────
+// Body for the request-close lifecycle: a party proposes a close, the other
+// approves/declines. The handler maps its outcome onto CLOSE_HTTP below.
 export const closeSchema = z.object({
   action: z.enum(['propose', 'approve', 'decline']),
 });
 
+// Maps the close handler's outcome string to the HTTP status it returns.
 export const CLOSE_HTTP: Record<string, number> = {
   ok: 200,
   not_found: 404,

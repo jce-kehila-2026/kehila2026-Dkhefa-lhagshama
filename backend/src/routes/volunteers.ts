@@ -58,6 +58,9 @@ type ApplyInput = z.infer<typeof applySchema>;
 
 // ── POST /api/volunteers/apply ────────────────────────────────────────────────
 
+// auth required; validates the apply form (applySchema), rejects already-approved
+// volunteers and duplicate pending applications. responds 201 { appId } on create,
+// 400 { error, fieldErrors } on bad input, 409 on duplicate/already-volunteer.
 router.post('/apply', authenticate, async (req: Request, res: Response) => {
   if (!req.user) {
     res.status(401).json({ error: 'not_authenticated' });

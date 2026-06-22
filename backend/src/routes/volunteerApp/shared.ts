@@ -1,9 +1,13 @@
 /**
- * Shared helpers + types for the /api/volunteer handler modules.
+ * Shared helpers + types for the /api/volunteer handler modules
+ * (pool / assigned / requests). Extracted verbatim from the original
+ * single-file router so behavior is preserved exactly.
  *
- * Extracted verbatim from the original single-file router so behavior is
- * preserved exactly. PII projection + the transaction bail-out error live here
- * because they are reused across the pool / assigned / requests handlers.
+ * Holds the two card projections + a timestamp coercer + the transaction
+ * bail-out error, all reused across those handlers. Key invariant: the card
+ * projections are the PII gate for volunteer-facing responses, so requester
+ * identity is intentionally limited to first name + city (no last name, phone,
+ * email, or raw id fields).
  */
 
 /** Firestore Timestamp | ISO string | null → ISO string | null. */
