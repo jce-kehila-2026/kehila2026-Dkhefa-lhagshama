@@ -1,12 +1,16 @@
 /**
- * Firebase Admin SDK initialization.
+ * Firebase Admin SDK bootstrap + the single source of server-side Firestore/Auth/Storage handles.
  *
- * Loads the service-account JSON from the path in
- * `GOOGLE_APPLICATION_CREDENTIALS`. The JSON is downloaded from
- * Firebase Console → Settings → Service accounts → Generate new private key.
+ * Every Express route and script in the backend reaches Firebase through here:
+ * call initializeFirebaseAdmin() once at startup, then use db()/auth()/storage()
+ * anywhere. Init is idempotent (guarded by the module-level `initialized` flag)
+ * so repeated calls reuse the one admin app.
  *
- * NEVER commit the service-account JSON to git. The pattern
- * `*-firebase-adminsdk-*.json` is in the repo's `.gitignore`.
+ * Credentials: locally, applicationDefault() reads the service-account JSON path
+ * in GOOGLE_APPLICATION_CREDENTIALS (downloaded from Firebase Console > Settings >
+ * Service accounts; never committed, matched by `*-firebase-adminsdk-*.json` in
+ * .gitignore). On managed runtimes (Cloud Functions / Cloud Run) it falls back to
+ * the platform service account, no key file shipped.
  */
 import * as fs from 'fs';
 

@@ -56,7 +56,8 @@ export function compareRequestPriority(
   const db = deadlineMs(b.deadline, now);
   if (da !== db) return da - db;
 
-  // 3. previously-taken floats above never-taken
+  // 3. tie-break: a request this volunteer took before (then dropped) floats
+  //    above one they never touched, so it resurfaces near the top of the pool
   const pa = a.wasPreviouslyTaken ? 0 : 1;
   const pb = b.wasPreviouslyTaken ? 0 : 1;
   return pa - pb;

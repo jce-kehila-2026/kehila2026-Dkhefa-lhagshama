@@ -1,16 +1,20 @@
 /**
  * Chat-on-assign helper (#71).
  *
- * When an admin assigns a volunteer to a request, this function
- * ensures a chat document exists between the beneficiary and the volunteer,
- * and posts a system message confirming the assignment.
+ * Keeps the per-request chat's `participants` array in sync with who actually
+ * serves a request, since chat read/write/attachment access is gated purely on
+ * `participants` membership. Used server-side (Admin SDK) by adminRequests.ts:
+ * ensureChatForRequest after an assign/re-assign write succeeds,
+ * removeVolunteerFromRequestChat when a volunteer drops the case.
  *
- * This is server-only (Admin SDK). It is called from adminRequests.ts
- * after the assignment write succeeds.
+ * Invariant: exactly one chat per requestId; the beneficiary is never removed
+ * from it, and a volunteer no longer on the case is never left in participants.
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '@/lib/firebaseAdmin';
 
+// args for ensureChatForRequest; identifies the request and the parties whose
+// chat membership must be reconciled.
 interface EnsureChatInput {
   requestId: string;
   beneficiaryId: string;
@@ -64,6 +68,8 @@ export async function ensureChatForRequest({
     const wasMember = chatData.participants.includes(volunteerId);
     next.add(volunteerId);
 
+    // only write when membership actually changed (incoming volunteer was new,
+    // or an outgoing one is being dropped) to avoid a redundant update
     if (removing || !wasMember) {
       await chatsRef.doc(chatId).update({
         participants: Array.from(next),
@@ -97,7 +103,7 @@ export async function ensureChatForRequest({
     isSystem: true,
   });
 
-  // Update lastMessageAt
+  // bump lastMessageAt so the system message surfaces the chat in list ordering
   await chatsRef.doc(chatId).update({
     lastMessageAt: FieldValue.serverTimestamp(),
   });

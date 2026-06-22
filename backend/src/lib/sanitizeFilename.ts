@@ -4,6 +4,10 @@
  * Strips non-ASCII and unsafe path characters, prepends a short random hex
  * prefix so two files with the same name do not collide in Storage.
  *
+ * Used by the upload/attachment path before a file is written to Firebase
+ * Storage, so a hostile or non-ASCII upload name can never become a path
+ * separator or collide with an existing object.
+ *
  * The client-side counterpart lives in frontend/src/utils/sanitizeFilename.ts
  * and uses the same algorithm; keep them in sync if the logic changes.
  *

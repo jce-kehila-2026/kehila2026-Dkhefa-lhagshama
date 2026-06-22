@@ -14,7 +14,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 import { db } from '@/lib/firebaseAdmin';
 
+/** The two parties allowed to take part in the consent handshake. */
 export type CloseRole = 'volunteer' | 'beneficiary';
+/** What the acting party asked for; `approve` with no pending proposal acts as `propose`. */
 export type CloseAction = 'propose' | 'approve' | 'decline';
 
 /** What effectively happened, for the caller's event trail (req 25). */
@@ -99,7 +101,8 @@ export async function applyCloseConsent(
 
     const existing = (data.closeRequest as Record<string, unknown> | null | undefined) ?? null;
 
-    // Defensive ownership check.
+    // Defensive ownership check. Volunteer side accepts either the assigned
+    // volunteer id or the legacy `handler` field (older requests stored it there).
     const owns =
       role === 'beneficiary'
         ? data.beneficiaryId === actorUid
@@ -107,6 +110,8 @@ export async function applyCloseConsent(
     if (!owns)
       return { status: 'forbidden', closed: false, closeRequest: null, action: null } as CloseResult;
 
+    // Decline runs before the status gate: clearing a stale proposal must work
+    // regardless of the request's current status.
     if (action === 'decline') {
       tx.update(ref, { closeRequest: null, updatedAt: FieldValue.serverTimestamp() });
       return { status: 'ok', closed: false, closeRequest: null, action: 'declined' } as CloseResult;

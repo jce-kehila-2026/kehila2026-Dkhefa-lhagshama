@@ -17,6 +17,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 import { db } from '@/lib/firebaseAdmin';
 
+// closed set of lifecycle event kinds a request can record on its timeline.
 export type RequestEventType =
   | 'created'
   | 'attachment_added'
@@ -26,6 +27,7 @@ export type RequestEventType =
   | 'close_consent'
   | 'rated';
 
+// read-scope of an event: 'all' = owner + staff, 'internal' = staff only (enforced in firestore.rules).
 export type RequestEventVisibility = 'all' | 'internal';
 
 export interface RequestEventInput {

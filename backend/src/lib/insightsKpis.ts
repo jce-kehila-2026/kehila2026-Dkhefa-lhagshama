@@ -32,6 +32,9 @@ function isSameMonth(at: Date, now: number): boolean {
   return at.getFullYear() === ref.getFullYear() && at.getMonth() === ref.getMonth();
 }
 
+// derive the four scalar KPIs in one pass over `requests`. `closedAtById` only
+// needs entries for closed requests; `now` defaults to wall-clock but is
+// injectable so the "this month" window is deterministic in tests.
 export function computeScalarKpis(
   requests: KpiRequest[],
   closedAtById: Map<string, Date>,
@@ -39,6 +42,7 @@ export function computeScalarKpis(
 ): ScalarKpis {
   const totalRequests = requests.length;
 
+  // open = anything not terminal; closedCount feeds the lifetime closure rate.
   let openRequests = 0;
   let closedCount = 0;
   for (const r of requests) {
@@ -47,6 +51,8 @@ export function computeScalarKpis(
     if (status === 'closed') closedCount += 1;
   }
 
+  // closed-this-month is a stricter subset: needs a closed-at timestamp that
+  // lands in the current calendar month (referred/rejected are not counted).
   let closedThisMonth = 0;
   for (const r of requests) {
     if (r.status !== 'closed') continue;

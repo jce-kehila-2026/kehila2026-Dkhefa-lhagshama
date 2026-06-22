@@ -4,6 +4,8 @@
  * pure, deterministic, unit-tested.
  */
 
+/** Pre-fetched request counts the route hands in; both optional so a missing
+ *  Firestore aggregate degrades to 0 rather than NaN. */
 export interface RawCounts {
   closedRequests?: number;
   referredRequests?: number;

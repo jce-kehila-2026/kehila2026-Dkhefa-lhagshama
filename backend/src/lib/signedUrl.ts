@@ -25,7 +25,9 @@ export async function mintSignedReadUrl(
   storagePath: string | null | undefined,
   ttlMs: number = SIGNED_URL_TTL_MS,
 ): Promise<string | null> {
+  // callers often pass an optional avatar path; absent path => no url (not an error).
   if (!storagePath) return null;
+  // getSignedUrl returns a [url] tuple from the gcloud storage SDK; take the first element.
   const [url] = await storage()
     .file(storagePath)
     .getSignedUrl({ action: 'read', expires: Date.now() + ttlMs });

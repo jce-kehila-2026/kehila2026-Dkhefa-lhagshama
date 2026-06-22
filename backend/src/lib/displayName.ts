@@ -17,6 +17,9 @@
  */
 import { auth, db } from '@/lib/firebaseAdmin';
 
+// walks the source chain (users mirror -> volunteers roster -> Auth name -> email local part)
+// and returns the first non-empty trimmed name, or null. swallows any Firestore/Auth
+// error to null so name resolution is best-effort and never breaks the calling request.
 export async function resolveDisplayName(uid: string): Promise<string | null> {
   try {
     const userSnap = await db().collection('users').doc(uid).get();
@@ -27,6 +30,8 @@ export async function resolveDisplayName(uid: string): Promise<string | null> {
           lastName?: string;
         })
       : null;
+    // relies on empty-string falsiness: a blank/whitespace displayName falls through
+    // to the firstName+lastName join, which is '' when both are missing.
     const fromUsers =
       (typeof u?.displayName === 'string' && u.displayName.trim()) ||
       [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim();

@@ -99,6 +99,8 @@ async function resolveBeneficiaryEmail(
   }
 }
 
+// bilingual (HE+EN) copy per event kind; subject is static, text is a builder
+// that injects the request id. one entry required for every NotifyKind.
 const MESSAGES: Record<NotifyKind, { subject: string; text: (id: string) => string }> = {
   reply: {
     subject: 'עדכון בבקשה שלך · Update on your request',
