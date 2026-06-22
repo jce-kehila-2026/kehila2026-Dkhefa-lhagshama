@@ -15,6 +15,7 @@ import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
 import WorkStatusControl from '@/components/volunteer-app/WorkStatusControl'
 import { ErrorState } from '@/components/admin/AdminUI'
 import Reveal from '@/components/motion/Reveal'
+import styles from './VolunteerDashboard.module.css'
 
 interface AssignedItem {
   id: string
@@ -172,7 +173,7 @@ export default function VolunteerDashboard() {
   return (
     <VolunteerLayout title={d.title} subtitle={d.subtitle}>
       {error && (
-        <div style={{ marginBlockEnd: 'var(--sp-5, 1.25rem)' }}>
+        <div className={styles.errorWrap}>
           <ErrorState message={error} onRetry={load} retryLabel={v.ui.retry} />
         </div>
       )}

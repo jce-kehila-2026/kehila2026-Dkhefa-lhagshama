@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { Lock, Eye, Loader2, UserPlus, Send, Paperclip } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
+import styles from "./ChatComposer.module.css";
 
 interface ChatComposerProps {
   composerLocked: boolean;
@@ -95,7 +96,7 @@ export function ChatComposer({
         accept=".pdf,.jpg,.jpeg,.png,.docx,application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         onChange={onFilePick}
         disabled={uploading || sending}
-        style={{ display: "none" }}
+        className={styles.hiddenInput}
         tabIndex={-1}
         aria-hidden="true"
       />
@@ -129,9 +130,8 @@ export function ChatComposer({
       />
       <button
         type="submit"
-        className="btn btn-ember"
+        className={`btn btn-ember ${styles.sendBtn}`}
         disabled={sending || !inputText.trim()}
-        style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexShrink: 0 }}
       >
         {sending ? c.sending : c.send}
         <Send size={15} style={{ transform: isRTL ? "scaleX(-1)" : "none" }} />

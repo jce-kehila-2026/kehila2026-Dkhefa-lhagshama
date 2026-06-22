@@ -16,6 +16,7 @@ import { LoadingSkeleton, LoadErrorState, EmptyState } from "./my-requests/Reque
 import { SAVE_PROFILE_OFFER_KEY } from "./my-requests/shared";
 import type { Translations, RequestRecord, SaveProfileOffer } from "./my-requests/shared";
 import type { CaughtError, Suggestion } from "@/types";
+import styles from "./MyRequestsPage.module.css";
 
 // ── Main page ─────────────────────────────────────────────────
 export default function MyRequestsPage() {
@@ -283,7 +284,7 @@ export default function MyRequestsPage() {
               {saveOffer && (
                 <div className="myreq-new-banner-save">
                   <span className="myreq-new-banner-save-text">
-                    <UserCheck size={15} aria-hidden="true" style={{ marginInlineEnd: "6px", verticalAlign: "-3px", color: "var(--ember)" }} />
+                    <UserCheck size={15} aria-hidden="true" className={styles.saveIcon} />
                     {t.stream2.autoFill.saveToProfile}
                   </span>
                   <div className="myreq-new-banner-save-actions">

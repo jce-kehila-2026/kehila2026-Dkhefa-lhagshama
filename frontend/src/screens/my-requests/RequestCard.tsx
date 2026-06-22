@@ -10,6 +10,7 @@ import { RequestTimeline } from "./RequestTimeline";
 import { ReferralPanel } from "./ReferralPanel";
 import { RateExperienceCard } from "./RateExperienceCard";
 import type { Translations, RequestRecord } from "./shared";
+import styles from "./RequestCard.module.css";
 
 // ── Request card with expandable timeline ─────────────────────
 // req 11 — the collapsed card headlines the CATEGORY (the raw id moves into
@@ -45,58 +46,28 @@ export function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, fo
     <div
       ref={focusRef}
       className={
+        `${styles.card} ` +
         (isArchived ? "myreq-card myreq-card-archived" : "myreq-card") +
         (isFocused ? " myreq-card-focused" : "")
       }
       style={{
-        background: "var(--white)",
         border: `1px solid ${isFocused ? "var(--ember)" : isExpanded ? "var(--ember-soft)" : "var(--hair)"}`,
-        borderRadius: "var(--radius-lg)",
         boxShadow: isExpanded ? "var(--shadow)" : "var(--shadow-xs)",
-        overflow: "hidden",
-        transition: "box-shadow var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out)",
       }}
     >
       {/* Header — the whole bar is the toggle */}
       <button
         type="button"
-        className="myreq-card-toggle"
+        className={`myreq-card-toggle ${styles.toggle}`}
         onClick={() => onToggle(item.id)}
         aria-expanded={isExpanded}
         aria-controls={panelId}
-        style={{
-          // NOTE: do not use `all: unset` here — it resets `outline` to
-          // `none` inline, which beats the global `*:focus-visible` ring on
-          // specificity and leaves keyboard users with no visible focus.
-          // Reset only what we need and let the global ember ring apply.
-          appearance: "none",
-          margin: 0,
-          background: "none",
-          border: "none",
-          borderRadius: "inherit",
-          font: "inherit",
-          color: "inherit",
-          boxSizing: "border-box",
-          display: "block",
-          width: "100%",
-          cursor: "pointer",
-          padding: "20px 24px",
-          textAlign: "start",
-        }}
       >
         {/* Top line: category (req 11) + status + chevron */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flexWrap: "wrap" }}>
-            <span style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "7px",
-              fontFamily: "Frank Ruhl Libre, Georgia, serif",
-              fontSize: "1.05rem",
-              fontWeight: 500,
-              color: "var(--ink)",
-            }}>
-              <Tag size={15} aria-hidden="true" style={{ color: "var(--ember)" }} />
+        <div className={styles.topLine}>
+          <div className={styles.topLineMain}>
+            <span className={styles.category}>
+              <Tag size={15} aria-hidden="true" className={styles.categoryIcon} />
               {categoryLabel(item.category)}
             </span>
             <LifecycleStatusPill status={item.status} t={t} />
@@ -109,18 +80,11 @@ export function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, fo
           </div>
           <span
             aria-hidden="true"
-            className="myreq-card-chevron"
+            className={`myreq-card-chevron ${styles.chevron}`}
             data-expanded={isExpanded || undefined}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
               background: isExpanded ? "var(--ember-soft)" : "var(--sky-3)",
               color: isExpanded ? "var(--ember-700)" : "var(--gray-500)",
-              flexShrink: 0,
             }}
           >
             <ChevronDown size={16} />
@@ -128,24 +92,12 @@ export function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, fo
         </div>
 
         {/* Description */}
-        <p style={{
-          marginBlock: "12px 0",
-          color: "var(--ink-2)",
-          fontSize: "15px",
-          lineHeight: 1.55,
-        }}>
+        <p className={styles.description}>
           {truncate(item.description || "", 140) || "·"}
         </p>
 
         {/* Meta grid — 4 collapsed facts (req 11): category, status, created, deadline */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-          gap: "16px 20px",
-          marginBlockStart: "18px",
-          paddingBlockStart: "16px",
-          borderBlockStart: "1px solid var(--hair)",
-        }}>
+        <div className={styles.metaGrid}>
           <MetaField icon={<Tag size={12} aria-hidden="true" />} label={tbl.category}>
             {categoryLabel(item.category)}
           </MetaField>
@@ -196,24 +148,13 @@ export function RequestCard({ item, t, lang, expandedId, onToggle, isFocused, fo
       {isExpanded && (
         <div
           id={panelId}
-          className="myreq-detail-panel"
-          style={{
-            padding: "4px 24px 24px",
-            background: "var(--sky-3)",
-            borderBlockStart: "1px solid var(--hair)",
-          }}
+          className={`myreq-detail-panel ${styles.detailPanel}`}
         >
-          <div style={{ paddingBlockStart: "20px" }}>
+          <div className={styles.detailInner}>
             {/* req 11 — raw id + urgency live in the detail panel now */}
             <div className="myreq-detail-meta">
               <MetaField label={mr.requestId}>
-                <span style={{
-                  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                  fontSize: "12.5px",
-                  fontWeight: 600,
-                  color: "var(--ember-700)",
-                  letterSpacing: "0.04em",
-                }}>
+                <span className={styles.requestRef}>
                   {formatRequestRef(item)}
                 </span>
               </MetaField>

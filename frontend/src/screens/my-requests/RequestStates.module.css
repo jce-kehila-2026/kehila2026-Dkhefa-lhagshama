@@ -1,0 +1,129 @@
+/* RequestStates — component-scoped styles (was inline style={{}}). */
+
+/* ── Loading skeleton ──────────────────────────────────────── */
+.skeletonGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.skeletonCard {
+  padding-block: 22px;
+  padding-inline: 24px;
+}
+
+.skeletonHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-end: 16px;
+}
+
+.skeletonBadgeA {
+  width: 90px;
+  height: 1.2rem;
+}
+
+.skeletonBadgeB {
+  width: 70px;
+  height: 1.2rem;
+}
+
+.skeletonTitle {
+  width: 85%;
+}
+
+.skeletonSubtitle {
+  width: 55%;
+  margin-block-start: 8px;
+}
+
+.skeletonMeta {
+  display: flex;
+  gap: 20px;
+  margin-block-start: 20px;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--hair);
+}
+
+.skeletonMetaItem {
+  width: 22%;
+}
+
+/* ── Load-error state ──────────────────────────────────────── */
+.errorCard {
+  padding-block: clamp(40px, 6vw, 56px);
+  padding-inline: 32px;
+  text-align: center;
+}
+
+.errorIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--danger-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+  margin-block-end: 18px;
+}
+
+.errorTitle {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: var(--fs-h3);
+  font-weight: 500;
+  color: var(--ink);
+  margin-block-end: 10px;
+}
+
+.errorBody {
+  color: var(--gray-600);
+  margin-block-end: 24px;
+  line-height: 1.7;
+  max-width: 44ch;
+  margin-inline: auto;
+}
+
+/* ── Empty state ───────────────────────────────────────────── */
+.emptyCard {
+  padding-block: clamp(48px, 7vw, 72px);
+  padding-inline: 32px;
+  text-align: center;
+}
+
+.emptyEyebrow {
+  color: var(--ember);
+  display: block;
+  margin-block-end: 16px;
+}
+
+.emptyIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--sky-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+  margin-block-end: 20px;
+}
+
+.emptyTitle {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: var(--fs-h2);
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-block-end: 12px;
+  text-wrap: balance;
+}
+
+.emptyBody {
+  color: var(--gray-600);
+  margin-block-end: 28px;
+  line-height: 1.7;
+  max-width: 46ch;
+  margin-inline: auto;
+  font-size: var(--fs-lede);
+}

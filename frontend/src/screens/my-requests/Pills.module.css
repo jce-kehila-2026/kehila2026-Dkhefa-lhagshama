@@ -1,0 +1,49 @@
+/* Pills — component-scoped styles (was inline style={{}} + labelStyle spread). */
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  padding-block: 3px;
+  padding-inline: 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.empty {
+  color: var(--gray-400);
+}
+
+.deadlinePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-block: 3px;
+  padding-inline: 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.metaField {
+  min-width: 0;
+}
+
+.metaLabel {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-block-end: 5px;
+}
+
+.metaValue {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+}

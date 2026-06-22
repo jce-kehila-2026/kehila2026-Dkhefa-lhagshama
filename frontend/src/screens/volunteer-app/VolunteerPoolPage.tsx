@@ -15,6 +15,7 @@ import { apiFetch, apiJson } from '@/lib/apiClient'
 import { formatDate } from '@/utils/helpers'
 import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
 import { ErrorState, EmptyState, StatusBadge } from '@/components/admin/AdminUI'
+import styles from './VolunteerPoolPage.module.css'
 
 interface PoolItem {
   id: string
@@ -139,9 +140,9 @@ export default function VolunteerPoolPage() {
         <div className="volapp-card-grid" aria-busy="true">
           {[0, 1, 2].map((i) => (
             <div className="card volapp-req-card" key={i}>
-              <span className="skeleton skeleton-line" style={{ width: '70%' }} aria-hidden="true" />
-              <span className="skeleton skeleton-line" style={{ width: '90%' }} aria-hidden="true" />
-              <span className="skeleton skeleton-line" style={{ width: '40%' }} aria-hidden="true" />
+              <span className={`skeleton skeleton-line ${styles.skeleton70}`} aria-hidden="true" />
+              <span className={`skeleton skeleton-line ${styles.skeleton90}`} aria-hidden="true" />
+              <span className={`skeleton skeleton-line ${styles.skeleton40}`} aria-hidden="true" />
             </div>
           ))}
         </div>

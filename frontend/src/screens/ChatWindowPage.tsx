@@ -23,6 +23,7 @@ import { useChatMessaging } from "./chat-window/useChatMessaging";
 import { MessageFeed } from "./chat-window/MessageFeed";
 import { ChatComposer } from "./chat-window/ChatComposer";
 import { ChatRail } from "./chat-window/ChatRail";
+import styles from "./ChatWindowPage.module.css";
 
 export default function ChatWindowPage() {
   const { t, lang, isRTL } = useLanguage();
@@ -183,7 +184,7 @@ export default function ChatWindowPage() {
   // Auth gate: don't render the chat UI for logged-out users.
   if (!authLoading && !user) {
     return (
-      <div className="page-container chat-window-shell" style={{ maxWidth: "560px" }}>
+      <div className={`page-container chat-window-shell ${styles.signInShell}`}>
         <Reveal>
           <div className="chat-state chat-state--card">
             <span aria-hidden="true" className="chat-state__icon chat-state__icon--ember">
@@ -304,7 +305,7 @@ export default function ChatWindowPage() {
               role="alert"
               style={{ direction: isRtl ? "rtl" : "ltr" }}
             >
-              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <AlertCircle size={16} className={styles.sendErrorIcon} />
               <span>{c.sendError}</span>
             </div>
           )}

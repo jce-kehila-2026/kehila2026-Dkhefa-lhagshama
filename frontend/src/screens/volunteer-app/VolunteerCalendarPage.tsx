@@ -10,6 +10,7 @@ import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
 import { ErrorState } from '@/components/admin/AdminUI'
 import AvailabilityEditor from '@/components/volunteer-app/AvailabilityEditor'
 import WorkStatusControl from '@/components/volunteer-app/WorkStatusControl'
+import styles from './VolunteerCalendarPage.module.css'
 
 interface AssignedItem {
   id: string
@@ -119,7 +120,7 @@ export default function VolunteerCalendarPage() {
   return (
     <VolunteerLayout title={c.title} subtitle={c.subtitle}>
       {error && (
-        <div style={{ marginBlockEnd: 'var(--sp-5)' }}>
+        <div className={styles.errorWrap}>
           <ErrorState message={error} onRetry={load} retryLabel={v.ui.retry} />
         </div>
       )}

@@ -12,6 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Reveal from "@/components/motion/Reveal";
 import { ChatAvatar } from "./ChatAvatar";
 import type { ChatParticipant, LinkedRequest } from "./shared";
+import styles from "./ChatRail.module.css";
 
 interface ChatRailProps {
   isRtl: boolean;
@@ -140,13 +141,7 @@ export function ChatRail({
             ) : (
               <span
                 aria-hidden="true"
-                className="chat-avatar chat-avatar--lg"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--ember)",
-                }}
+                className={`chat-avatar chat-avatar--lg ${styles.identityFallbackIcon}`}
               >
                 <MessageCircle size={24} />
               </span>
@@ -255,7 +250,7 @@ export function ChatRail({
                       <Clock
                         size={14}
                         aria-hidden="true"
-                        style={{ verticalAlign: "-2px", marginInlineEnd: "6px" }}
+                        className={styles.waitingClockIcon}
                       />
                       {c.waitingToClose}
                     </span>

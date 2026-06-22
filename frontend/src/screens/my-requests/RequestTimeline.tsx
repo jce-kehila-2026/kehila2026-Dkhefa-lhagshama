@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { apiJson } from "@/lib/apiClient";
 import { formatDate } from "@/utils/helpers";
 
-import { labelStyle } from "./shared";
 import type { Translations, TimelineEvent } from "./shared";
+import styles from "./RequestTimeline.module.css";
 
 // ── Request Timeline (#68) ────────────────────────────────────
 export function RequestTimeline({ requestId, t }: { requestId: string; t: Translations }) {
@@ -24,19 +24,19 @@ export function RequestTimeline({ requestId, t }: { requestId: string; t: Transl
   if (error) return null;
   if (events === null) {
     return (
-      <div style={{ padding: "12px 0", color: "var(--gray-400)", fontSize: "13px" }}>
+      <div className={styles.loading}>
         {t.common.loading}
       </div>
     );
   }
 
   return (
-    <div style={{ marginBlockStart: "4px" }}>
-      <div style={{ ...labelStyle, marginBlockEnd: "14px" }}>
+    <div className={styles.root}>
+      <div className={styles.label}>
         {tl.title}
       </div>
       {events.length === 0 ? (
-        <div style={{ color: "var(--gray-500)", fontSize: "13px" }}>{tl.noEvents}</div>
+        <div className={styles.noEvents}>{tl.noEvents}</div>
       ) : (
         <ol className="timeline">
           {events.map((ev: TimelineEvent, i: number) => {
@@ -47,7 +47,7 @@ export function RequestTimeline({ requestId, t }: { requestId: string; t: Transl
               <li key={ev.id} className="timeline-item">
                 {!isLast && <span className="timeline-rail" aria-hidden="true" />}
                 <span className="timeline-dot" aria-hidden="true" />
-                <div style={{ flex: 1, paddingBlockStart: "1px" }}>
+                <div className={styles.itemBody}>
                   <div className="timeline-title">{typeLabel}</div>
                   {dateStr && <div className="timeline-time">{dateStr}</div>}
                 </div>

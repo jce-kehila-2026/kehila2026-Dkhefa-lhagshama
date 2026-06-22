@@ -5,8 +5,8 @@ import type { LucideIcon } from "lucide-react";
 import Reveal from "@/components/motion/Reveal";
 
 import { RequestCard } from "./RequestCard";
-import { labelStyle } from "./shared";
 import type { Translations, RequestRecord } from "./shared";
+import styles from "./RequestBoard.module.css";
 
 type ColKey = "open" | "inProgress" | "done";
 
@@ -56,7 +56,7 @@ export function RequestBoard({
       {/* Active requests — archived ones are grouped separately below.
           The count + a shared search sit on one row. */}
       <div className="myreq-toolbar">
-        <span style={{ ...labelStyle }} aria-live="polite">
+        <span className={styles.label} aria-live="polite">
           {activeItems.length} · {t.myRequests.title}
         </span>
         <div className="myreq-search">
@@ -83,7 +83,7 @@ export function RequestBoard({
       </div>
 
       {q && activeItems.length === 0 && archivedItems.length === 0 ? (
-        <p className="myreq-col-empty" style={{ paddingBlock: "32px" }}>
+        <p className={`myreq-col-empty ${styles.emptyState}`}>
           {t.myRequests.noMatches}
         </p>
       ) : (
@@ -99,7 +99,7 @@ export function RequestBoard({
           return (
             <section key={col.key} className="myreq-col" aria-label={col.title}>
               <div className="myreq-col-head">
-                <h2 className="myreq-col-title" style={labelStyle}>{col.title}</h2>
+                <h2 className={`myreq-col-title ${styles.label}`}>{col.title}</h2>
                 <span className="myreq-col-count">{len}</span>
               </div>
               <div className="myreq-col-body">
@@ -159,10 +159,10 @@ export function RequestBoard({
       {/* Past / archived requests — de-emphasized, not hidden (Note 6) */}
       {archivedItems.length > 0 && (
         <section className="myreq-archived-group" aria-label={t.lifecycle.archivedLabel}>
-          <h2 className="myreq-archived-heading" style={labelStyle}>
+          <h2 className={`myreq-archived-heading ${styles.label}`}>
             {t.lifecycle.archivedLabel}
           </h2>
-          <div style={{ display: "grid", gap: "16px" }}>
+          <div className={styles.archivedList}>
             {archivedItems.map((item, i) => (
               <Reveal key={item.id} delay={Math.min(i * 0.05, 0.3)}>
                 <RequestCard

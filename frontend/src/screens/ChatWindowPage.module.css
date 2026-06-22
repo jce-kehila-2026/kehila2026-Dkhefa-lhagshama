@@ -1,0 +1,9 @@
+/* ChatWindowPage — component-scoped styles (was static inline style={{}}). */
+
+.signInShell {
+  max-width: 560px;
+}
+
+.sendErrorIcon {
+  flex-shrink: 0;
+}

@@ -1,0 +1,5 @@
+/* VolunteerCalendarPage — component-scoped styles (was inline style={{}}). */
+
+.errorWrap {
+  margin-block-end: var(--sp-5);
+}

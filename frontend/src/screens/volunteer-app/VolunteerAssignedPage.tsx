@@ -21,6 +21,7 @@ import { formatDate } from '@/utils/helpers'
 import { formatRequestRef } from '@/lib/requestRef'
 import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
 import { ErrorState, EmptyState, StatusBadge } from '@/components/admin/AdminUI'
+import styles from './VolunteerAssignedPage.module.css'
 
 interface AssignedItem {
   id: string
@@ -241,8 +242,8 @@ export default function VolunteerAssignedPage() {
         <div className="volapp-card-grid" aria-busy="true">
           {[0, 1].map((i) => (
             <div className="card volapp-req-card" key={i}>
-              <span className="skeleton skeleton-line" style={{ width: '60%' }} aria-hidden="true" />
-              <span className="skeleton skeleton-line" style={{ width: '85%' }} aria-hidden="true" />
+              <span className={`skeleton skeleton-line ${styles.skeletonShort}`} aria-hidden="true" />
+              <span className={`skeleton skeleton-line ${styles.skeletonLong}`} aria-hidden="true" />
             </div>
           ))}
         </div>
@@ -265,8 +266,7 @@ export default function VolunteerAssignedPage() {
             <article
               key={item.id}
               id={`req-${item.id}`}
-              className="card volapp-req-card"
-              style={{ scrollMarginBlockStart: '90px' }}
+              className={`card volapp-req-card ${styles.reqCard}`}
             >
               <div className="volapp-req-head">
                 <h3 className="volapp-req-title">{item.title || labelFor(item.category)}</h3>

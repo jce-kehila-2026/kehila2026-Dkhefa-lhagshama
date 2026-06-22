@@ -31,6 +31,7 @@ import { apiJson, apiFetch } from "../lib/apiClient";
 import { formatRequestRef } from "../lib/requestRef";
 import { formatDate } from "../utils/helpers";
 import type { ChatKind } from "../types";
+import styles from "./ChatListPage.module.css";
 
 // A chat row as projected from the Firestore `chats` collection for this list.
 interface ChatListItem {
@@ -359,8 +360,7 @@ export default function ChatListPage() {
         body: c.loadError,
         action: (
           <button
-            className="btn btn-outline"
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+            className={`btn btn-outline ${styles.refreshBtn}`}
             onClick={() => window.location.reload()}
           >
             <RotateCcw size={16} />
@@ -407,7 +407,7 @@ export default function ChatListPage() {
     return (
       <div className="chat-list-card">
         {focusHasNoChat && (
-          <p className="chat-state__body" role="status" style={{ padding: "12px 16px", margin: 0 }}>
+          <p className={`chat-state__body ${styles.focusNotice}`} role="status">
             {c.focusNoChat}
           </p>
         )}
@@ -438,7 +438,7 @@ export default function ChatListPage() {
                     <span className="chat-row__icon" aria-hidden="true">
                       <RowIcon size={21} strokeWidth={1.9} />
                     </span>
-                    <div style={{ minWidth: 0 }}>
+                    <div className={styles.rowTitleWrap}>
                       <div className="chat-row__title">
                         {isDirect ? (
                           directLabel

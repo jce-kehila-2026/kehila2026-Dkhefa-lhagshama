@@ -1,0 +1,11 @@
+/* App shell layout (was inline style on the wrapper + main content div). */
+
+.shell {
+  min-block-size: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+}

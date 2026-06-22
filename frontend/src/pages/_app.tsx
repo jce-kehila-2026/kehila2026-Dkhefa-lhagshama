@@ -7,6 +7,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ToastContainer from '@/components/feedback/Toast'
 import Modal from '@/components/feedback/Modal'
+import styles from './_app.module.css'
 import '@/styles/globals.css'
 import '@/styles/tokens.css'
 import '@/styles/base.css'
@@ -53,11 +54,11 @@ export default function App({ Component, pageProps }: AppProps) {
     <LanguageProvider>
       <AuthProvider>
         <AppProvider>
-          <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <div className={styles.shell}>
             {!hideChrome && <SkipLink />}
             {!hideChrome && <Navbar />}
             {/* key on route → a single calm page-enter on each navigation. */}
-            <div id="main-content" className="page-enter" key={router.pathname} style={{ flex: 1 }}>
+            <div id="main-content" className={`page-enter ${styles.main}`} key={router.pathname}>
               <Component {...pageProps} />
             </div>
             {!hideChrome && <Footer />}

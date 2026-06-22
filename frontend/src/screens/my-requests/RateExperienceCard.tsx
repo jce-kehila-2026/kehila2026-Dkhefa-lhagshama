@@ -7,6 +7,8 @@ import type { CaughtError } from "@/types";
 
 import type { Translations } from "./shared";
 
+import styles from "./RateExperienceCard.module.css";
+
 // ── Rate-your-experience card (#80) ───────────────────────────
 export function RateExperienceCard({ requestId, t }: { requestId: string; t: Translations }) {
   const r = t.ratings;
@@ -49,36 +51,21 @@ export function RateExperienceCard({ requestId, t }: { requestId: string; t: Tra
   const alreadyRated = done || (existing && typeof existing.stars === "number");
 
   return (
-    <div
-      style={{
-        marginBlockStart: "20px",
-        padding: "22px 24px",
-        background: "var(--ember-soft)",
-        border: "1px solid var(--ember-soft)",
-        borderRadius: "var(--radius-lg)",
-        boxShadow: "var(--shadow-xs)",
-      }}
-    >
-      <div style={{
-        fontFamily: "Frank Ruhl Libre, Georgia, serif",
-        fontSize: "1.15rem",
-        fontWeight: 500,
-        color: "var(--ink)",
-        marginBlockEnd: "6px",
-      }}>
+    <div className={styles.card}>
+      <div className={styles.title}>
         {r.cardTitle}
       </div>
       {alreadyRated ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--success)", fontSize: "14px", fontWeight: 600 }}>
+        <div className={styles.thanks}>
           <CheckCircle size={16} aria-hidden="true" /> {r.thanks}
         </div>
       ) : (
         <>
-          <p style={{ fontSize: "13px", color: "var(--gray-600)", marginBlockEnd: "16px", lineHeight: 1.6, maxWidth: "52ch" }}>
+          <p className={styles.subtitle}>
             {r.cardSubtitle}
           </p>
           <RatingForm onSubmit={handleSubmit} submitting={submitting} />
-          {error && <div className="form-error" style={{ marginBlockStart: 10 }}><span>{error}</span></div>}
+          {error && <div className={`form-error ${styles.errorSpacing}`}><span>{error}</span></div>}
         </>
       )}
     </div>

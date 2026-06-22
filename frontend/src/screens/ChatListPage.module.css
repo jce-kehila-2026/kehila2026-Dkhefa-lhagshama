@@ -1,0 +1,17 @@
+/* ChatListPage — component-scoped styles (was static inline style={{}}). */
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.focusNotice {
+  padding-block: 12px;
+  padding-inline: 16px;
+  margin: 0;
+}
+
+.rowTitleWrap {
+  min-width: 0;
+}

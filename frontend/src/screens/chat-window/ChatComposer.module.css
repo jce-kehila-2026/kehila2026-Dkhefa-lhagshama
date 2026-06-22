@@ -1,0 +1,12 @@
+/* ChatComposer — component-scoped static styles (was inline style={{}}). */
+
+.hiddenInput {
+  display: none;
+}
+
+.sendBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}

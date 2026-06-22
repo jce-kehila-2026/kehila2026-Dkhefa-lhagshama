@@ -1,0 +1,21 @@
+/* RequestBoard — component-scoped styles (was inline style={{}} + the
+   shared labelStyle JS object). Visuals unchanged. */
+
+/* Monospace eyebrow/label — mirrors shared labelStyle exactly. */
+.label {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.emptyState {
+  padding-block: 32px;
+}
+
+.archivedList {
+  display: grid;
+  gap: 16px;
+}

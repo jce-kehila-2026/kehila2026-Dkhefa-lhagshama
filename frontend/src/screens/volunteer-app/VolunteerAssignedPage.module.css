@@ -1,0 +1,13 @@
+/* VolunteerAssignedPage — component-scoped styles (was inline style={{}}). */
+
+.skeletonShort {
+  width: 60%;
+}
+
+.skeletonLong {
+  width: 85%;
+}
+
+.reqCard {
+  scroll-margin-block-start: 90px;
+}

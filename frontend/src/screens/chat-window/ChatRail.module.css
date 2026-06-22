@@ -1,0 +1,13 @@
+/* ChatRail — component-scoped styles (was static inline style={{}}). */
+
+.identityFallbackIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ember);
+}
+
+.waitingClockIcon {
+  vertical-align: -2px;
+  margin-inline-end: 6px;
+}

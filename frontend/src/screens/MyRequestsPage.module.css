@@ -1,0 +1,7 @@
+/* MyRequestsPage — component-scoped styles (was inline style={{}}). */
+
+.saveIcon {
+  margin-inline-end: 6px;
+  vertical-align: -3px;
+  color: var(--ember);
+}
