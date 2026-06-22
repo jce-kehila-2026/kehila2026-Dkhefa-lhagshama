@@ -7,6 +7,7 @@ import { useState } from "react";
 import MenuPrimitive, { MenuItem } from "@/components/feedback/Menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import styles from "./Navbar.module.css";
 
 /** className that can vary on active state (react-router-style shim). */
 type NavClassName = string | ((s: { isActive: boolean }) => string);
@@ -170,51 +171,18 @@ export default function Navbar() {
 
   return (
     <nav className="navbar" role="navigation" aria-label={t.nav.ariaMain}>
-      <div
-        className="page-container"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          height: "64px",
-          gap: "8px",
-          // Wider than the 1120px content column so the full signed-in nav
-          // (links + lang + account chip + Sign Out + CTA) never overflows.
-          maxWidth: "1320px",
-          // Positioning context for the centered logo badge (desktop).
-          position: "relative",
-        }}
-      >
+      <div className={`page-container ${styles.bar}`}>
         {/* LOGO — inline on mobile only; desktop uses the centered badge below */}
-        <Link
-          href="/"
-          className="hide-desktop"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            textDecoration: "none",
-            flexShrink: 0,
-          }}
-        >
+        <Link href="/" className={`hide-desktop ${styles.brandLink}`}>
           <img
             src="/logo.jpg"
             alt={t.nav.brand}
             width={40}
             height={40}
-            style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+            className={styles.brandLogo}
           />
-          <div style={{ lineHeight: 1.2 }} className="nav-wordmark">
-            <div
-              style={{
-                color: "var(--cream)",
-                fontFamily: "Frank Ruhl Libre, serif",
-                fontWeight: 700,
-                fontSize: "16px",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {t.nav.brand}
-            </div>
+          <div className={`nav-wordmark ${styles.wordmarkWrap}`}>
+            <div className={styles.wordmark}>{t.nav.brand}</div>
           </div>
         </Link>
 
@@ -230,24 +198,8 @@ export default function Navbar() {
 
         {/* DESKTOP GROUP — links pinned to the start, controls to the end, so
             the centered logo badge sits in the clear gap between them. */}
-        <div
-          className="hide-mobile"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            inlineSize: "100%",
-            justifyContent: "space-between",
-            minWidth: 0,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "2px",
-            }}
-          >
+        <div className={`hide-mobile ${styles.desktopGroup}`}>
+          <div className={styles.desktopLinks}>
             {links.map((l) => (
               <NavLink
                 key={l.key}
@@ -263,13 +215,7 @@ export default function Navbar() {
             ))}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
+          <div className={styles.desktopControls}>
             {/* Language menu — current language label + checkable option list. */}
             {languageMenu}
 
@@ -301,26 +247,11 @@ export default function Navbar() {
         </div>
 
         {/* MOBILE CONTROLS */}
-        <div
-          className="hide-desktop"
-          style={{
-            marginInlineStart: "auto",
-            display: "flex",
-            gap: "8px",
-            alignItems: "center",
-          }}
-        >
+        <div className={`hide-desktop ${styles.mobileControls}`}>
           <button
             aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
             onClick={() => setMenuOpen((o) => !o)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--cream)",
-              cursor: "pointer",
-              padding: "6px",
-              display: "flex",
-            }}
+            className={styles.mobileToggle}
           >
             {menuOpen ? <X size={22} /> : <MenuIcon size={22} />}
           </button>
@@ -329,43 +260,14 @@ export default function Navbar() {
 
       {/* MOBILE MENU — flat list mirroring the desktop menus (no nested popovers). */}
       {menuOpen && (
-        <div
-          className="hide-desktop nav-mobile-menu"
-          style={{
-            background: "var(--ink-2)",
-            borderBlockStart: "1px solid rgba(244,238,224,0.12)",
-            padding: "12px 16px 20px",
-          }}
-        >
+        <div className={`hide-desktop nav-mobile-menu ${styles.mobileMenu}`}>
           {/* Signed-in indicator for mobile */}
           {!loading && user && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 14px",
-                marginBottom: "8px",
-                background: "rgba(244,238,224,0.06)",
-                border: "1px solid rgba(244,238,224,0.14)",
-                borderRadius: "8px",
-              }}
-            >
+            <div className={styles.mobileUser}>
               <span className="nav-account-avatar nav-account-avatar-lg">
                 {accountInitial}
               </span>
-              <span
-                style={{
-                  color: "var(--cream)",
-                  fontSize: "13px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  minWidth: 0,
-                  flex: 1,
-                }}
-                title={user.email || ""}
-              >
+              <span className={styles.mobileUserEmail} title={user.email || ""}>
                 {user.email || ""}
               </span>
             </div>
@@ -377,13 +279,8 @@ export default function Navbar() {
               router={router}
               to={l.to}
               className={({ isActive }) =>
-                `nav-link${isActive ? " active" : ""}`
+                `nav-link${isActive ? " active" : ""} ${styles.mobileLink}`
               }
-              style={{
-                display: "block",
-                padding: "11px 14px",
-                marginBottom: "4px",
-              }}
               onClick={() => setMenuOpen(false)}
               end={l.to === "/"}
             >
@@ -404,9 +301,8 @@ export default function Navbar() {
               <button
                 key={l.code}
                 type="button"
-                className={`nav-link nav-mobile-option${l.code === lang ? " active" : ""}`}
+                className={`nav-link nav-mobile-option${l.code === lang ? " active" : ""} ${styles.mobileOption}`}
                 aria-current={l.code === lang ? "true" : undefined}
-                style={{ display: "block", width: "100%", textAlign: "start", padding: "11px 14px" }}
                 onClick={() => {
                   setLang(l.code);
                   setMenuOpen(false);
@@ -425,9 +321,8 @@ export default function Navbar() {
                   router={router}
                   to="/admin"
                   className={({ isActive }) =>
-                    `nav-link${isActive ? " active" : ""}`
+                    `nav-link${isActive ? " active" : ""} ${styles.mobileLink}`
                   }
-                  style={{ display: "block", padding: "11px 14px", marginBottom: "4px" }}
                   onClick={() => setMenuOpen(false)}
                 >
                   {t.nav.menuAdmin}
@@ -438,8 +333,7 @@ export default function Navbar() {
                   "+ Submit Request" and volunteers get the Volunteer hub. */}
               {!isAdmin && (
                 <button
-                  className="btn btn-primary btn-full"
-                  style={{ marginTop: "12px" }}
+                  className={`btn btn-primary btn-full ${styles.mobileCta}`}
                   onClick={() => {
                     navigate(primaryCta.to);
                     setMenuOpen(false);
@@ -449,8 +343,7 @@ export default function Navbar() {
                 </button>
               )}
               <button
-                className="btn btn-outline btn-full"
-                style={{ marginTop: "8px" }}
+                className={`btn btn-outline btn-full ${styles.mobileCtaSecondary}`}
                 onClick={async () => {
                   setMenuOpen(false);
                   await handleLogout();
@@ -463,16 +356,14 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="btn btn-outline btn-full"
-                style={{ marginTop: "12px", display: "block", textAlign: "center" }}
+                className={`btn btn-outline btn-full ${styles.mobileAuthLink}`}
                 onClick={() => setMenuOpen(false)}
               >
                 {t.auth.login.title}
               </Link>
               <Link
                 href="/register"
-                className="btn btn-primary btn-full"
-                style={{ marginTop: "8px", display: "block", textAlign: "center" }}
+                className={`btn btn-primary btn-full ${styles.mobileAuthLinkSecondary}`}
                 onClick={() => setMenuOpen(false)}
               >
                 {t.auth.register.title}

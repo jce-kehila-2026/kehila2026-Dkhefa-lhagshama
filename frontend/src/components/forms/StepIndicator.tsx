@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react'
+import styles from './StepIndicator.module.css'
 
 // API preserved: { steps: string[], currentStep: number (1-indexed) }.
 // `progressLabel` localizes the progress landmark's aria-label (callers pass a
@@ -18,7 +19,7 @@ export default function StepIndicator({ steps, currentStep, progressLabel = 'Pro
         const isActive = num === currentStep
         const state = isDone ? 'is-done' : isActive ? 'is-active' : 'is-upcoming'
         return (
-          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', flex: i < steps.length - 1 ? '1 1 auto' : '0 0 auto' }}>
+          <div key={i} className={styles.step} style={{ flex: i < steps.length - 1 ? '1 1 auto' : '0 0 auto' }}>
             <div className={`stepper-node ${state}`} role="listitem" aria-current={isActive ? 'step' : undefined}>
               <span className="stepper-dot" aria-hidden="true">
                 {isDone ? <Check size={16} strokeWidth={3} /> : num}

@@ -1,0 +1,14 @@
+/* StatCard — component-scoped styles (was inline style={{}}). */
+
+.card {
+  text-align: center;
+}
+
+.value {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 400;
+  color: var(--ink);
+  display: block;
+  line-height: 1;
+}

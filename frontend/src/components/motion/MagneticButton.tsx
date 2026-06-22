@@ -13,6 +13,7 @@
 import { useRef } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 import { useReducedMotion } from 'motion/react'
+import styles from './MagneticButton.module.css'
 
 interface MagneticButtonProps {
   className?: string
@@ -40,11 +41,10 @@ export default function MagneticButton({ className, onClick, children, type = 'b
     <button
       ref={ref}
       type={type}
-      className={className}
+      className={className ? `${className} ${styles.magnetic}` : styles.magnetic}
       onClick={onClick}
       onMouseMove={handleMove}
       onMouseLeave={reset}
-      style={{ transition: 'transform 240ms cubic-bezier(0.34,1.56,0.64,1)' }}
     >
       {children}
     </button>

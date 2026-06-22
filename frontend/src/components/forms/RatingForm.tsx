@@ -10,6 +10,7 @@ import { useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { Star } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import styles from './RatingForm.module.css'
 
 interface RatingFormProps {
   onSubmit?: (stars: number, comment: string) => void
@@ -84,12 +85,12 @@ export default function RatingForm({ onSubmit, submitting = false, initialStars 
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <form onSubmit={handleSubmit} className={styles.form}>
       <div
         role="radiogroup"
         aria-label={r.starsLabel}
         onKeyDown={onKeyDown}
-        style={{ display: 'inline-flex', gap: 2 }}
+        className={styles.starGroup}
       >
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -113,20 +114,19 @@ export default function RatingForm({ onSubmit, submitting = false, initialStars 
         ))}
       </div>
 
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--ink)', fontWeight: 500 }}>
+      <label className={styles.commentLabel}>
         {r.commentLabel}
         <textarea
-          className="form-textarea"
+          className={`form-textarea ${styles.textarea}`}
           rows={3}
           value={comment}
           maxLength={1000}
           onChange={(e) => setComment(e.target.value)}
           placeholder={r.commentPH}
-          style={{ resize: 'vertical' }}
         />
       </label>
 
-      {error && <div style={{ color: 'var(--danger, #DC2626)', fontSize: 13 }}>{error}</div>}
+      {error && <div className={styles.error}>{error}</div>}
 
       <div>
         <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Sparkles, ExternalLink, Phone, Mail, ArrowLeft, ArrowRight, X } from "lucide-react";
 
-import type { CSSProperties } from "react";
 import type { Suggestion } from "@/types";
 import { safeHref } from "@/lib/safeUrl";
+import styles from "./SuggestCard.module.css";
 
 // ── Suggest-alternatives card (UC-01 A1, simple If-Then) ──────
 // Surfaces up to 3 approved community answers for a category. Bilingual text
@@ -14,16 +14,6 @@ import { safeHref } from "@/lib/safeUrl";
 // (request form step 2) can phrase themselves differently.
 // Visual classes (`card`, `myreq-suggest-dismiss`) are styled globally in
 // src/styles/screens/my-requests.css — do not duplicate them.
-
-// Small monospace eyebrow/label helper (matches MyRequestsPage's labelStyle).
-const labelStyle: CSSProperties = {
-  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-  fontSize: "11px",
-  fontWeight: 600,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "var(--gray-500)",
-};
 
 function pickLangValue(
   value: Suggestion["title"],
@@ -53,54 +43,26 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
   // DirectoryPage/RequestsPage (`isRTL ? ArrowLeft : ArrowRight`).
   const DirArrow = lang === "he" ? ArrowLeft : ArrowRight;
   return (
-    <div
-      className="card"
-      style={{
-        position: "relative",
-        marginBlockEnd: "28px",
-        padding: "24px 26px",
-        background: "var(--ember-soft)",
-        border: "1px solid var(--ember-soft)",
-        borderRadius: "var(--radius-lg)",
-        boxShadow: "var(--shadow-xs)",
-      }}
-    >
+    <div className={`card ${styles.card}`}>
       <button
         type="button"
-        className="myreq-suggest-dismiss"
+        className={`myreq-suggest-dismiss ${styles.dismiss}`}
         onClick={onDismiss}
         aria-label={dismissLabel}
         title={dismissLabel}
-        style={{
-          appearance: "none",
-          position: "absolute",
-          insetBlockStart: "14px",
-          insetInlineEnd: "14px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 30,
-          height: 30,
-          padding: 0,
-          border: "none",
-          borderRadius: "50%",
-          background: "var(--sky-3)",
-          color: "var(--gray-500)",
-          cursor: "pointer",
-        }}
       >
         <X size={16} aria-hidden="true" />
       </button>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBlockEnd: "4px" }}>
+      <div className={styles.headRow}>
         <Sparkles size={16} color="var(--ember)" aria-hidden="true" />
-        <span style={{ ...labelStyle, color: "var(--ember)" }}>{heading}</span>
+        <span className={`${styles.label} ${styles.labelEmber}`}>{heading}</span>
       </div>
-      <p style={{ fontSize: "13.5px", color: "var(--gray-600)", lineHeight: 1.6, maxWidth: "56ch", marginBlockEnd: "16px" }}>
+      <p className={styles.subtitle}>
         {subtitle}
       </p>
 
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "10px" }}>
+      <ul className={styles.list}>
         {items.slice(0, 3).map((item) => {
           const title = pickLangValue(item.title, lang) || pickLangValue(item.sourceName, lang);
           const source = pickLangValue(item.sourceName, lang);
@@ -123,38 +85,24 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
               }`
             : "/directory";
           return (
-            <li
-              key={item.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "14px",
-                flexWrap: "wrap",
-                padding: "12px 14px",
-                background: "var(--white)",
-                border: "1px solid var(--hair)",
-                borderRadius: "var(--radius-sm)",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>
+            <li key={item.id} className={styles.item}>
+              <div className={styles.itemText}>
+                <div className={styles.itemTitle}>
                   {title || "·"}
                 </div>
                 {source && source !== title && (
-                  <div style={{ fontSize: "12.5px", color: "var(--gray-500)", marginBlockStart: "2px" }}>
+                  <div className={styles.itemSource}>
                     {source}
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, flexWrap: "wrap" }}>
+              <div className={styles.actions}>
                 {href && (
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn btn-ghost btn-sm"
-                    style={{ gap: "6px" }}
+                    className={`btn btn-ghost btn-sm ${styles.action}`}
                   >
                     {openLabel}
                     <ExternalLink size={14} aria-hidden="true" />
@@ -165,8 +113,7 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
                 {phone && (
                   <a
                     href={`tel:${phone}`}
-                    className="btn btn-ghost btn-sm"
-                    style={{ gap: "6px" }}
+                    className={`btn btn-ghost btn-sm ${styles.action}`}
                   >
                     {callLabel}
                     <Phone size={14} aria-hidden="true" />
@@ -175,8 +122,7 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
                 {email && (
                   <a
                     href={`mailto:${email}`}
-                    className="btn btn-ghost btn-sm"
-                    style={{ gap: "6px" }}
+                    className={`btn btn-ghost btn-sm ${styles.action}`}
                   >
                     {emailLabel}
                     <Mail size={14} aria-hidden="true" />
@@ -187,8 +133,7 @@ export default function SuggestCard({ items, lang, heading, subtitle, openLabel,
                 {!hasContact && (
                   <Link
                     href={directoryHref}
-                    className="btn btn-ghost btn-sm"
-                    style={{ gap: "6px" }}
+                    className={`btn btn-ghost btn-sm ${styles.action}`}
                   >
                     {directoryLabel}
                     <DirArrow size={14} aria-hidden="true" />

@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiJson } from '@/lib/apiClient'
 import type { AvailabilityWindow, VolunteerMe } from '@/types'
+import styles from './AvailabilityEditor.module.css'
 
 interface AvailabilityEditorProps {
   me: VolunteerMe | null
@@ -168,7 +169,7 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
 
       {/* ── Unavailable → return date ──────────────────────────── */}
       {isUnavailable && (
-        <div style={{ marginBlockStart: 'var(--sp-4)', borderBlockStart: '1px solid var(--hair)', paddingBlockStart: 'var(--sp-3)' }}>
+        <div className={styles.returnSection}>
           <h3 className="volapp-subhead">{c.unavailableTitle}</h3>
           <label className="form-label" htmlFor="avail-again">{c.availableAgainLabel}</label>
           <input
@@ -179,7 +180,7 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
             value={availableAgainOn}
             onChange={(e) => setAvailableAgainOn(e.target.value)}
           />
-          <p className="volapp-muted" style={{ marginBlockStart: 'var(--sp-1)' }}>{c.availableAgainHint}</p>
+          <p className={`volapp-muted ${styles.againHint}`}>{c.availableAgainHint}</p>
           <div className="volapp-avail-actions">
             <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={saveReturnDate}>
               {c.save}

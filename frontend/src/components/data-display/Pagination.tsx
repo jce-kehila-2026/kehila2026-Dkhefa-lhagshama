@@ -1,5 +1,6 @@
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import styles from './Pagination.module.css'
 
 interface PaginationProps {
   total: number
@@ -31,19 +32,19 @@ export default function Pagination({ total, perPage = 10, current, onChange }: P
   }
 
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:'6px', justifyContent:'center', marginTop:'24px' }}>
+    <div className={styles.root}>
       <button className="page-btn" onClick={() => onChange(current - 1)} disabled={current === 1}>
         <PrevIcon size={14} />
       </button>
       {getPages().map((p, i) => (
         p === '...'
-          ? <span key={i} style={{ padding:'0 4px', color:'var(--gray-400)', fontSize:'13px' }}>…</span>
+          ? <span key={i} className={styles.ellipsis}>…</span>
           : <button key={i} className={`page-btn${p === current ? ' active' : ''}`} onClick={() => onChange(p)}>{p}</button>
       ))}
       <button className="page-btn" onClick={() => onChange(current + 1)} disabled={current === pages}>
         <NextIcon size={14} />
       </button>
-      <span style={{ fontSize:'13px', color:'var(--gray-400)', marginInlineStart:'8px' }}>
+      <span className={styles.count}>
         {t.common.page} {current} {t.common.of} {pages}
       </span>
     </div>

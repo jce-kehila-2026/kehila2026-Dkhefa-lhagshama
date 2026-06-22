@@ -1,0 +1,117 @@
+/* UploadArea — component-scoped styles (was inline style={{}}). */
+
+/* ── Uploaded state: compact file card ── */
+.fileCard {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-block: var(--sp-3);
+  padding-inline: var(--sp-4);
+  border: 1px solid var(--success);
+  background: var(--success-soft);
+  border-radius: var(--radius);
+}
+
+.fileIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fileMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  font-size: 12px;
+  color: var(--gray-600);
+}
+
+.removeBtn {
+  padding: var(--sp-2);
+}
+
+/* ── Uploading state ── */
+.uploadingCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+}
+
+.percent {
+  font-size: 13.5px;
+  color: var(--gray-600);
+}
+
+.progressTrack {
+  width: 80%;
+  height: 6px;
+  background: var(--gray-200);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* ── Idle / prompt state ── */
+.promptIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  margin-block: 0 var(--sp-3);
+  margin-inline: auto;
+  background: var(--white);
+  border: 1px solid var(--hair);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.promptLabel {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  margin-block-end: var(--sp-1);
+}
+
+.requiredMark {
+  color: var(--danger);
+}
+
+.promptHint {
+  font-size: 13px;
+  color: var(--gray-600);
+  margin-block-end: var(--sp-1);
+}
+
+.promptFormats {
+  font-size: 12px;
+  color: var(--gray-500);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Error + hidden input ── */
+.errorRow {
+  margin-block-start: var(--sp-2);
+}
+
+.hiddenInput {
+  display: none;
+}

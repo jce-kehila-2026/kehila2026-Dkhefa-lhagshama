@@ -1,0 +1,30 @@
+/* RatingForm — component-scoped styles (was static inline style={{}}). */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.starGroup {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.commentLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.error {
+  color: var(--danger, #DC2626);
+  font-size: 13px;
+}

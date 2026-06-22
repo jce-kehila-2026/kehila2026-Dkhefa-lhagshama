@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson } from '@/lib/apiClient'
 import { getIdToken } from '@/lib/auth'
+import styles from './CreateTaskDialog.module.css'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001'
 
@@ -167,7 +168,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
           {f.dialogTitle}
         </h2>
 
-        <div className="field" style={{ textAlign: 'start' }}>
+        <div className={`field ${styles.fieldStart}`}>
           <label className="form-label" htmlFor="task-title">
             {f.titleLabel}
           </label>
@@ -181,7 +182,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
           />
         </div>
 
-        <div className="field" style={{ textAlign: 'start', marginBlockStart: 'var(--sp-3)' }}>
+        <div className={`field ${styles.fieldSpaced}`}>
           <label className="form-label" htmlFor="task-desc">
             {f.descLabel}
           </label>
@@ -196,8 +197,8 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
           />
         </div>
 
-        <div className="admin-task-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
-          <div className="field" style={{ textAlign: 'start' }}>
+        <div className={`admin-task-grid ${styles.gridSpaced}`}>
+          <div className={`field ${styles.fieldStart}`}>
             <label className="form-label" htmlFor="task-cat">
               {f.categoryLabel}
             </label>
@@ -217,7 +218,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
             </select>
           </div>
 
-          <div className="field" style={{ textAlign: 'start' }}>
+          <div className={`field ${styles.fieldStart}`}>
             <label className="form-label" htmlFor="task-urgency">
               {f.urgencyLabel}
             </label>
@@ -236,7 +237,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
             </select>
           </div>
 
-          <div className="field" style={{ textAlign: 'start' }}>
+          <div className={`field ${styles.fieldStart}`}>
             <label className="form-label" htmlFor="task-deadline">
               {f.deadlineLabel}
             </label>
@@ -252,22 +253,21 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
         </div>
 
         {/* ── Optional attachments — each with its own visibility toggle ─── */}
-        <div className="field" style={{ textAlign: 'start', marginBlockStart: 'var(--sp-3)' }}>
+        <div className={`field ${styles.fieldSpaced}`}>
           <label className="form-label">{f.filesLabel}</label>
           <input
             ref={fileInputRef}
             type="file"
             multiple
             onChange={(e) => addFiles(e.target.files)}
-            style={{ display: 'none' }}
+            className={styles.fileInput}
             disabled={busy}
           />
           <button
             type="button"
-            className="btn btn-outline btn-sm"
+            className={`btn btn-outline btn-sm ${styles.addBtn}`}
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <Paperclip size={15} aria-hidden="true" />
             {f.addFiles}
@@ -305,10 +305,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
         </div>
 
         {error && (
-          <p
-            role="alert"
-            style={{ margin: 'var(--sp-3) 0 0', color: 'var(--danger)', fontSize: 'var(--fs-sm)', textAlign: 'start' }}
-          >
+          <p role="alert" className={styles.error}>
             {error}
           </p>
         )}

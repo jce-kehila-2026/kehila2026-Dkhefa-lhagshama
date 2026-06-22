@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import styles from './Toast.module.css'
 
 /** A single transient toast notification (mirrors AppContext's toast shape). */
 interface ToastItem {
@@ -27,11 +28,11 @@ export default function ToastContainer() {
     <div className="toast-container no-print" role="region" aria-live="polite">
       {(toasts as ToastItem[]).map(t => (
         <div key={t.id} className={`toast ${t.type}`}>
-          <span style={{ flexShrink:0 }}>{ICONS[t.type]}</span>
-          <span style={{ flex:1 }}>{t.message}</span>
+          <span className={styles.icon}>{ICONS[t.type]}</span>
+          <span className={styles.message}>{t.message}</span>
           <button
             onClick={() => removeToast(t.id)}
-            style={{ background:'none', border:'none', color:'rgba(244,238,224,0.7)', cursor:'pointer', padding:'2px', display:'flex', flexShrink:0 }}
+            className={styles.dismiss}
             aria-label={tr.common.close}
           >
             <X size={14} />

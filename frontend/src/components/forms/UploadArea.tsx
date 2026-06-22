@@ -4,6 +4,7 @@ import { Upload, CheckCircle, X, FileText } from 'lucide-react'
 import { uploadAttachment } from '@/lib/storage'
 import type { UploadHandle } from '@/lib/storage'
 import { sanitizeFilename } from '@/utils/sanitizeFilename' // #96
+import styles from './UploadArea.module.css'
 
 /** Payload reported to the parent on a successful (or simulated) upload. */
 interface UploadResult {
@@ -123,22 +124,15 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
   // ── Uploaded state: compact file card with remove ──
   if (file && !uploading) {
     return (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 'var(--sp-3)',
-        padding: 'var(--sp-3) var(--sp-4)', border: '1px solid var(--success)',
-        background: 'var(--success-soft)', borderRadius: 'var(--radius)',
-      }}>
-        <div aria-hidden="true" style={{
-          width: 38, height: 38, borderRadius: 'var(--radius-sm)', flexShrink: 0,
-          background: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+      <div className={styles.fileCard}>
+        <div aria-hidden="true" className={styles.fileIcon}>
           <CheckCircle size={20} color="var(--success)" />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
-          <div style={{ fontSize: '12px', color: 'var(--gray-600)' }}>{(file.size / 1024).toFixed(0)} KB</div>
+        <div className={styles.fileMeta}>
+          <div className={styles.fileName}>{file.name}</div>
+          <div className={styles.fileSize}>{(file.size / 1024).toFixed(0)} KB</div>
         </div>
-        <button type="button" onClick={remove} aria-label={`Remove ${file.name}`} className="btn btn-ghost btn-sm" style={{ padding: 'var(--sp-2)' }}>
+        <button type="button" onClick={remove} aria-label={`Remove ${file.name}`} className={`btn btn-ghost btn-sm ${styles.removeBtn}`}>
           <X size={16} />
         </button>
       </div>
@@ -160,36 +154,32 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
         style={dragging ? { borderColor: 'var(--ember)', background: 'var(--ember-soft)' } : undefined}
       >
         {uploading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--sp-3)', width: '100%' }}>
+          <div className={styles.uploadingCol}>
             <div className="spinner-ring" aria-hidden="true" />
-            <span style={{ fontSize: '13.5px', color: 'var(--gray-600)' }}>
+            <span className={styles.percent}>
               {percent ? `${percent.toFixed(0)}%` : ''}
             </span>
-            <div style={{ width: '80%', height: 6, background: 'var(--gray-200)', borderRadius: 3, overflow: 'hidden' }}>
+            <div className={styles.progressTrack}>
               <div style={{ width: `${percent.toFixed(0)}%`, height: '100%', background: 'var(--ink)', transition: 'width 0.15s linear' }} />
             </div>
           </div>
         ) : (
           <>
-            <div aria-hidden="true" style={{
-              width: 48, height: 48, borderRadius: 'var(--radius)', margin: '0 auto var(--sp-3)',
-              background: 'var(--white)', border: '1px solid var(--hair)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <div aria-hidden="true" className={styles.promptIcon}>
               <Upload size={20} color="var(--gray-600)" />
             </div>
-            <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ink)', marginBottom: 'var(--sp-1)' }}>
-              {label} {required && <span style={{ color: 'var(--danger)' }}>*</span>}
+            <div className={styles.promptLabel}>
+              {label} {required && <span className={styles.requiredMark}>*</span>}
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--gray-600)', marginBottom: 'var(--sp-1)' }}>{hint}</div>
-            <div style={{ fontSize: '12px', color: 'var(--gray-500)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <div className={styles.promptHint}>{hint}</div>
+            <div className={styles.promptFormats}>
               <FileText size={12} /> {formats}
             </div>
           </>
         )}
       </div>
       {(errMsg || error) && (
-        <div className="form-error" style={{ marginTop: 'var(--sp-2)' }}>
+        <div className={`form-error ${styles.errorRow}`}>
           <span>{errMsg || error}</span>
         </div>
       )}
@@ -197,7 +187,7 @@ export default function UploadArea({ label, hint, formats, required, onUpload, e
         type="file"
         id={inputId}
         accept=".jpg,.jpeg,.png,.pdf,.docx"
-        style={{ display: 'none' }}
+        className={styles.hiddenInput}
         onChange={(e: ChangeEvent<HTMLInputElement>) => handleFile(e.target.files?.[0])}
       />
       <style>{`

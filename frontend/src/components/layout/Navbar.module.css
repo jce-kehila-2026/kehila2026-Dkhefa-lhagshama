@@ -1,0 +1,136 @@
+/* Navbar — component-scoped styles (was inline style={{}}). */
+
+.bar {
+  display: flex;
+  align-items: center;
+  block-size: 64px;
+  gap: 8px;
+  /* Wider than the 1120px content column so the full signed-in nav
+     (links + lang + account chip + Sign Out + CTA) never overflows. */
+  max-inline-size: 1320px;
+  /* Positioning context for the centered logo badge (desktop). */
+  position: relative;
+}
+
+.brandLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.brandLogo {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.wordmarkWrap {
+  line-height: 1.2;
+}
+
+.wordmark {
+  color: var(--cream);
+  font-family: 'Frank Ruhl Libre', serif;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.desktopGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  inline-size: 100%;
+  justify-content: space-between;
+  min-inline-size: 0;
+}
+
+.desktopLinks {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.desktopControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobileControls {
+  margin-inline-start: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mobileToggle {
+  background: none;
+  border: none;
+  color: var(--cream);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+}
+
+.mobileMenu {
+  background: var(--ink-2);
+  border-block-start: 1px solid rgba(244, 238, 224, 0.12);
+  padding: 12px 16px 20px;
+}
+
+.mobileUser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-block-end: 8px;
+  background: rgba(244, 238, 224, 0.06);
+  border: 1px solid rgba(244, 238, 224, 0.14);
+  border-radius: 8px;
+}
+
+.mobileUserEmail {
+  color: var(--cream);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-inline-size: 0;
+  flex: 1;
+}
+
+.mobileLink {
+  display: block;
+  padding: 11px 14px;
+  margin-block-end: 4px;
+}
+
+.mobileOption {
+  display: block;
+  inline-size: 100%;
+  text-align: start;
+  padding: 11px 14px;
+}
+
+.mobileCta {
+  margin-block-start: 12px;
+}
+
+.mobileCtaSecondary {
+  margin-block-start: 8px;
+}
+
+.mobileAuthLink {
+  margin-block-start: 12px;
+  display: block;
+  text-align: center;
+}
+
+.mobileAuthLinkSecondary {
+  margin-block-start: 8px;
+  display: block;
+  text-align: center;
+}

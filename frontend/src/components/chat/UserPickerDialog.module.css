@@ -1,0 +1,19 @@
+/* UserPickerDialog — component-scoped styles (was inline style={{}}).
+   Static literals only; computed/dynamic values stay inline in the .tsx.
+   Logical properties keep RTL behaviour identical. */
+
+.fieldStart {
+  text-align: start;
+}
+
+.skeletonLine {
+  inline-size: 70%;
+}
+
+.errorNote {
+  margin-block: var(--sp-3) 0;
+  margin-inline: 0;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  text-align: start;
+}

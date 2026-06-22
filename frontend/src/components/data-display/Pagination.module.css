@@ -1,0 +1,22 @@
+/* Pagination — component-scoped styles (was inline style={{}}). */
+
+.root {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin-block-start: 24px;
+}
+
+.ellipsis {
+  padding-block: 0;
+  padding-inline: 4px;
+  color: var(--gray-400);
+  font-size: 13px;
+}
+
+.count {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-inline-start: 8px;
+}

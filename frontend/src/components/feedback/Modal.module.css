@@ -1,0 +1,12 @@
+/* Modal — component-scoped styles (was inline style={{}}). */
+
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.closeBtn {
+  padding-block: 4px;
+  padding-inline: 4px;
+}

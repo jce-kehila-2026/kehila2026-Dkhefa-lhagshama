@@ -3,6 +3,7 @@ import { MessagesSquare, UserPlus } from 'lucide-react'
 
 import { useLanguage } from '../../contexts/LanguageContext'
 import { apiJson } from '../../lib/apiClient'
+import styles from './UserPickerDialog.module.css'
 
 /**
  * Admin user picker (feedback round 2): a searchable multi-select over
@@ -159,7 +160,7 @@ export default function UserPickerDialog({
         </h2>
 
         {withTitleField && (
-          <div className="field" style={{ textAlign: 'start' }}>
+          <div className={`field ${styles.fieldStart}`}>
             <label className="form-label" htmlFor={`${headingId}-title`}>
               {c.newChatTitleLabel}
             </label>
@@ -175,7 +176,7 @@ export default function UserPickerDialog({
           </div>
         )}
 
-        <div className="field" style={{ textAlign: 'start', marginBlockStart: withTitleField ? 'var(--sp-3)' : 0 }}>
+        <div className={`field ${styles.fieldStart}`} style={{ marginBlockStart: withTitleField ? 'var(--sp-3)' : 0 }}>
           <label className="form-label" htmlFor={`${headingId}-search`}>
             {c.newChatMembersLabel}
           </label>
@@ -193,7 +194,7 @@ export default function UserPickerDialog({
             <ul className="chat-user-list" aria-hidden="true">
               {[0, 1, 2].map((i) => (
                 <li key={i} className="chat-user-option">
-                  <span className="skeleton skeleton-line" style={{ width: '70%' }} />
+                  <span className={`skeleton skeleton-line ${styles.skeletonLine}`} />
                 </li>
               ))}
             </ul>
@@ -230,15 +231,7 @@ export default function UserPickerDialog({
         </div>
 
         {(minOneError || error) && (
-          <p
-            role="alert"
-            style={{
-              margin: 'var(--sp-3) 0 0',
-              color: 'var(--danger)',
-              fontSize: 'var(--fs-sm)',
-              textAlign: 'start',
-            }}
-          >
+          <p role="alert" className={styles.errorNote}>
             {minOneError ? c.newChatMinOne : error}
           </p>
         )}

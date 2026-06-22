@@ -1,0 +1,7 @@
+/* StepIndicator — component-scoped styles (was inline style={{}}).
+   The per-step `flex` value stays inline because it is computed per index. */
+
+.step {
+  display: flex;
+  align-items: flex-start;
+}

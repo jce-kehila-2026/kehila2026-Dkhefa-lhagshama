@@ -1,0 +1,7 @@
+/* FormElements — component-scoped styles (was inline style={{}}). */
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}

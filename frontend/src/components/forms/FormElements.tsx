@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { AlertCircle } from 'lucide-react'
 import type { CSSProperties, ReactNode, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import styles from './FormElements.module.css'
 
 interface FormGroupProps {
   children?: ReactNode
@@ -109,7 +110,7 @@ export function Textarea({ error, hint, ...props }: TextareaProps) {
 
 export function FormRow({ children }: { children?: ReactNode }) {
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+    <div className={styles.formRow}>
       {children}
     </div>
   )

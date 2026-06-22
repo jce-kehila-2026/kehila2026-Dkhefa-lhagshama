@@ -1,0 +1,34 @@
+/* CreateTaskDialog — component-scoped styles (was static inline style={{}}).
+   Logical properties keep RTL behaviour identical to the original literals. */
+
+.fieldStart {
+  text-align: start;
+}
+
+.fieldSpaced {
+  text-align: start;
+  margin-block-start: var(--sp-3);
+}
+
+.gridSpaced {
+  margin-block-start: var(--sp-3);
+}
+
+.fileInput {
+  display: none;
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.error {
+  margin-block-start: var(--sp-3);
+  margin-inline: 0;
+  margin-block-end: 0;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  text-align: start;
+}

@@ -1,0 +1,11 @@
+/* AvailabilityEditor — component-scoped styles (was inline style={{}}). */
+
+.returnSection {
+  margin-block-start: var(--sp-4);
+  border-block-start: 1px solid var(--hair);
+  padding-block-start: var(--sp-3);
+}
+
+.againHint {
+  margin-block-start: var(--sp-1);
+}

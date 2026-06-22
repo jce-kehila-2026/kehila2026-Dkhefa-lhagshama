@@ -1,0 +1,19 @@
+/* Toast — component-scoped styles (was inline style={{}}). */
+
+.icon {
+  flex-shrink: 0;
+}
+
+.message {
+  flex: 1;
+}
+
+.dismiss {
+  background: none;
+  border: none;
+  color: rgba(244, 238, 224, 0.7);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  flex-shrink: 0;
+}

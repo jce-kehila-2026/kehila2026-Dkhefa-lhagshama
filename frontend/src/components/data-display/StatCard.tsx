@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
+import styles from './StatCard.module.css'
 
 interface StatCardProps {
   num: number
@@ -55,15 +56,8 @@ export default function StatCard({ num, suffix = '', delay = 0 }: StatCardProps)
   }, [num, delay, reduce])
 
   return (
-    <div ref={ref} style={{ textAlign:'center' }}>
-      <span style={{
-        fontFamily:'Frank Ruhl Libre, Georgia, serif',
-        fontSize:'clamp(28px, 4vw, 42px)',
-        fontWeight:400,
-        color:'var(--ink)',
-        display:'block',
-        lineHeight:1,
-      }}>
+    <div ref={ref} className={styles.card}>
+      <span className={styles.value}>
         {displayed.toLocaleString()}{suffix}
       </span>
     </div>
