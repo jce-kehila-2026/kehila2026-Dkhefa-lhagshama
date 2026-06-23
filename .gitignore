@@ -51,6 +51,13 @@ CLAUDE.md
 # Superpowers brainstorm/visual companion artifacts (local only)
 docs/superpowers/
 .superpowers/
+
+# Session work-reports / feedback-round artifacts — context only, live in the
+# sem2-workspace repo, never in the team repo (e.g. PROFESSOR-FEEDBACK-ROUND-*,
+# FEEDBACK-ROUND-*, NPO-ROUND-*, and their E2E screenshot dirs).
+*-ROUND-*/
+*FEEDBACK-ROUND*/
+e2e-screenshots/
 # Auto-generated command message logs
 2026-*-command-message*.txt
 

@@ -19,8 +19,6 @@ Beyond the five core use cases (UC-01..UC-05), the platform now includes a volun
 - **Admin operations** — operational dashboard with KPIs and "needs attention" queues, admin-authored **task requests** shown to volunteers (with per-file "visible to volunteers" control), multi-claimant review (assign one volunteer, which clears the other claims), age insights, and guardrails preventing demotion/disabling of an admin or self.
 - **Public + UX polish** — refreshed home and business directory, status-grouped my-requests with request↔chat shortcuts, and an active/past chat split.
 
-See `PROJECT-CONTEXT.md` for the full breakdown and `docs/DATA-MODEL-DELTAS.md` for the data-model changes.
-
 ## Tech Stack
 
 - **Frontend:** React 18 + Next.js (Pages Router) + Tailwind CSS — `frontend/`
