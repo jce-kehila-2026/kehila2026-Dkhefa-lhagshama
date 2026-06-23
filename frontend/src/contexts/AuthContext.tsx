@@ -144,14 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
+    let stopped = false;
     const ref = doc(firebaseDb, 'users', user.uid);
     const unsub = onSnapshot(
       ref,
       async (snap) => {
+        if (stopped) return;
         if (snap.exists() && snap.data()?.disabled === true) {
+          stopped = true;
           try {
-            // Stop listening before signing out so we don't briefly re-fire.
-            unsub();
+            try { window.sessionStorage?.removeItem('pff:saveProfileOffer'); } catch { /* noop */ }
             await fbLogout();
           } finally {
             if (typeof window !== 'undefined') {
@@ -166,7 +168,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     );
 
-    return unsub;
+    return () => {
+      stopped = true;
+      unsub();
+    };
   }, [user]);
 
   // Debounced session-presence. A (loading=false, user=null) tick can be a real

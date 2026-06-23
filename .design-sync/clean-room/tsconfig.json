@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./src/*"],
+      "next/link": ["./.ds-build/shims/next-link.tsx"],
+      "next/router": ["./.ds-build/shims/next-router.tsx"]
+    }
+  }
+}

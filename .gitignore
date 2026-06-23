@@ -66,3 +66,15 @@ TEST-ACCOUNTS.md
 
 # Leftover `gh issue list` dumps (working artifacts, never a tracked source)
 open_issues.json
+
+# design-sync generated/staged output (the .design-sync/ source is tracked; its
+# build products are not).
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+frontend/.ds-build/
+frontend/tsconfig.sync.json
+.ds-pkg/
+.ds-nm/
