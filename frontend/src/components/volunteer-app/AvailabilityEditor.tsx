@@ -1,28 +1,16 @@
-/**
- * AvailabilityEditor — volunteer-hub panel for editing recurring weekly availability
- * windows plus an optional "available again on" return date when the volunteer is
- * unavailable. Used inside the volunteer calendar/hub; persists via
- * PATCH /api/volunteer/me and hands the fresh VolunteerMe back through `onSaved`
- * so the parent stays the source of truth. Local edits hydrate from `me` and
- * stay client-side until a save button is pressed. Bilingual via useLanguage().
- */
 import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { apiJson } from '@/lib/apiClient'
 import type { AvailabilityWindow, VolunteerMe } from '@/types'
-import styles from './AvailabilityEditor.module.css'
 
 interface AvailabilityEditorProps {
   me: VolunteerMe | null
   onSaved: (updated: VolunteerMe) => void
 }
 
-// 24h HH:MM matcher used to validate the native <input type="time"> values
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
-// a window is valid when day is 0..6 (sun..sat), both times are HH:MM, and end is
-// strictly after start (compared as minutes-since-midnight). mirrors the backend check.
 function validWindow(w: AvailabilityWindow): boolean {
   if (w.day < 0 || w.day > 6) return false
   if (!HHMM.test(w.start) || !HHMM.test(w.end)) return false
@@ -31,17 +19,18 @@ function validWindow(w: AvailabilityWindow): boolean {
   return eh * 60 + em > sh * 60 + sm
 }
 
-// props: `me` is the current volunteer profile (parent-owned); `onSaved` receives the
-// server's updated VolunteerMe after a successful PATCH so the parent can re-sync.
 export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorProps) {
   const { t } = useLanguage()
   const v = t.volunteerApp
-  const c = v.calendar // calendar i18n bucket (labels, day names, messages)
+  const c = v.calendar
+  const ws = v.dash.workStatus
 
   const [windows, setWindows] = useState<AvailabilityWindow[]>([])
   const [availableAgainOn, setAvailableAgainOn] = useState('')
-  const [busy, setBusy] = useState(false) // disables save buttons while a PATCH is in flight
+  const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [savingStatus, setSavingStatus] = useState(false)
+  const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   // Hydrate local editor state whenever the parent's `me` changes.
   useEffect(() => {
@@ -50,8 +39,25 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
     setAvailableAgainOn(me.availableAgainOn ?? '')
   }, [me])
 
-  // gates the return-date sub-section; only shown when the volunteer is unavailable
   const isUnavailable = me?.workStatus === 'unavailable'
+
+  const setStatus = async (next: 'free' | 'working' | 'unavailable') => {
+    if (next === me?.workStatus) return
+    setSavingStatus(true)
+    setStatusMsg(null)
+    try {
+      const updated = await apiJson<VolunteerMe>('/api/volunteer/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ workStatus: next }),
+      })
+      onSaved(updated)
+      setStatusMsg({ kind: 'ok', text: ws.saved })
+    } catch {
+      setStatusMsg({ kind: 'err', text: ws.error })
+    } finally {
+      setSavingStatus(false)
+    }
+  }
 
   const addWindow = () =>
     setWindows((ws) => [...ws, { day: 0, start: '09:00', end: '17:00' }])
@@ -59,13 +65,11 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
   const removeWindow = (idx: number) =>
     setWindows((ws) => ws.filter((_, i) => i !== idx))
 
-  // immutably merge a partial change into the window at `idx`
   const patchWindow = (idx: number, patch: Partial<AvailabilityWindow>) =>
     setWindows((ws) => ws.map((w, i) => (i === idx ? { ...w, ...patch } : w)))
 
-  const today = new Date().toISOString().slice(0, 10) // min for the return-date picker (no past dates)
+  const today = new Date().toISOString().slice(0, 10)
 
-  // validate every window, then PATCH the full windows array; bubbles result via onSaved/msg
   const saveWindows = async () => {
     const bad = windows.find((w) => !validWindow(w))
     if (bad) {
@@ -88,7 +92,6 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
     }
   }
 
-  // PATCH the unavailable status + return date; empty input clears the date (null)
   const saveReturnDate = async () => {
     setBusy(true)
     setMsg(null)
@@ -112,6 +115,34 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
   const days = c.days as readonly string[]
 
   return (
+    <>
+    <section className="card volapp-panel">
+      <h2 className="volapp-panel-title">{ws.title}</h2>
+      <p className="volapp-panel-sub">{ws.subtitle}</p>
+      <div className="volapp-status-group" role="group" aria-label={ws.title}>
+        {(['free', 'working', 'unavailable'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            className={`btn btn-sm ${me?.workStatus === s ? 'btn-primary' : 'btn-outline'}`}
+            disabled={savingStatus}
+            aria-pressed={me?.workStatus === s}
+            onClick={() => setStatus(s)}
+          >
+            {ws[s]}
+          </button>
+        ))}
+      </div>
+      {statusMsg && (
+        <p
+          className={`volapp-inline-msg${statusMsg.kind === 'err' ? ' is-error' : ''}`}
+          role={statusMsg.kind === 'err' ? 'alert' : 'status'}
+        >
+          {statusMsg.text}
+        </p>
+      )}
+    </section>
+
     <section className="card volapp-panel">
       <h2 className="volapp-panel-title">{c.availabilityTitle}</h2>
       <p className="volapp-panel-sub">{c.availabilitySub}</p>
@@ -186,7 +217,7 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
 
       {/* ── Unavailable → return date ──────────────────────────── */}
       {isUnavailable && (
-        <div className={styles.returnSection}>
+        <div style={{ marginBlockStart: 'var(--sp-4)', borderBlockStart: '1px solid var(--hair)', paddingBlockStart: 'var(--sp-3)' }}>
           <h3 className="volapp-subhead">{c.unavailableTitle}</h3>
           <label className="form-label" htmlFor="avail-again">{c.availableAgainLabel}</label>
           <input
@@ -197,7 +228,7 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
             value={availableAgainOn}
             onChange={(e) => setAvailableAgainOn(e.target.value)}
           />
-          <p className={`volapp-muted ${styles.againHint}`}>{c.availableAgainHint}</p>
+          <p className="volapp-muted" style={{ marginBlockStart: 'var(--sp-1)' }}>{c.availableAgainHint}</p>
           <div className="volapp-avail-actions">
             <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={saveReturnDate}>
               {c.save}
@@ -215,5 +246,6 @@ export default function AvailabilityEditor({ me, onSaved }: AvailabilityEditorPr
         </p>
       )}
     </section>
+    </>
   )
 }

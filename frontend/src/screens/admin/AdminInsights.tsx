@@ -14,7 +14,6 @@
  * an older backend renders gracefully rather than crashing.
  */
 import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
 import {
   ResponsiveContainer,
   AreaChart,
@@ -27,7 +26,6 @@ import {
   Tooltip,
   Cell,
 } from 'recharts'
-import type { TooltipContentProps } from 'recharts'
 import { useReducedMotion } from 'motion/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
@@ -37,55 +35,13 @@ import AdminLayout from '@/components/admin/AdminLayout'
 import InsightsRangeSelect, { type InsightsRange } from '@/components/InsightsRangeSelect'
 import { ErrorState, EmptyState, adminErrorMessage } from '@/components/admin/AdminUI'
 import Reveal from '@/components/motion/Reveal'
+import { COLOR_INK, COLOR_INK_2, COLOR_EMBER, COLOR_SKY, COLOR_HAIR, STATUS_COLORS, makeTooltip } from '@/components/charts/insightsChrome'
 
-// Editorial palette pulled from the design tokens — recharts needs literal
-// color strings (it cannot read CSS custom properties through SVG fills), so
-// these mirror tokens.css. No colors outside the brand palette are introduced.
-const COLOR_INK = '#0F1E2D' // --ink
-const COLOR_INK_2 = '#2C3D52' // --ink-2
-const COLOR_EMBER = '#B9694E' // --ember
-const COLOR_EMBER_700 = '#9C5440' // --ember-700
-const COLOR_SKY = '#BFD3E6' // --sky
-const COLOR_SKY_2 = '#DCE7F0' // --sky-2
-const COLOR_HAIR = 'rgba(15,30,45,0.10)' // --hair
 const COLOR_CURSOR = 'rgba(15,30,45,0.04)' // hairline-tint hover cursor
 // Light brand fills (sky/sky-2) sit below the 3:1 non-text contrast floor on
 // white (WCAG 1.4.11), so bars that use them carry a thin ink-hairline outline
 // to make their boundary perceivable. Negligible on the darker ink/ember bars.
 const COLOR_BAR_STROKE = 'rgba(15,30,45,0.32)'
-
-// One color per status so the by-status chart reads consistently. Every value
-// is a brand token from the ember/ink/sky ramps (no rainbow defaults), and each
-// stays clearly visible as a filled bar on the white card surface. Falls back
-// to ink-2 for any status not in the map.
-const STATUS_COLORS: Record<string, string> = {
-  pending: COLOR_SKY,
-  in_progress: COLOR_INK_2,
-  awaiting_review: COLOR_EMBER,
-  closed: COLOR_INK,
-  rejected: COLOR_EMBER_700,
-  referred: COLOR_SKY_2,
-}
-
-// A localized recharts tooltip styled to match the editorial surface. recharts
-// hands its `content` render prop the full TooltipContentProps bag; we read only
-// active/label/payload and close over the unit label per chart.
-function makeTooltip(valueLabel: string) {
-  const TooltipContent = (props: TooltipContentProps) => {
-    const { active, payload, label } = props
-    if (!active || !payload || payload.length === 0) return null
-    const value = payload[0]?.value
-    return (
-      <div className="insights-tooltip" role="presentation">
-        {label != null && <span className="insights-tooltip-label">{label as ReactNode}</span>}
-        <span className="insights-tooltip-value">
-          {value} <span className="insights-tooltip-unit">{valueLabel}</span>
-        </span>
-      </div>
-    )
-  }
-  return TooltipContent
-}
 
 export default function AdminInsights() {
   const { t, lang, isRTL } = useLanguage()
@@ -247,7 +203,7 @@ export default function AdminInsights() {
       return (
         <div className="admin-insights" aria-busy="true">
           <div className="insights-kpi-strip">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4, 5].map((i) => (
               <div className="insights-kpi" key={i}>
                 <span className="skeleton skeleton-line insights-skeleton-title" aria-hidden="true" />
                 <span className="skeleton skeleton-line insights-skeleton-title" aria-hidden="true" />

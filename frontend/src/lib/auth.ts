@@ -41,9 +41,8 @@ export async function registerWithEmail(email: string, password: string): Promis
   });
 
   if (!res.ok) {
-    // The Firebase user was created, but role assignment failed. Surface the
-    // problem so the caller can decide whether to delete the account.
     const detail = await res.text();
+    await cred.user.delete().catch(() => {});
     throw new Error(`role_assignment_failed: ${detail}`);
   }
 

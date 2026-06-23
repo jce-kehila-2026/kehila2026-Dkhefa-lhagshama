@@ -132,7 +132,7 @@ export default function VolunteerAssignedPage() {
         method: 'PATCH',
         body: JSON.stringify({
           urgency: editUrgency,
-          deadline: editDeadline || undefined,
+          deadline: editDeadline || null,
         }),
       })
       if (!res.ok) throw new Error('patch failed')

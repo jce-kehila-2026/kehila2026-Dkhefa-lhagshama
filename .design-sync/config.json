@@ -1,0 +1,18 @@
+{
+  "projectId": "088739f7-c643-48ed-8c49-8800fd77f2d5",
+  "shape": "package",
+  "pkg": "push-for-fulfillment-frontend",
+  "globalName": "PfF",
+  "srcDir": "src/components",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".ds-build/app.css",
+  "tokensGlob": "src/styles/tokens.css",
+  "readmeHeader": ".design-sync/conventions.md",
+  "provider": { "component": "LanguageProvider", "inner": { "component": "AppProvider" } },
+  "extraEntries": [
+    "./.ds-build/shims/process-shim.ts",
+    "./src/contexts/LanguageContext.tsx",
+    "./src/contexts/AppContext.tsx",
+    "./.ds-build/exports-barrel.ts"
+  ]
+}

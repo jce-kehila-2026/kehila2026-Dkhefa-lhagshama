@@ -108,9 +108,9 @@ export default function AssetImage({
   // fade-in stuck; re-sync `loaded` from the img's complete/naturalWidth state.
   // re-runs when the slot's src changes.
   useEffect(() => {
-    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
-      setLoaded(true)
-    }
+    setFailed(false)
+    const cached = !!imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0
+    setLoaded(cached)
   }, [asset?.src])
 
   if (!asset) {

@@ -118,7 +118,7 @@ export default function VolunteerPoolPage() {
   // items shown in the grid: the whole pool, or only the active category's slice.
   const items = useMemo(() => {
     const all = data?.items ?? []
-    return activeCat ? all.filter((i) => i.category === activeCat) : all
+    return activeCat ? all.filter((i) => (i.category ?? 'uncategorized') === activeCat) : all
   }, [data, activeCat])
 
   // POST a claim for one pool item. 409 = lost the race (already claimed),

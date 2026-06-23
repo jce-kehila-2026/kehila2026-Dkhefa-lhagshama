@@ -1,18 +1,4 @@
-/**
- * VolunteerInsightsPage — the volunteer-hub analytics dashboard (/volunteer-hub/insights).
- *
- * Fetches a single volunteer's request metrics from GET /api/volunteer/insights
- * (server scopes to the authenticated volunteer) and renders four recharts panels:
- * requests over time (area), current load + avg resolution (stat tiles), and
- * breakdowns by category and by status (bars). A time-range selector re-queries.
- *
- * Bilingual (HE/EN, RTL-aware): status ids resolve via t.lifecycle.statusLabels and
- * category ids via the admin-managed taxonomy (useCategories.labelFor) before reaching
- * the charts. Shares the .insights-* CSS + STATUS_COLORS with AdminInsights so the two
- * dashboards stay visually identical within the locked brand palette.
- */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
 import {
   ResponsiveContainer,
   AreaChart,
@@ -25,58 +11,15 @@ import {
   Tooltip,
   Cell,
 } from 'recharts'
-import type { TooltipContentProps } from 'recharts'
 import { useReducedMotion } from 'motion/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson } from '@/lib/apiClient'
 import type { VolunteerInsights } from '@/types'
 import VolunteerLayout from '@/components/volunteer-app/VolunteerLayout'
-import InsightsRangeSelect, { type InsightsRange } from '@/components/InsightsRangeSelect'
 import Reveal from '@/components/motion/Reveal'
 import { ErrorState, EmptyState } from '@/components/admin/AdminUI'
-
-// Editorial palette pulled from tokens.css — recharts needs literal color
-// strings (it cannot read CSS custom properties through SVG fills).
-const COLOR_INK = '#0F1E2D' // --ink
-const COLOR_INK_2 = '#2C3D52' // --ink-2
-const COLOR_EMBER = '#B9694E' // --ember
-const COLOR_EMBER_700 = '#9C5440' // --ember-700
-const COLOR_SKY = '#BFD3E6' // --sky
-const COLOR_SKY_2 = '#DCE7F0' // --sky-2
-const COLOR_HAIR = 'rgba(15,30,45,0.10)' // --hair
-
-// One color per status — kept identical to AdminInsights so both dashboards
-// match and stay within the locked brand palette (no rainbow defaults). Falls
-// back to ink-2 for any status not in the map.
-const STATUS_COLORS: Record<string, string> = {
-  pending: COLOR_SKY,
-  in_progress: COLOR_INK_2,
-  awaiting_review: COLOR_EMBER,
-  closed: COLOR_INK,
-  rejected: COLOR_EMBER_700,
-  referred: COLOR_SKY_2,
-}
-
-// Builds a recharts Tooltip content component with a fixed unit suffix
-// (e.g. "requests"). Returns null when the tooltip is inactive/empty so no
-// empty box flashes on hover-out.
-function makeTooltip(valueLabel: string) {
-  const TooltipContent = (props: TooltipContentProps) => {
-    const { active, payload, label } = props
-    if (!active || !payload || payload.length === 0) return null
-    const value = payload[0]?.value
-    return (
-      <div className="insights-tooltip" role="presentation">
-        {label != null && <span className="insights-tooltip-label">{label as ReactNode}</span>}
-        <span className="insights-tooltip-value">
-          {value} <span className="insights-tooltip-unit">{valueLabel}</span>
-        </span>
-      </div>
-    )
-  }
-  return TooltipContent
-}
+import { COLOR_INK_2, COLOR_EMBER, COLOR_SKY, COLOR_HAIR, STATUS_COLORS, makeTooltip } from '@/components/charts/insightsChrome'
 
 export default function VolunteerInsightsPage() {
   const { t, lang, isRTL } = useLanguage()
@@ -99,30 +42,22 @@ export default function VolunteerInsightsPage() {
 
   // Gate charts behind a mounted flag to avoid SSR hydration warnings.
   const [mounted, setMounted] = useState(false)
-  const [range, setRange] = useState<InsightsRange>('all')
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Fetch insights for the active range. 'custom' sends explicit from/to (omitted
-  // entirely when both are blank so the server returns the unbounded set);
-  // every other range passes a named ?range= token the backend understands.
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const params =
-        range === 'custom' ? (from || to ? `?from=${from}&to=${to}` : '') : `?range=${range}`
-      const res = await apiJson<VolunteerInsights>('/api/volunteer/insights' + params)
+      const res = await apiJson<VolunteerInsights>('/api/volunteer/insights')
       setData(res)
     } catch {
       setError(ins.loadError)
     } finally {
       setLoading(false)
     }
-  }, [ins.loadError, range, from, to])
+  }, [ins.loadError])
 
   useEffect(() => {
     load()
@@ -258,8 +193,8 @@ export default function VolunteerInsightsPage() {
           <h2 className="insights-card-title">{ins.avgResolution}</h2>
           {data!.avgResolutionDays != null ? (
             <p className="insights-stat">
-              <span className="insights-stat-value">{data!.avgResolutionDays}</span>
-              <span className="insights-stat-unit">{ins.days(data!.avgResolutionDays)}</span>
+              <span className="insights-stat-value">{Math.round(data!.avgResolutionDays)}</span>
+              <span className="insights-stat-unit">{ins.days(Math.round(data!.avgResolutionDays))}</span>
             </p>
           ) : (
             <p className="insights-nodata">{ins.noData}</p>
@@ -329,16 +264,6 @@ export default function VolunteerInsightsPage() {
 
   return (
     <VolunteerLayout title={ins.title} subtitle={ins.subtitle}>
-      <InsightsRangeSelect
-        value={range}
-        onChange={setRange}
-        from={from}
-        to={to}
-        onDates={(f, t) => {
-          setFrom(f)
-          setTo(t)
-        }}
-      />
       {renderBody()}
     </VolunteerLayout>
   )

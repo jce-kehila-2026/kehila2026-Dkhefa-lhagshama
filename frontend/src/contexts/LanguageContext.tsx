@@ -46,11 +46,9 @@ export type Translations = (typeof import('@/data/translations'))['default'][Lan
 export interface LanguageContextValue {
   lang: Lang
   setLang: (lang: Lang) => void
-  toggleLang: () => void
   languages: readonly LanguageOption[]
   t: Translations
   isRTL: boolean
-  hydrated: boolean
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null)
@@ -74,7 +72,6 @@ function isLang(value: unknown): value is Lang {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   // SSR-safe: start with the default and adopt the saved preference after mount.
   const [lang, setLangState] = useState<Lang>(DEFAULT_LANG)
-  const [hydrated, setHydrated] = useState(false)
 
   const setLang = useCallback((next: Lang) => setLangState(next), [])
 
@@ -84,7 +81,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return
     const saved = window.localStorage.getItem('pff-lang')
     if (isLang(saved) && saved !== lang) setLangState(saved)
-    setHydrated(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -114,18 +110,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       : 'Push for Fulfillment | דחיפה להגשמה'
   }, [lang, active.dir])
 
-  // Thin wrapper: still consumed by the navbar flip control until Note 5's
-  // menu refactor lands. Cycles through the language list.
-  const toggleLang = useCallback(() => {
-    setLangState((prev) => {
-      const idx = LANGUAGES.findIndex((l) => l.code === prev)
-      return LANGUAGES[(idx + 1) % LANGUAGES.length].code
-    })
-  }, [])
-
   return (
     <LanguageContext.Provider
-      value={{ lang, setLang, toggleLang, languages: LANGUAGES, t, isRTL, hydrated }}
+      value={{ lang, setLang, languages: LANGUAGES, t, isRTL }}
     >
       {children}
     </LanguageContext.Provider>
