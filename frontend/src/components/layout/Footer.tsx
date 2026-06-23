@@ -1,46 +1,54 @@
-/*
- * Footer.tsx — global site footer rendered on every page (via the shared layout).
- * Presentational only: no data fetching, no state. All copy comes from the shared
- * i18n table (LanguageContext `t`), so the footer flips HE/EN with the rest of the app;
- * the brand name and a couple of literals are inlined per-language where there's no t key.
- * Columns: brand+socials, quick links, services (driven by t.services.items), contact, legal/reg.
- */
-import type { ComponentProps, ReactNode } from 'react'
+import type { CSSProperties, ComponentProps, ReactNode } from 'react'
 import NextLink from 'next/link'
 import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
-import styles from './Footer.module.css'
 
-// shim: prototype used react-router's <Link to="...">. forward `to` → next/link `href`
-// so the ported JSX below stays unchanged. local-only, not exported.
+// Shim: prototype used react-router's <Link to="...">.
+// We forward `to` → `href` and render next/link so the rest of the JSX is unchanged.
 type LinkProps = Omit<ComponentProps<typeof NextLink>, 'href'> & { to: string; children?: ReactNode }
 const Link = ({ to, children, ...rest }: LinkProps) => <NextLink href={to} {...rest}>{children}</NextLink>
 
-// site footer. `f` is the footer i18n slice; other slices (nav, services) read directly off `t`.
 export default function Footer() {
   const { t } = useLanguage()
   const f = t.footer
 
+  const colHeadStyle: CSSProperties = {
+    color: 'var(--cream)',
+    fontSize: '11px',
+    fontWeight: 600,
+    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    marginBottom: '18px',
+  }
+  const linkStyle: CSSProperties = { color: 'rgba(244,238,224,0.78)', fontSize: '13.5px', textDecoration: 'none', transition: 'color .2s' }
+
   return (
-    <footer className={styles.footer}>
+    <footer style={{ background:'var(--ink)', color:'rgba(244,238,224,0.78)', paddingTop:'56px' }}>
       <div className="page-container">
-        <div className={styles.grid}>
+        <div style={{
+          display:'grid',
+          gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))',
+          gap:'40px',
+          paddingBottom:'48px',
+          borderBottom:'1px solid rgba(244,238,224,0.12)',
+        }}>
           {/* BRAND */}
           <div>
-            <div className={styles.brandRow}>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
               <img
                 src="/logo.jpg"
                 alt={t.lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
                 width={42}
                 height={42}
-                className={styles.logo}
+                style={{ borderRadius:'50%', objectFit:'cover', background:'var(--cream)' }}
               />
-              <span className={styles.brandName}>
+              <span style={{ color:'var(--cream)', fontFamily:'Frank Ruhl Libre, serif', fontWeight:700, fontSize:'18px' }}>
                 {t.lang === 'he' ? 'דחיפה להגשמה' : 'Push for Fulfillment'}
               </span>
             </div>
-            <p className={styles.tagline}>{f.tagline}</p>
-            <div className={styles.social}>
+            <p style={{ fontSize:'13.5px', lineHeight:1.7, marginBottom:'20px' }}>{f.tagline}</p>
+            <div style={{ display:'flex', gap:'10px' }}>
               {[Facebook, Instagram, Twitter].map((Icon, i) => (
                 <a key={i} href="#" className="social-icon">
                   <Icon size={15} />
@@ -51,47 +59,53 @@ export default function Footer() {
 
           {/* QUICK LINKS */}
           <div>
-            <h4 className={styles.colHead}>{f.quickLinks}</h4>
+            <h4 style={colHeadStyle}>{f.quickLinks}</h4>
             {[
               { to:'/', label: t.nav.home },
               { to:'/requests', label: t.nav.requests },
               { to:'/directory', label: t.nav.directory },
               { to:'/volunteer', label: t.nav.volunteers },
-              { to:'/track', label: t.nav.track },
             ].map(l => (
-              <div key={l.to} className={styles.linkRow}>
-                <Link to={l.to} className={styles.link}>{l.label}</Link>
+              <div key={l.to} style={{ marginBottom:'9px' }}>
+                <Link to={l.to} style={linkStyle}
+                  onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
+                  onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.78)'}
+                >{l.label}</Link>
               </div>
             ))}
           </div>
 
           {/* SERVICES */}
           <div>
-            <h4 className={styles.colHead}>{f.services}</h4>
-            {/* one link per service in the i18n table; all point at /requests (no per-service deep link) */}
+            <h4 style={colHeadStyle}>{f.services}</h4>
             {Object.values(t.services.items).map((s, i) => (
-              <div key={i} className={styles.linkRow}>
-                <Link to="/requests" className={styles.link}>{s.title}</Link>
+              <div key={i} style={{ marginBottom:'9px' }}>
+                <Link to="/requests" style={linkStyle}
+                  onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
+                  onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.78)'}
+                >{s.title}</Link>
               </div>
             ))}
           </div>
 
           {/* CONTACT */}
           <div>
-            <h4 className={styles.colHead}>{f.contact}</h4>
+            <h4 style={colHeadStyle}>{f.contact}</h4>
             {[
               { Icon: Phone, text: f.phone, href: 'tel:+972546720113' },
               { Icon: Mail,  text: 'info@push4ful.org.il', href: 'mailto:info@push4ful.org.il' },
               { Icon: MapPin,text: f.address },
               { Icon: Clock, text: t.lang === 'he' ? 'א׳–ה׳ 9:00–18:00' : 'Sun–Thu 9:00–18:00' },
             ].map(({ Icon, text, href }, i) => (
-              <div key={i} className={styles.contactRow}>
-                <Icon size={14} className={styles.contactIcon} />
-                {/* rows with an href (tel:/mailto:) render as links; address/hours are plain text */}
+              <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'8px', marginBottom:'10px' }}>
+                <Icon size={14} style={{ color:'var(--ember)', marginTop:'3px', flexShrink:0 }} />
                 {href ? (
-                  <a href={href} className={styles.link}>{text}</a>
+                  <a href={href} style={{ ...linkStyle, fontSize:'13.5px' }}
+                    onMouseEnter={e => e.currentTarget.style.color='var(--ember)'}
+                    onMouseLeave={e => e.currentTarget.style.color='rgba(244,238,224,0.78)'}
+                  >{text}</a>
                 ) : (
-                  <span className={styles.contactText}>{text}</span>
+                  <span style={{ fontSize:'13.5px' }}>{text}</span>
                 )}
               </div>
             ))}
@@ -99,16 +113,15 @@ export default function Footer() {
         </div>
 
         {/* BOTTOM BAR */}
-        <div className={styles.bottomBar}>
+        <div style={{
+          padding:'20px 0',
+          display:'flex', justifyContent:'center', alignItems:'center',
+          flexWrap:'wrap', gap:'12px',
+          fontSize:'12.5px',
+        }}>
           <div>{f.rights}</div>
-          <div className={styles.legal}>
-            <span className={styles.sep}>|</span>
-            <Link to="/privacy" className={styles.legalLink}>{f.privacy}</Link>
-            <Link to="/terms" className={styles.legalLink}>{f.terms}</Link>
-            <Link to="/accessibility" className={styles.legalLink}>{f.accessibility}</Link>
-          </div>
         </div>
-        <div className={styles.reg}>
+        <div style={{ textAlign:'center', padding:'12px 0 20px', fontSize:'11.5px', color:'rgba(244,238,224,0.35)' }}>
           {f.reg}
         </div>
       </div>

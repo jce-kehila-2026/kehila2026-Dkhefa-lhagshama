@@ -1,19 +1,10 @@
-/**
- * CreateTaskDialog — admin modal for creating a "task" request on behalf of the
- * NGO (req 20 + 21). Rendered by the admin requests views; a two-step submit
- * first creates the request to get its id, then streams each picked file to the
- * uploads endpoint carrying a per-file volunteer-visibility flag. Category
- * options reuse the admin-managed taxonomy (useCategories) so there is no second
- * list to drift from the beneficiary form. Controlled component: parent owns
- * `open` and gets the new id back via `onCreated` to refresh its list.
- */
 import { useRef, useState } from 'react'
 import { ClipboardList, Paperclip, X } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useApp } from '@/contexts/AppContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson } from '@/lib/apiClient'
 import { getIdToken } from '@/lib/auth'
-import styles from './CreateTaskDialog.module.css'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001'
 
@@ -40,15 +31,16 @@ interface CreateTaskDialogProps {
 const URGENCIES = ['low', 'medium', 'high'] as const
 
 /**
- * Submit flow:
- *   1. POST /api/admin/requests/task -> { id }
+ * Admin "create task request" dialog (req 20 + 21). Flow:
+ *   1. POST /api/admin/requests/task → { id }
  *   2. for each picked file: POST raw bytes to
  *      /api/uploads/requests/{id}?filename=...&volunteerVisible=<checkbox>
- * Key state: form fields, `files` (PickedFile[] with visibility), `busy`
- * (blocks close + double-submit), `error` (validation/upload/create message).
+ * Category options come from the admin-managed taxonomy (useCategories), the
+ * same list the beneficiary form renders — no parallel list to drift.
  */
 export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTaskDialogProps) {
   const { t } = useLanguage()
+  const { toast } = useApp()
   const a = t.admin
   const f = a.taskForm
   const { categories, labelFor } = useCategories()
@@ -63,7 +55,6 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // unmount-equivalent when closed; hooks above stay unconditional so order is stable.
   if (!open) return null
 
   const reset = () => {
@@ -77,7 +68,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
   }
 
   const close = () => {
-    if (busy) return // don't let overlay/cancel close mid-submit
+    if (busy) return
     reset()
     onClose()
   }
@@ -142,16 +133,14 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
           deadline: deadline || undefined,
         }),
       })
-      // 2. Attach each file with its per-file visibility flag. Sequential so a
-      //    failure can be flagged per-file; the request itself already exists.
+      // 2. Attach each file with its per-file visibility flag.
       let uploadFailed = false
       for (const picked of files) {
         const ok = await uploadOne(created.id, picked)
         if (!ok) uploadFailed = true
       }
-      // partial-failure: surface upload error but still treat the create as done
-      // (request exists with id), so the parent list refreshes regardless.
-      if (uploadFailed) setError(f.uploadError)
+      if (uploadFailed) toast(f.uploadError, 'error')
+      else toast(f.successToast, 'success')
       reset()
       onCreated(created.id)
     } catch {
@@ -181,7 +170,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
           {f.dialogTitle}
         </h2>
 
-        <div className={`field ${styles.fieldStart}`}>
+        <div className="field" style={{ textAlign: 'start' }}>
           <label className="form-label" htmlFor="task-title">
             {f.titleLabel}
           </label>
@@ -195,7 +184,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
           />
         </div>
 
-        <div className={`field ${styles.fieldSpaced}`}>
+        <div className="field" style={{ textAlign: 'start', marginBlockStart: 'var(--sp-3)' }}>
           <label className="form-label" htmlFor="task-desc">
             {f.descLabel}
           </label>
@@ -210,8 +199,8 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
           />
         </div>
 
-        <div className={`admin-task-grid ${styles.gridSpaced}`}>
-          <div className={`field ${styles.fieldStart}`}>
+        <div className="admin-task-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
+          <div className="field" style={{ textAlign: 'start' }}>
             <label className="form-label" htmlFor="task-cat">
               {f.categoryLabel}
             </label>
@@ -231,7 +220,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
             </select>
           </div>
 
-          <div className={`field ${styles.fieldStart}`}>
+          <div className="field" style={{ textAlign: 'start' }}>
             <label className="form-label" htmlFor="task-urgency">
               {f.urgencyLabel}
             </label>
@@ -250,7 +239,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
             </select>
           </div>
 
-          <div className={`field ${styles.fieldStart}`}>
+          <div className="field" style={{ textAlign: 'start' }}>
             <label className="form-label" htmlFor="task-deadline">
               {f.deadlineLabel}
             </label>
@@ -266,21 +255,22 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
         </div>
 
         {/* ── Optional attachments — each with its own visibility toggle ─── */}
-        <div className={`field ${styles.fieldSpaced}`}>
+        <div className="field" style={{ textAlign: 'start', marginBlockStart: 'var(--sp-3)' }}>
           <label className="form-label">{f.filesLabel}</label>
           <input
             ref={fileInputRef}
             type="file"
             multiple
             onChange={(e) => addFiles(e.target.files)}
-            className={styles.fileInput}
+            style={{ display: 'none' }}
             disabled={busy}
           />
           <button
             type="button"
-            className={`btn btn-outline btn-sm ${styles.addBtn}`}
+            className="btn btn-outline btn-sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <Paperclip size={15} aria-hidden="true" />
             {f.addFiles}
@@ -318,7 +308,10 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
         </div>
 
         {error && (
-          <p role="alert" className={styles.error}>
+          <p
+            role="alert"
+            style={{ margin: 'var(--sp-3) 0 0', color: 'var(--danger)', fontSize: 'var(--fs-sm)', textAlign: 'start' }}
+          >
             {error}
           </p>
         )}

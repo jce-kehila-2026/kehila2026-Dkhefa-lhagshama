@@ -1,17 +1,3 @@
-/*
- * AdminApprovalsPage — UC-05 approval queue inside the admin shell.
- *
- * Lists pending businesses + answers (orgs live in `answers` now, so there is no
- * separate organizations entity) and lets an admin approve / reject / request
- * changes on each. Reads from GET /api/admin/pending, writes via the matching
- * POST /api/admin/{approve|reject|request-changes} endpoints. Bilingual: every
- * translatable field arrives as a { he, en } object and is rendered through `L`.
- *
- * Invariants: a successful action removes the item from the local list (no
- * refetch); every destructive action funnels through a ConfirmDialog before it
- * fires; the active entity filter is purely client-side over the loaded items.
- * Collaborators: AdminLayout (shell), ConfirmDialog, AdminUI states, apiClient.
- */
 import { useEffect, useState, useCallback } from 'react'
 import type { CSSProperties } from 'react'
 import { CheckCircle, XCircle, MessageSquare, Store, Lightbulb, Layers, ClipboardCheck } from 'lucide-react'
@@ -23,7 +9,7 @@ import ConfirmDialog from '@/components/feedback/ConfirmDialog'
 import Reveal from '../../components/motion/Reveal'
 import { EmptyState, ErrorState, TableSkeleton, adminErrorMessage } from '@/components/admin/AdminUI'
 import type { Lang } from '@/types'
-import styles from './AdminApprovalsPage.module.css'
+import { pickLang as pickShared } from '@/lib/bilingual'
 
 // Orgs live in the answers collection now (split by orgType); nothing writes to
 // a separate organizations collection, so it is not an approval entity.
@@ -40,17 +26,6 @@ interface ApprovalItem {
   entityType: EntityType | string
   name?: LocalizedField
   title?: LocalizedField
-  // Full detail fields the /api/admin/pending endpoint already returns (it spreads
-  // the whole doc); rendered in the card so the admin sees the request, not just a name.
-  ownerName?: string
-  phone?: string
-  category?: string
-  orgType?: string
-  website?: string
-  sourceUrl?: string
-  city?: LocalizedField
-  description?: LocalizedField
-  body?: LocalizedField
 }
 
 type ApprovalAction = 'approve' | 'reject' | 'request_changes'
@@ -63,13 +38,7 @@ interface PendingAction {
 // Businesses/answers store translatable fields as { he, en } objects. Render
 // the active-language value (falling back to he) so the approval queue never
 // tries to render a raw object as a React child.
-const L = (v: LocalizedField, lang: Lang): string => {
-  if (v && typeof v === 'object' && !Array.isArray(v)) {
-    const obj = v as { he?: string; en?: string; [key: string]: string | undefined }
-    return obj[lang] ?? obj.he ?? ''
-  }
-  return (v as string) ?? ''
-}
+const L = (v: LocalizedField, lang: Lang): string => pickShared(v as Parameters<typeof pickShared>[0], lang)
 
 // Distinct badge tone per entity type so the queue is scannable at a glance.
 const ENTITY_TONE: Record<string, string> = {
@@ -91,13 +60,13 @@ const ENTITY_VISUAL: Record<string, EntityVisual> = {
   all:        { Icon: Layers,    fg: 'var(--ember)',   bg: 'var(--ember-soft)' },
 }
 
+/**
+ * Approval queue rendered inside the admin shell. Reuses the existing
+ * /api/admin/pending + approve|reject|request-changes endpoints (UC-05).
+ */
 export default function AdminApprovalsPage() {
   const { t, lang } = useLanguage()
   const a = t.admin
-  const f = a.approvals.fields as {
-    owner: string; phone: string; category: string; city: string; type: string; website: string
-    orgTypeLabels: Record<string, string>
-  }
   const { toast } = useApp()
 
   const [items, setItems] = useState<ApprovalItem[]>([])
@@ -125,12 +94,9 @@ export default function AdminApprovalsPage() {
     load()
   }, [load])
 
-  // Fire the confirmed action, then optimistically drop the item from the list
-  // (no refetch) and surface a toast. Failure leaves the item in place.
   const act = async (item: ApprovalItem, action: ApprovalAction) => {
     setBusyId(item.id)
     try {
-      // action enum uses underscore (request_changes) but the route is hyphenated.
       const endpoint = action.replace('_', '-')
       const res = await apiFetch(`/api/admin/${endpoint}`, {
         method: 'POST',
@@ -195,9 +161,10 @@ export default function AdminApprovalsPage() {
 
       {/* FILTERS: entity tabs that scope the queue by type, with live counts. */}
       <div
-        className={`admin-filters ${styles.filters}`}
+        className="admin-filters"
         role="group"
         aria-label={a.approvals.title}
+        style={{ marginBlockEnd: 'var(--sp-5)' }}
       >
         {ENTITY_FILTERS.map((f) => (
           <button
@@ -267,40 +234,8 @@ export default function AdminApprovalsPage() {
                     </div>
                   </div>
 
-                  {/* Full details so the admin reviews the whole submission, not just a name. */}
-                  {(() => {
-                    const rows: Array<[string, string]> = []
-                    if (item.ownerName) rows.push([f.owner, item.ownerName])
-                    if (item.phone) rows.push([f.phone, item.phone])
-                    if (item.category) rows.push([f.category, item.category])
-                    const cityStr = L(item.city, lang)
-                    if (cityStr) rows.push([f.city, cityStr])
-                    if (item.orgType) rows.push([f.type, f.orgTypeLabels[item.orgType] || item.orgType])
-                    const url = item.website || item.sourceUrl
-                    const desc = L(item.description, lang) || L(item.body, lang)
-                    if (!rows.length && !url && !desc) return null
-                    return (
-                      <div className="admin-approval-details">
-                        {rows.length > 0 && (
-                          <dl className="admin-approval-fields">
-                            {rows.map(([k, v]) => (
-                              <div key={k}>
-                                <dt>{k}</dt>
-                                <dd>{v}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                        )}
-                        {url && (
-                          <a className="admin-approval-link" href={url} target="_blank" rel="noreferrer noopener">{url}</a>
-                        )}
-                        {desc && <p className="admin-approval-desc">{desc}</p>}
-                      </div>
-                    )
-                  })()}
-
                   {/* Actions: approve leads (ember), then request-changes, then reject */}
-                  <div className={`admin-row-actions ${styles.rowActions}`}>
+                  <div className="admin-row-actions" style={{ marginInlineStart: 'auto' }}>
                     <button
                       type="button"
                       className="btn btn-primary btn-sm admin-approval-action"
@@ -348,7 +283,6 @@ export default function AdminApprovalsPage() {
         variant={pendingCopy?.variant}
         busy={!!pending && busyId === pending.item.id}
         onConfirm={() => pending && act(pending.item, pending.action)}
-        // ignore cancel while an action is in flight so the dialog can't be dismissed mid-request
         onCancel={() => { if (!busyId) setPending(null) }}
       />
     </AdminLayout>

@@ -1,15 +1,3 @@
-// AdminDirectoryPage — /admin/directory CRUD console for the two community
-// catalogs: `answers` (partner orgs: עמותות + שותפים) and `businesses`. Unlike
-// the approvals queue it lists rows of EVERY status, and lets admins create /
-// edit / delete on top of the /api/admin/directory/:catalog REST routes.
-// Used by the admin staff only (AdminLayout gates access). Key collaborators:
-// useCategories (live answer-category taxonomy, shared with /directory + the
-// request form), t.admin.directoryMgmt (bilingual strings), apiClient.apiJson.
-// Invariants worth knowing: answer fields are bilingual ({he,en}); business
-// fields are flat strings stored identically in both langs by the backend;
-// status is only editable when editing an existing row (create defaults to
-// 'approved'); client-side validators here mirror the backend zod rules so
-// admins see precise inline errors instead of a generic 400 toast.
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Building2, Store, Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -27,7 +15,7 @@ import {
   adminErrorMessage,
 } from '@/components/admin/AdminUI'
 import type { Lang, OrgType } from '@/types'
-import styles from './AdminDirectoryPage.module.css'
+import { pickLang as pickShared, pickLangArray as pickArrShared } from '@/lib/bilingual'
 
 // The two directory catalogs managed here. 'answers' = partner organizations
 // (עמותות + שותפים), 'businesses' = community businesses. Matches the
@@ -41,7 +29,6 @@ const STATUSES = ['pending', 'approved', 'rejected', 'needs_changes'] as const
 // Bilingual field as returned by the API: `{ he, en }` or a plain string.
 type Bilingual = string | { he?: string; en?: string } | null | undefined
 
-// One partner-org row as returned by GET /api/admin/directory/answers.
 interface AnswerRow {
   id: string
   title: Bilingual
@@ -58,7 +45,6 @@ interface AnswerRow {
   createdAt: string | null
 }
 
-// One community-business row as returned by GET /api/admin/directory/businesses.
 interface BusinessRow {
   id: string
   name: Bilingual
@@ -76,21 +62,11 @@ interface BusinessRow {
 type DirectoryRow = AnswerRow | BusinessRow
 
 // Render a bilingual field in the active language (he fallback).
-const L = (v: Bilingual, lang: Lang): string => {
-  if (v && typeof v === 'object') return v[lang] ?? v.he ?? ''
-  return v ?? ''
-}
+const L = (v: Bilingual, lang: Lang): string => pickShared(v, lang)
 
 // `tags` arrives as `{ he: string[], en: string[] }`; admin edits overwrite
 // both languages, so prefill from the active language (he fallback).
-const tagsOf = (v: BusinessRow['tags'], lang: Lang): string[] => {
-  if (Array.isArray(v)) return v
-  if (v && typeof v === 'object') {
-    const arr = v[lang] ?? v.he
-    return Array.isArray(arr) ? arr : []
-  }
-  return []
-}
+const tagsOf = (v: BusinessRow['tags'], lang: Lang): string[] => pickArrShared(v, lang)
 
 // Mirrors the backend http(s)-only URL rule so admins get a precise message
 // instead of a generic 400 (zod's .url() + scheme refine in adminDirectory.ts).
@@ -265,7 +241,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
     onChange: (v: string) => void,
     opts: { textarea?: boolean; type?: string; placeholder?: string } = {},
   ) => (
-    <div className={`field ${styles.field}`}>
+    <div className="field" style={{ textAlign: 'start' }}>
       <label className="form-label" htmlFor={id}>{label}</label>
       {opts.textarea ? (
         <textarea
@@ -311,16 +287,16 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
         {isAnswers ? (
           <>
             {/* Bilingual pairs sit side by side, labeled HE / EN. */}
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-title-he', dm.fieldTitleHe, titleHe, setTitleHe)}
               {field('dir-title-en', dm.fieldTitleEn, titleEn, setTitleEn)}
             </div>
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-body-he', dm.fieldBodyHe, bodyHe, setBodyHe, { textarea: true })}
               {field('dir-body-en', dm.fieldBodyEn, bodyEn, setBodyEn, { textarea: true })}
             </div>
-            <div className={`admin-task-grid ${styles.gridGap}`}>
-              <div className={`field ${styles.field}`}>
+            <div className="admin-task-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
+              <div className="field" style={{ textAlign: 'start' }}>
                 <label className="form-label" htmlFor="dir-org-type">{dm.fieldOrgType}</label>
                 <select
                   id="dir-org-type"
@@ -334,7 +310,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
                   ))}
                 </select>
               </div>
-              <div className={`field ${styles.field}`}>
+              <div className="field" style={{ textAlign: 'start' }}>
                 <label className="form-label" htmlFor="dir-category">{dm.fieldCategory}</label>
                 <select
                   id="dir-category"
@@ -349,7 +325,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
                 </select>
               </div>
               {item && (
-                <div className={`field ${styles.field}`}>
+                <div className="field" style={{ textAlign: 'start' }}>
                   <label className="form-label" htmlFor="dir-status">{dm.fieldStatus}</label>
                   <select
                     id="dir-status"
@@ -365,32 +341,32 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
                 </div>
               )}
             </div>
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-region-he', dm.fieldRegionHe, regionHe, setRegionHe)}
               {field('dir-region-en', dm.fieldRegionEn, regionEn, setRegionEn)}
             </div>
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-audience-he', dm.fieldAudienceHe, audienceHe, setAudienceHe)}
               {field('dir-audience-en', dm.fieldAudienceEn, audienceEn, setAudienceEn)}
             </div>
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-source-name', dm.fieldSourceName, sourceName, setSourceName)}
               {field('dir-source-url', dm.fieldSourceUrl, sourceUrl, setSourceUrl, { type: 'url', placeholder: 'https://example.org' })}
             </div>
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-answer-phone', dm.fieldAnswerPhone, answerPhone, setAnswerPhone, { type: 'tel' })}
               {field('dir-answer-email', dm.fieldAnswerEmail, answerEmail, setAnswerEmail, { type: 'email', placeholder: 'name@example.org' })}
             </div>
           </>
         ) : (
           <>
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-biz-name', dm.fieldName, name, setName)}
               {field('dir-biz-owner', dm.fieldOwnerName, ownerName, setOwnerName)}
             </div>
-            <div className={`admin-task-grid ${styles.gridGap}`}>
+            <div className="admin-task-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-biz-phone', dm.fieldPhone, phone, setPhone, { type: 'tel' })}
-              <div className={`field ${styles.field}`}>
+              <div className="field" style={{ textAlign: 'start' }}>
                 <label className="form-label" htmlFor="dir-biz-category">{dm.fieldCategory}</label>
                 <select
                   id="dir-biz-category"
@@ -406,7 +382,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
               </div>
               {field('dir-biz-city', dm.fieldCity, city, setCity)}
               {item && (
-                <div className={`field ${styles.field}`}>
+                <div className="field" style={{ textAlign: 'start' }}>
                   <label className="form-label" htmlFor="dir-biz-status">{dm.fieldStatus}</label>
                   <select
                     id="dir-biz-status"
@@ -422,7 +398,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
                 </div>
               )}
             </div>
-            <div className={`field ${styles.descField}`}>
+            <div className="field" style={{ textAlign: 'start', marginBlockStart: 'var(--sp-3)' }}>
               <label className="form-label" htmlFor="dir-biz-desc">{dm.fieldDescription}</label>
               <textarea
                 id="dir-biz-desc"
@@ -433,7 +409,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
                 disabled={busy}
               />
             </div>
-            <div className={`admin-dir-bi-grid ${styles.gridGap}`}>
+            <div className="admin-dir-bi-grid" style={{ marginBlockStart: 'var(--sp-3)' }}>
               {field('dir-biz-website', dm.fieldWebsite, website, setWebsite, { type: 'url', placeholder: 'https://example.com' })}
               {field('dir-biz-tags', dm.fieldTags, tagsText, setTagsText)}
             </div>
@@ -443,7 +419,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
         {formError && (
           <p
             role="alert"
-            className={styles.formError}
+            style={{ margin: 'var(--sp-3) 0 0', color: 'var(--danger)', fontSize: 'var(--fs-sm)', textAlign: 'start' }}
           >
             {formError}
           </p>
@@ -524,8 +500,6 @@ export default function AdminDirectoryPage() {
     return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US')
   }
 
-  // Persist the dialog: PATCH when editing an existing row, POST to create.
-  // On success closes the dialog and re-fetches both catalogs.
   const saveDialog = async (payload: Record<string, unknown>) => {
     if (!dialog) return
     setBusy(true)
@@ -552,7 +526,6 @@ export default function AdminDirectoryPage() {
     }
   }
 
-  // Hard-delete the confirmed row via DELETE, then re-fetch.
   const doDelete = async () => {
     if (!confirmDelete) return
     setBusy(true)
@@ -581,8 +554,6 @@ export default function AdminDirectoryPage() {
 
   const q = query.trim().toLowerCase()
   const baseRows: DirectoryRow[] = tab === 'answers' ? answers : businesses
-  // Active-tab rows after the bilingual client-side search (title/name +
-  // resolved category label + source/owner). Empty query returns all rows.
   const rows: DirectoryRow[] = useMemo(() => {
     if (!q) return baseRows
     return baseRows.filter((row) => {
@@ -610,8 +581,17 @@ export default function AdminDirectoryPage() {
   return (
     <AdminLayout title={dm.title} subtitle={dm.subtitle}>
       {/* ── Toolbar: catalog tabs + the "new entry" primary action ─────── */}
-      <div className={styles.toolbar}>
-        <div className={`admin-filters ${styles.filtersFlush}`} role="group" aria-label={dm.title}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--sp-3)',
+          marginBlockEnd: 'var(--sp-5)',
+        }}
+      >
+        <div className="admin-filters" role="group" aria-label={dm.title} style={{ marginBlockEnd: 0 }}>
           {CATALOGS.map((c) => (
             <button
               key={c}
@@ -627,8 +607,9 @@ export default function AdminDirectoryPage() {
         </div>
         <button
           type="button"
-          className={`btn btn-primary ${styles.newBtn}`}
+          className="btn btn-primary"
           onClick={() => setDialog({ catalog: tab, item: null })}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
           <Plus size={16} aria-hidden="true" />
           {tab === 'answers' ? dm.newAnswer : dm.newBusiness}
@@ -671,8 +652,17 @@ export default function AdminDirectoryPage() {
         />
       ) : !error ? (
         <Reveal>
-          <div className={`card ${styles.tableCard}`}>
-            <div className={`admin-table-wrap ${styles.tableWrapFlush}`}>
+          <div
+            className="card"
+            style={{
+              padding: 0,
+              overflow: 'hidden',
+              border: '1px solid var(--hair)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          >
+            <div className="admin-table-wrap" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
               <table className="admin-data-table">
                 <thead>
                   <tr>

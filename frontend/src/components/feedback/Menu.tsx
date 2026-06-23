@@ -247,6 +247,7 @@ export default function Menu({ trigger, align = 'end', label, children }: MenuPr
   // jump to the ends, Esc closes (returning focus), Tab dismisses without
   // hijacking focus so it flows to the next element naturally.
   const onMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (itemCount === 0) return
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()

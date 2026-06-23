@@ -240,11 +240,11 @@ export default function RequestsPage() {
 
   // Silent auto-fill on mount (after auth resolves)
   useEffect(() => {
-    if (user && !profileLoaded && !draft) {
+    if (user && role !== 'volunteer' && !profileLoaded && !draft) {
       loadProfileInto(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user, role])
 
   // ── Validation / navigation ─────────────────────────────────
   // Validate the current step; on errors set field errors + focus the first
@@ -256,7 +256,7 @@ export default function RequestsPage() {
     // expects. Values are already validation message strings.
     if (step === 1) errs = validateStep1(values, t) as unknown as Record<string, string>
     if (step === 2) errs = validateStep2(values, t) as unknown as Record<string, string>
-    if (step === 3) errs = validateStep3({ idUploaded }, t) as unknown as Record<string, string>
+    if (step === 3) errs = validateStep3({ idUploaded, idType: values.idType }, t) as unknown as Record<string, string>
     if (step === 4) errs = validateStep4(values, t) as unknown as Record<string, string>
 
     if (Object.keys(errs).length > 0) {

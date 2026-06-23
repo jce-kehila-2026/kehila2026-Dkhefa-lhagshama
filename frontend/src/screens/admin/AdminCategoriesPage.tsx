@@ -293,7 +293,7 @@ export default function AdminCategoriesPage() {
         <TableSkeleton rows={6} cols={4} />
       ) : !error && items.length === 0 ? (
         <EmptyState icon={Tags} title={cm.empty} message={cm.emptyHint} />
-      ) : !error ? (
+      ) : items.length > 0 ? (
         <Reveal>
           <div className={`card ${styles.tableCard}`}>
             <div className={`admin-table-wrap ${styles.tableWrap}`}>

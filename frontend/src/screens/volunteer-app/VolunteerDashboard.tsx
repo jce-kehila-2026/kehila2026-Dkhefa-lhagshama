@@ -196,6 +196,14 @@ export default function VolunteerDashboard() {
     return allCategories.filter((c) => !taken.has(c.id))
   }, [allCategories, me])
 
+  if (error && !me) {
+    return (
+      <VolunteerLayout title={d.title} subtitle={d.subtitle}>
+        <ErrorState message={error} onRetry={load} retryLabel={v.ui.retry} />
+      </VolunteerLayout>
+    )
+  }
+
   return (
     <VolunteerLayout title={d.title} subtitle={d.subtitle}>
       {error && (

@@ -1,21 +1,13 @@
 /**
- * RegisterPage — the public sign-up screen (route /register, rendered by
- * pages/register.tsx). Bilingual (HE/EN via LanguageContext), two account paths
- * behind a tab toggle. The default export is the orchestrator: it owns the
- * tab + volunteer-step state machine and dispatches to one of three sub-forms.
+ * RegisterPage — Beneficiary / Volunteer tab toggle.
  *
- * Tab "Beneficiary" (default): single-step sign-up → useAuth().register
- *   (Firebase createUser + POST /api/auth/register, which sets the `beneficiary`
- *   claim) → toast verify-email → redirect to validated `next`.
+ * Tab "Beneficiary" (default): original single-step sign-up → calls
+ *   Firebase createUser + POST /api/auth/register (sets `beneficiary` claim).
  *
  * Tab "Volunteer": two-step flow
- *   Step 1 — email + password (same Firebase sign-up policy as beneficiary)
- *   Step 2 — volunteer details + optional avatar → register (beneficiary claim)
- *            then POST /api/volunteers/apply (admin promotes to volunteer later)
+ *   Step 1 — email + password (same Firebase sign-up)
+ *   Step 2 — volunteer details form → POST /api/volunteers/apply
  *   On success → redirect to /register/volunteer/thanks
- *
- * Invariant: both tabs share one password policy (min 8 chars + >=1 digit) since
- * both hit the same Firebase createUser; the volunteer path must never be weaker.
  *
  * Issue #69.
  */
@@ -34,7 +26,6 @@ import { apiFetch } from '../lib/apiClient'
 import { getIdToken } from '../lib/auth'
 import UploadArea from '../components/forms/UploadArea'
 import Reveal from '../components/motion/Reveal'
-import styles from './RegisterPage.module.css'
 
 // ── Note 11: optional volunteer profile photo ────────────────────────────────
 // Client-side guards that mirror the backend avatar endpoint contract.
@@ -99,7 +90,7 @@ function PwCheck({ ok, label }: { ok: boolean; label: ReactNode }) {
 // ── Tab toggle ────────────────────────────────────────────────────────────────
 function TabToggle({ active, labels, onChange }: { active: string; labels: Record<string, ReactNode>; onChange: (tab: string) => void }) {
   return (
-    <div className={`seg ${styles.tabToggle}`} role="tablist">
+    <div className="seg" role="tablist" style={{ marginBlockEnd: 22 }}>
       {['beneficiary', 'volunteer'].map((tab) => (
         <button
           key={tab}
@@ -144,16 +135,13 @@ function StepIndicator({ current, labels, progressLabel }: { current: number; la
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null
   return (
-    <div id={id} className={`form-error ${styles.fieldError}`} role="alert">
+    <div id={id} className="form-error" role="alert" style={{ marginBlockStart: 6 }}>
       <AlertCircle size={12} aria-hidden="true" /><span>{message}</span>
     </div>
   )
 }
 
 // ── BENEFICIARY FORM (original flow) ─────────────────────────────────────────
-// Single-step sign-up form. Validates the password policy client-side, then
-// register() → verify-email toast → redirect to the validated `next` param.
-// Maps Firebase email-already-in-use to a friendly field error.
 function BeneficiaryForm({ t }: { t: Translations }) {
   const { register } = useAuth()
   const { toast } = useApp()
@@ -215,7 +203,7 @@ function BeneficiaryForm({ t }: { t: Translations }) {
           aria-describedby={`ben-pw-checks${fieldErrors.password ? ' ben-pw-err' : ''}`}
           value={password} onChange={(e) => setPassword(e.target.value)} className={`form-input${fieldErrors.password ? ' error' : ''}`} />
         {password.length > 0 && (
-          <div id="ben-pw-checks" className={`pw-checks ${styles.pwChecks}`} role="status" aria-live="polite">
+          <div id="ben-pw-checks" className="pw-checks" role="status" aria-live="polite" style={{ marginBlockStart: 8 }}>
             <PwCheck ok={password.length >= 8} label={a.pwRuleLength} />
             <PwCheck ok={/\d/.test(password)} label={a.pwRuleDigit} />
           </div>
@@ -232,7 +220,7 @@ function BeneficiaryForm({ t }: { t: Translations }) {
         <FieldError id="ben-confirm-err" message={fieldErrors.confirm} />
       </label>
       {error && <div className="form-error" role="alert"><AlertCircle size={12} aria-hidden="true" /><span>{error}</span></div>}
-      <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg ${styles.submitBtn}${submitting ? ' is-loading' : ''}`} aria-busy={submitting}>
+      <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ marginBlockStart: 4, justifyContent: 'center' }}>
         {submitting ? a.submitting : a.submit}
       </button>
       <div className="reg-alt">
@@ -246,9 +234,6 @@ function BeneficiaryForm({ t }: { t: Translations }) {
 }
 
 // ── VOLUNTEER FORM — step 1 (account) ────────────────────────────────────────
-// Collects + validates credentials only (no account is created here). On valid
-// input it hands { email, password } up via onNext so the parent advances to
-// step 2; the Firebase sign-up is deferred until the step-2 submit.
 function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthRegister; lang: string; onNext: (data: AccountData) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -291,7 +276,7 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
           aria-describedby={`vol-pw-checks${fieldErrors.password ? ' vol-pw-err' : ''}`}
           value={password} onChange={(e) => setPassword(e.target.value)} className={`form-input${fieldErrors.password ? ' error' : ''}`} />
         {password.length > 0 && (
-          <div id="vol-pw-checks" className={`pw-checks ${styles.pwChecks}`} role="status" aria-live="polite">
+          <div id="vol-pw-checks" className="pw-checks" role="status" aria-live="polite" style={{ marginBlockStart: 8 }}>
             <PwCheck ok={password.length >= 8} label={a.pwRuleLength} />
             <PwCheck ok={/\d/.test(password)} label={a.pwRuleDigit} />
           </div>
@@ -307,7 +292,7 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
           value={confirm} onChange={(e) => setConfirm(e.target.value)} className={`form-input${fieldErrors.confirm ? ' error' : ''}`} />
         <FieldError id="vol-confirm-err" message={fieldErrors.confirm} />
       </label>
-      <button type="submit" className={`btn btn-ember btn-lg ${styles.submitBtn}`}>
+      <button type="submit" className="btn btn-ember btn-lg" style={{ marginBlockStart: 4, justifyContent: 'center' }}>
         {v.nextStep}
       </button>
       <div className="reg-alt">
@@ -321,11 +306,7 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
 }
 
 // ── VOLUNTEER FORM — step 2 (details) ────────────────────────────────────────
-// Volunteer details form + the multi-stage submit: create the Firebase account
-// (once, via accountCreatedRef), refresh claims, optionally upload the avatar
-// (non-blocking), then POST /api/volunteers/apply and redirect to /thanks.
-// accountData carries the step-1 credentials; isRTL flips the back-arrow icon.
-function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: VolunteerSignup; a: AuthRegister; lang: string; isRTL: boolean; accountData: AccountData; onBack: () => void }) {
+function VolunteerStep2({ v, a, lang, isRTL, accountData, accountCreated, onAccountCreated, onBack }: { v: VolunteerSignup; a: AuthRegister; lang: string; isRTL: boolean; accountData: AccountData; accountCreated: boolean; onAccountCreated: () => void; onBack: () => void }) {
   const { register, refreshClaims } = useAuth()
   const router = useRouter()
   const BackArrow = isRTL ? ArrowRight : ArrowLeft
@@ -351,12 +332,6 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
   const areasRef = useRef<HTMLDivElement>(null)
   const langRef = useRef<HTMLInputElement>(null)
   const consentRef = useRef<HTMLInputElement>(null)
-  // Tracks whether the Firebase account was already created in THIS session.
-  // The two-step submit creates the account first and only then POSTs the
-  // application; if the apply call fails, the account already exists. On retry
-  // we must skip register() (it would throw email-already-in-use and strand the
-  // user) and re-POST only the application.
-  const accountCreatedRef = useRef(false)
 
   const toggleArea = (area: string) => {
     setSelectedAreas((prev) =>
@@ -395,9 +370,9 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
       // Skip on retry: if a previous attempt created the account but the apply
       // POST failed, re-running register() would throw email-already-in-use and
       // dead-end the user. Re-POST only the application instead.
-      if (!accountCreatedRef.current) {
+      if (!accountCreated) {
         await register(accountData.email, accountData.password)
-        accountCreatedRef.current = true
+        onAccountCreated()
 
         // Step A2: force a token refresh so freshly-minted claims are reflected
         // without a re-login (pragmatic refresh per the role-model contract).
@@ -507,7 +482,7 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
           onChange={(e) => setProfession(e.target.value)} className="form-input" />
       </label>
 
-      <div className={styles.fieldStack} role="group" aria-labelledby="vol-areas-label" ref={areasRef}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} role="group" aria-labelledby="vol-areas-label" ref={areasRef}>
         <div id="vol-areas-label" className="reg-field-label">{v.areasOfHelp}</div>
         <div className="reg-pillset">
           {v.areasList.map((area: string) => {
@@ -518,7 +493,8 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggleArea(area)}
-                className={`opt-pill ${styles.optPillRound}${on ? ' is-on' : ''}`}
+                className={`opt-pill${on ? ' is-on' : ''}`}
+                style={{ borderRadius: 999 }}
               >
                 {on && <Check size={13} strokeWidth={3} aria-hidden="true" />}
                 {area}
@@ -535,9 +511,9 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
           onChange={(e) => setLanguagesRaw(e.target.value)} className="form-input" />
       </label>
 
-      <div className={styles.fieldStack} role="radiogroup" aria-labelledby="vol-avail-label">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} role="radiogroup" aria-labelledby="vol-avail-label">
         <div id="vol-avail-label" className="reg-field-label">{v.availability}</div>
-        <div className={styles.availRow}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {availOptions.map((opt) => (
             <label key={opt.value} className={`opt-pill${availability === opt.value ? ' is-on' : ''}`}>
               <input type="radio" name="availability" value={opt.value}
@@ -552,14 +528,15 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
       <label className="reg-field" htmlFor="vol-motivation">
         {v.motivation}
         <textarea id="vol-motivation" rows={3} placeholder={v.motivationPH} value={motivation}
-          onChange={(e) => setMotivation(e.target.value)} className={`form-input ${styles.motivationInput}`} />
+          onChange={(e) => setMotivation(e.target.value)} className="form-input"
+          style={{ resize: 'vertical', minHeight: 72 }} />
       </label>
 
       {/* Note 11 — optional profile photo. Reuses UploadArea without a
           requestId (no real Storage write here); the chosen image is held in
           state and uploaded to the backend on submit. Image-only client-side
           validation runs in onPhotoPicked. */}
-      <div className={styles.fieldStack}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <UploadArea
           label={v.photoLabel}
           hint={v.photoHint}
@@ -574,17 +551,17 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
       {error && <div className="form-error" role="alert"><AlertCircle size={12} aria-hidden="true" /><span>{error}</span></div>}
 
       {photoNotice && (
-        <div className={`form-error ${styles.photoNotice}`} role="status">
+        <div className="form-error" role="status" style={{ color: 'var(--gray-600)' }}>
           <AlertCircle size={12} aria-hidden="true" /><span>{photoNotice}</span>
         </div>
       )}
 
       <div className="reg-actions">
-        <button type="button" onClick={onBack} className={`btn btn-outline btn-lg ${styles.backBtn}`}>
+        <button type="button" onClick={onBack} className="btn btn-outline btn-lg" style={{ flex: '0 0 auto', gap: 6 }}>
           <BackArrow size={16} aria-hidden="true" />
           {v.backStep}
         </button>
-        <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg ${styles.submitFlexBtn}${submitting ? ' is-loading' : ''}`} aria-busy={submitting}>
+        <button type="submit" disabled={submitting} className={`btn btn-ember btn-lg${submitting ? ' is-loading' : ''}`} aria-busy={submitting} style={{ flex: 1, justifyContent: 'center' }}>
           {submitting ? v.submitting : v.submit}
         </button>
       </div>
@@ -593,10 +570,6 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-// Orchestrator: owns tab ('beneficiary' | 'volunteer'), volStep (1 | 2) and the
-// step-1 accountData, and renders the matching sub-form. Also renders the brand
-// aside + form heading. Preselects the volunteer tab when arriving via the
-// /volunteer "Apply" CTA (/register?role=volunteer).
 export default function RegisterPage() {
   const { t, lang, isRTL } = useLanguage()
   const v = t.volunteerSignup
@@ -606,6 +579,7 @@ export default function RegisterPage() {
   const [tab, setTab] = useState('beneficiary') // 'beneficiary' | 'volunteer'
   const [volStep, setVolStep] = useState(1)      // 1 | 2
   const [accountData, setAccountData] = useState<AccountData | null>(null) // { email, password }
+  const [accountCreated, setAccountCreated] = useState(false)
 
   // Preselect the volunteer tab when arrived via the /volunteer "Apply" CTA
   // (/register?role=volunteer). Runs once router.query is populated; the user
@@ -621,8 +595,6 @@ export default function RegisterPage() {
     volunteer:   v.tabVolunteer,
   }
 
-  // Switching tabs resets the volunteer flow so a half-entered step-2 (and its
-  // captured credentials) never leak across tabs.
   const switchTab = (next: string) => {
     setTab(next)
     setVolStep(1)
@@ -645,7 +617,7 @@ export default function RegisterPage() {
   const joinEyebrow = lang === 'he' ? 'הצטרפות לקהילה' : 'Join the community'
 
   return (
-    <div className={`auth-grid ${styles.authGrid}`}>
+    <div className="auth-grid" style={{ minHeight: 'calc(100vh - var(--nav-h))' }}>
       {/* ── BRAND ASIDE — editorial, ink-toned, sets the tone.
            `auth-aside` (login.css) hides this under 900px so the form
            stacks to a single, full-width column on phones/tablets.
@@ -664,7 +636,7 @@ export default function RegisterPage() {
             className="reg-aside-avatar"
           />
 
-          <span className={`eyebrow ${styles.eyebrowEmber}`}>{joinEyebrow}</span>
+          <span className="eyebrow" style={{ color: 'var(--ember)' }}>{joinEyebrow}</span>
 
           {/* Decorative brand display — presentational only (aria-hidden);
               the canonical page <h1> lives in the form <main> region. */}
@@ -693,7 +665,7 @@ export default function RegisterPage() {
                 eyebrow → serif heading → lede rhythm and an accessible <h1>
                 (the aside h1 is decorative + hidden under 900px). */}
             <div className="reg-head">
-              <span className={`eyebrow ${styles.eyebrowEmber}`}>{joinEyebrow}</span>
+              <span className="eyebrow" style={{ color: 'var(--ember)' }}>{joinEyebrow}</span>
               <h1 className="reg-head-title">{a.title}</h1>
               {a.subtitle && <p className="reg-head-sub">{a.subtitle}</p>}
             </div>
@@ -720,6 +692,8 @@ export default function RegisterPage() {
                 lang={lang}
                 isRTL={isRTL}
                 accountData={accountData!}
+                accountCreated={accountCreated}
+                onAccountCreated={() => setAccountCreated(true)}
                 onBack={() => setVolStep(1)}
               />
             )}

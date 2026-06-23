@@ -13,6 +13,7 @@
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { Inbox, ChevronLeft, ChevronRight, Plus, HandHeart, X, Search, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCategories } from '@/hooks/useCategories'
@@ -101,7 +102,7 @@ export default function AdminRequestsListPage() {
   // Read URL params eagerly (before first render) so state is initialised from
   // the deep-link on mount. The inline function runs only once at component
   // creation; SSR returns the default because window is not available there.
-  function readUrlParams(): { filter: FilterKey; claimsOnly: boolean; sort: SortKey; volunteerId: string } {
+  const readUrlParams = useCallback((): { filter: FilterKey; claimsOnly: boolean; sort: SortKey; volunteerId: string } => {
     if (typeof window === 'undefined') return { filter: '', claimsOnly: false, sort: 'newest', volunteerId: '' }
     const p = new URLSearchParams(window.location.search)
     const rawStatus = p.get('status') ?? ''
@@ -115,8 +116,9 @@ export default function AdminRequestsListPage() {
       sort: p.get('sort') === 'priority' ? 'priority' : 'newest',
       volunteerId: p.get('volunteerId') ?? '',
     }
-  }
+  }, [])
 
+  const router = useRouter()
   const urlInit = readUrlParams()
   const [filter, setFilter] = useState<FilterKey>(urlInit.filter)
   const [items, setItems] = useState<RequestRow[]>([])
@@ -169,6 +171,14 @@ export default function AdminRequestsListPage() {
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
   }, [filter, claimsOnly, sort, volunteerId])
 
+  useEffect(() => {
+    const next = readUrlParams()
+    setFilter((prev) => (prev === next.filter ? prev : next.filter))
+    setClaimsOnly((prev) => (prev === next.claimsOnly ? prev : next.claimsOnly))
+    setSort((prev) => (prev === next.sort ? prev : next.sort))
+    setVolunteerId((prev) => (prev === next.volunteerId ? prev : next.volunteerId))
+  }, [router.asPath, readUrlParams])
+
   // Mirror the Newest/Priority preset into the client sort model so the table
   // reflects the chosen preset until the admin clicks a column header.
   useEffect(() => {
@@ -202,6 +212,7 @@ export default function AdminRequestsListPage() {
       else if (filter) params.set('status', filter)
       if (sort === 'priority') params.set('sort', 'priority')
       if (volunteerId) params.set('volunteerId', volunteerId)
+      params.set('limit', '200')
       const qs = params.toString()
       const res = await apiJson(`/api/admin/requests${qs ? `?${qs}` : ''}`) as { items?: RequestRow[] }
       setItems(res.items || [])
