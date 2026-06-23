@@ -128,7 +128,8 @@ export default function AdminRequestsListPage() {
   // When linked from the dashboard with ?claims=true, narrow the list to
   // requests that have interested volunteers (req 22 surfacing). Set once from
   // the URL at mount; it never changes after, so there is no setter.
-  const [claimsOnly] = useState(urlInit.claimsOnly)
+ // const [claimsOnly] = useState(urlInit.claimsOnly)
+ const [claimsOnly, setClaimsOnly] = useState(urlInit.claimsOnly)
   // Server-side sort order: newest (default) or priority (urgency/deadline).
   const [sort, setSort] = useState<SortKey>(urlInit.sort)
   // ?volunteerId= deep link (e.g. from the volunteers roster): narrow the list
