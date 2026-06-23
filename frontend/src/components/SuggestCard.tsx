@@ -4,6 +4,7 @@ import { Sparkles, ExternalLink, Phone, Mail, ArrowLeft, ArrowRight, X } from "l
 import type { Suggestion } from "@/types";
 import { safeHref } from "@/lib/safeUrl";
 import styles from "./SuggestCard.module.css";
+import { pickLang as pickShared } from "@/lib/bilingual";
 
 // ── Suggest-alternatives card (UC-01 A1, simple If-Then) ──────
 // Surfaces up to 3 approved community answers for a category. Bilingual text
@@ -21,9 +22,7 @@ function pickLangValue(
   value: Suggestion["title"],
   lang: string,
 ): string {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  return value[lang as "he" | "en"] || value.he || value.en || "";
+  return pickShared(value, lang);
 }
 
 // dismissible card listing up to 3 suggested answers; each row renders its

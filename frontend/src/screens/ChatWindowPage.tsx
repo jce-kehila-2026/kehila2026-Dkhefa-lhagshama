@@ -16,7 +16,7 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -45,13 +45,20 @@ export default function ChatWindowPage() {
   const { t, lang, isRTL } = useLanguage();
   const { user, loading: authLoading, hasRole } = useAuth();
   const c = t.chat;
+  const lc = t.lifecycle; // mark-done confirm labels (shared with the lifecycle hook/rail)
   const router = useRouter();
   const { id: chatId } = router.query;
 
   // Only attach the listener once auth is resolved AND a user exists,
   // so logged-out visitors never trigger a permission-denied snapshot.
   const listenChatId = !authLoading && user && typeof chatId === "string" ? chatId : null;
-  const { messages, loading: msgsLoading, error: msgsError } = useMessages(listenChatId);
+  const {
+    messages,
+    loading: msgsLoading,
+    error: msgsError,
+    hasMore: msgsHasMore,
+    loadMore: loadMoreMessages,
+  } = useMessages(listenChatId);
 
   // ── Data layer (chat-doc projection, participants, linked request) ─────
   const {
@@ -184,16 +191,30 @@ export default function ChatWindowPage() {
   // container, never the page (scrollIntoView would scroll every ancestor incl.
   // the window, yanking the whole page down when a chat opens). Jump instantly
   // on first paint and under reduced motion; glide only for live arrivals.
+  const [confirmDone, setConfirmDone] = useState(false); // mark-done confirmation dialog
   const didInitialScrollRef = useRef(false);
+  // Track whether the feed is near its bottom (updated on scroll). Lets the
+  // auto-scroll effect avoid yanking the user down when they have scrolled up
+  // to read history — e.g. after pressing "load earlier".
+  const nearBottomRef = useRef(true);
+  const handleFeedScroll = () => {
+    const feed = feedRef.current;
+    if (!feed) return;
+    nearBottomRef.current =
+      feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;
+  };
   useEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
+    const isFirst = !didInitialScrollRef.current;
+    didInitialScrollRef.current = true;
+    // After the first paint, only auto-scroll when the user is already at the
+    // bottom — never interrupt reading older (paginated) messages.
+    if (!isFirst && !nearBottomRef.current) return;
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const behavior: ScrollBehavior =
-      !didInitialScrollRef.current || prefersReduced ? "auto" : "smooth";
-    didInitialScrollRef.current = true;
+    const behavior: ScrollBehavior = isFirst || prefersReduced ? "auto" : "smooth";
     feed.scrollTo({ top: feed.scrollHeight, behavior });
   }, [messages]);
 
@@ -292,6 +313,10 @@ export default function ChatWindowPage() {
                 isRtl={isRtl}
                 downloading={downloading}
                 onDownload={handleDownload}
+                hasMore={msgsHasMore}
+                onLoadMore={loadMoreMessages}
+                loadEarlierLabel={c.loadEarlier}
+                onFeedScroll={handleFeedScroll}
               />
 
               {/* Composer — sticks to the bottom of the panel. Read-only when
@@ -309,7 +334,11 @@ export default function ChatWindowPage() {
                 sending={sending}
                 inputText={inputText}
                 onInputChange={setInputText}
-                onSend={handleSend}
+                onSend={(e) => {
+                  // a user-initiated send should always pin to the latest msg
+                  nearBottomRef.current = true;
+                  return handleSend(e);
+                }}
                 onFilePick={handleFilePick}
               />
             </div>
@@ -344,7 +373,7 @@ export default function ChatWindowPage() {
           statusDotClass={statusDotClass}
           canMarkDone={canMarkDone}
           markingDone={markingDone}
-          onMarkDone={handleMarkDone}
+          onMarkDone={() => setConfirmDone(true)}
           canUseCloseConsent={canUseCloseConsent}
           closeReq={closeReq}
           otherProposed={otherProposed}
@@ -380,6 +409,21 @@ export default function ChatWindowPage() {
         onCancel={() => {
           if (!removeBusy) setRemoveTarget(null);
         }}
+      />
+
+      {/* Mark-request-done confirmation (replaces the old window.confirm). */}
+      <ConfirmDialog
+        open={confirmDone}
+        title={lc.actions.markDone}
+        message={lc.actions.markDoneConfirm}
+        confirmLabel={lc.actions.markDone}
+        cancelLabel={t.common.cancel}
+        busy={markingDone}
+        onConfirm={() => {
+          setConfirmDone(false);
+          handleMarkDone();
+        }}
+        onCancel={() => setConfirmDone(false)}
       />
 
       {/* Add-participant picker (admin-only data source). */}

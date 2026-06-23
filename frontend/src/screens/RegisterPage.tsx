@@ -322,10 +322,10 @@ function VolunteerStep1({ v, a, lang, onNext }: { v: VolunteerSignup; a: AuthReg
 
 // ── VOLUNTEER FORM — step 2 (details) ────────────────────────────────────────
 // Volunteer details form + the multi-stage submit: create the Firebase account
-// (once, via accountCreatedRef), refresh claims, optionally upload the avatar
-// (non-blocking), then POST /api/volunteers/apply and redirect to /thanks.
-// accountData carries the step-1 credentials; isRTL flips the back-arrow icon.
-function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: VolunteerSignup; a: AuthRegister; lang: string; isRTL: boolean; accountData: AccountData; onBack: () => void }) {
+// (once, tracked by the parent's `accountCreated` flag), refresh claims, optionally
+// upload the avatar (non-blocking), then POST /api/volunteers/apply and redirect to
+// /thanks. accountData carries the step-1 credentials; isRTL flips the back-arrow icon.
+function VolunteerStep2({ v, a, lang, isRTL, accountData, accountCreated, onAccountCreated, onBack }: { v: VolunteerSignup; a: AuthRegister; lang: string; isRTL: boolean; accountData: AccountData; accountCreated: boolean; onAccountCreated: () => void; onBack: () => void }) {
   const { register, refreshClaims } = useAuth()
   const router = useRouter()
   const BackArrow = isRTL ? ArrowRight : ArrowLeft
@@ -351,12 +351,6 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
   const areasRef = useRef<HTMLDivElement>(null)
   const langRef = useRef<HTMLInputElement>(null)
   const consentRef = useRef<HTMLInputElement>(null)
-  // Tracks whether the Firebase account was already created in THIS session.
-  // The two-step submit creates the account first and only then POSTs the
-  // application; if the apply call fails, the account already exists. On retry
-  // we must skip register() (it would throw email-already-in-use and strand the
-  // user) and re-POST only the application.
-  const accountCreatedRef = useRef(false)
 
   const toggleArea = (area: string) => {
     setSelectedAreas((prev) =>
@@ -395,9 +389,9 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, onBack }: { v: Volunte
       // Skip on retry: if a previous attempt created the account but the apply
       // POST failed, re-running register() would throw email-already-in-use and
       // dead-end the user. Re-POST only the application instead.
-      if (!accountCreatedRef.current) {
+      if (!accountCreated) {
         await register(accountData.email, accountData.password)
-        accountCreatedRef.current = true
+        onAccountCreated()
 
         // Step A2: force a token refresh so freshly-minted claims are reflected
         // without a re-login (pragmatic refresh per the role-model contract).
@@ -606,6 +600,7 @@ export default function RegisterPage() {
   const [tab, setTab] = useState('beneficiary') // 'beneficiary' | 'volunteer'
   const [volStep, setVolStep] = useState(1)      // 1 | 2
   const [accountData, setAccountData] = useState<AccountData | null>(null) // { email, password }
+  const [accountCreated, setAccountCreated] = useState(false)
 
   // Preselect the volunteer tab when arrived via the /volunteer "Apply" CTA
   // (/register?role=volunteer). Runs once router.query is populated; the user
@@ -720,6 +715,8 @@ export default function RegisterPage() {
                 lang={lang}
                 isRTL={isRTL}
                 accountData={accountData!}
+                accountCreated={accountCreated}
+                onAccountCreated={() => setAccountCreated(true)}
                 onBack={() => setVolStep(1)}
               />
             )}

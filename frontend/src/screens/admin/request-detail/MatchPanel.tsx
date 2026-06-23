@@ -254,7 +254,12 @@ export default function MatchPanel({
                 type="button"
                 className="btn btn-ghost btn-sm match-toggle"
                 disabled={saving}
-                onClick={() => setReassigning(false)}
+                onClick={() => {
+                  setReassigning(false)
+                  // Reset the candidate filter too (this also re-homes the
+                  // carousel via the parent's candidateQuery effect).
+                  setCandidateSearch('')
+                }}
               >
                 {m.cancelReassign}
               </button>

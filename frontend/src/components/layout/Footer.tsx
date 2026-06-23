@@ -57,7 +57,6 @@ export default function Footer() {
               { to:'/requests', label: t.nav.requests },
               { to:'/directory', label: t.nav.directory },
               { to:'/volunteer', label: t.nav.volunteers },
-              { to:'/track', label: t.nav.track },
             ].map(l => (
               <div key={l.to} className={styles.linkRow}>
                 <Link to={l.to} className={styles.link}>{l.label}</Link>
@@ -101,12 +100,6 @@ export default function Footer() {
         {/* BOTTOM BAR */}
         <div className={styles.bottomBar}>
           <div>{f.rights}</div>
-          <div className={styles.legal}>
-            <span className={styles.sep}>|</span>
-            <Link to="/privacy" className={styles.legalLink}>{f.privacy}</Link>
-            <Link to="/terms" className={styles.legalLink}>{f.terms}</Link>
-            <Link to="/accessibility" className={styles.legalLink}>{f.accessibility}</Link>
-          </div>
         </div>
         <div className={styles.reg}>
           {f.reg}

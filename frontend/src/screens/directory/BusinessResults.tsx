@@ -56,7 +56,7 @@ export default function BusinessResults({
                 }
                 aria-hidden="true"
               >
-                {!photo && <BannerIcon size={52} color="var(--cream)" strokeWidth={1.5} />}
+                {!photo && <BannerIcon size={52} color="var(--ink-2)" strokeWidth={1.5} />}
                 {biz.featured && (
                   <span className="dir-biz-featured">
                     <Star size={10} fill="var(--ember)" color="var(--ember)" aria-hidden="true" /> {d.featured}

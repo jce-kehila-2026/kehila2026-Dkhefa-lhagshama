@@ -10,6 +10,7 @@
 import { useRef, useState } from 'react'
 import { ClipboardList, Paperclip, X } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useApp } from '@/contexts/AppContext'
 import { useCategories } from '@/hooks/useCategories'
 import { apiJson } from '@/lib/apiClient'
 import { getIdToken } from '@/lib/auth'
@@ -49,6 +50,7 @@ const URGENCIES = ['low', 'medium', 'high'] as const
  */
 export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTaskDialogProps) {
   const { t } = useLanguage()
+  const { toast } = useApp()
   const a = t.admin
   const f = a.taskForm
   const { categories, labelFor } = useCategories()
@@ -151,7 +153,8 @@ export default function CreateTaskDialog({ open, onClose, onCreated }: CreateTas
       }
       // partial-failure: surface upload error but still treat the create as done
       // (request exists with id), so the parent list refreshes regardless.
-      if (uploadFailed) setError(f.uploadError)
+      if (uploadFailed) toast(f.uploadError, 'error')
+      else toast(f.successToast, 'success')
       reset()
       onCreated(created.id)
     } catch {

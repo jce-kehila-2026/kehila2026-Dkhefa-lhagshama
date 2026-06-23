@@ -53,17 +53,16 @@ export function useParticipantActions(chatId: string | string[] | undefined) {
     setAddBusy(true);
     setAddError(null);
     try {
+      let failed = 0;
       for (const uid of uids) {
         const res = await apiFetch(`/api/chats/${chatId}/participants`, {
           method: "POST",
           body: JSON.stringify({ uid }),
         });
-        if (!res.ok) {
-          setAddError(c.addPersonError);
-          return;
-        }
+        if (!res.ok) failed++;
       }
-      setAddOpen(false);
+      if (failed > 0) setAddError(c.addPersonError);
+      else setAddOpen(false);
     } catch {
       setAddError(c.addPersonError);
     } finally {

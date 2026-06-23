@@ -24,6 +24,7 @@ import Reveal from '../../components/motion/Reveal'
 import { EmptyState, ErrorState, TableSkeleton, adminErrorMessage } from '@/components/admin/AdminUI'
 import type { Lang } from '@/types'
 import styles from './AdminApprovalsPage.module.css'
+import { pickLang as pickShared } from '@/lib/bilingual'
 
 // Orgs live in the answers collection now (split by orgType); nothing writes to
 // a separate organizations collection, so it is not an approval entity.
@@ -63,13 +64,7 @@ interface PendingAction {
 // Businesses/answers store translatable fields as { he, en } objects. Render
 // the active-language value (falling back to he) so the approval queue never
 // tries to render a raw object as a React child.
-const L = (v: LocalizedField, lang: Lang): string => {
-  if (v && typeof v === 'object' && !Array.isArray(v)) {
-    const obj = v as { he?: string; en?: string; [key: string]: string | undefined }
-    return obj[lang] ?? obj.he ?? ''
-  }
-  return (v as string) ?? ''
-}
+const L = (v: LocalizedField, lang: Lang): string => pickShared(v as Parameters<typeof pickShared>[0], lang)
 
 // Distinct badge tone per entity type so the queue is scannable at a glance.
 const ENTITY_TONE: Record<string, string> = {

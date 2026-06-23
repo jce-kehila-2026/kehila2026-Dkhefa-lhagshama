@@ -28,6 +28,7 @@ import {
 } from '@/components/admin/AdminUI'
 import type { Lang, OrgType } from '@/types'
 import styles from './AdminDirectoryPage.module.css'
+import { pickLang as pickShared, pickLangArray as pickArrShared } from '@/lib/bilingual'
 
 // The two directory catalogs managed here. 'answers' = partner organizations
 // (עמותות + שותפים), 'businesses' = community businesses. Matches the
@@ -76,21 +77,11 @@ interface BusinessRow {
 type DirectoryRow = AnswerRow | BusinessRow
 
 // Render a bilingual field in the active language (he fallback).
-const L = (v: Bilingual, lang: Lang): string => {
-  if (v && typeof v === 'object') return v[lang] ?? v.he ?? ''
-  return v ?? ''
-}
+const L = (v: Bilingual, lang: Lang): string => pickShared(v, lang)
 
 // `tags` arrives as `{ he: string[], en: string[] }`; admin edits overwrite
 // both languages, so prefill from the active language (he fallback).
-const tagsOf = (v: BusinessRow['tags'], lang: Lang): string[] => {
-  if (Array.isArray(v)) return v
-  if (v && typeof v === 'object') {
-    const arr = v[lang] ?? v.he
-    return Array.isArray(arr) ? arr : []
-  }
-  return []
-}
+const tagsOf = (v: BusinessRow['tags'], lang: Lang): string[] => pickArrShared(v, lang)
 
 // Mirrors the backend http(s)-only URL rule so admins get a precise message
 // instead of a generic 400 (zod's .url() + scheme refine in adminDirectory.ts).

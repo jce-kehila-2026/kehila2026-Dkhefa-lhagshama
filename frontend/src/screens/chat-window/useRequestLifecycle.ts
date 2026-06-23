@@ -56,7 +56,6 @@ export function useRequestLifecycle({
   // final status applied from the response). optimistic with rollback to prevStatus.
   async function handleMarkDone() {
     if (!linkedRequest || markingDone || !canMarkDone) return;
-    if (typeof window !== "undefined" && !window.confirm(lc.actions.markDoneConfirm)) return;
 
     const prevStatus = linkedRequest.status;
     setMarkingDone(true);

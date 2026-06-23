@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   collection,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -21,6 +22,8 @@ import {
 
 import { firebaseDb } from '../lib/firebase';
 import type { ChatAttachment } from '../types';
+
+const PAGE_SIZE = 50;
 
 export interface ChatMessage {
   id: string;
@@ -45,6 +48,8 @@ interface UseMessagesResult {
   messages: ChatMessage[];
   loading: boolean;
   error: string | null;
+  hasMore: boolean;
+  loadMore: () => void;
 }
 
 /** Raw shape of a `messages/{id}` document as stored by the backend. */
@@ -82,7 +87,13 @@ export function useMessages(chatId: string | null): UseMessagesResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitN, setLimitN] = useState(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
   const unsubRef = useRef<Unsubscribe | null>(null);
+
+  useEffect(() => {
+    setLimitN(PAGE_SIZE);
+  }, [chatId]);
 
   useEffect(() => {
     // detach the prior chat's listener before (re)subscribing, so a chatId
@@ -104,13 +115,15 @@ export function useMessages(chatId: string | null): UseMessagesResult {
     const q = query(
       collection(firebaseDb, 'messages'),
       where('chatId', '==', chatId),
-      orderBy('timestamp', 'asc'),
+      orderBy('timestamp', 'desc'),
+      limit(limitN),
     );
 
     unsubRef.current = onSnapshot(
       q,
       (snap) => {
-        const msgs: ChatMessage[] = snap.docs.map((doc) => {
+        setHasMore(snap.docs.length >= limitN);
+        const msgs: ChatMessage[] = snap.docs.slice().reverse().map((doc) => {
           const d = doc.data() as RawMessageDoc;
           return {
             id: doc.id,
@@ -144,7 +157,9 @@ export function useMessages(chatId: string | null): UseMessagesResult {
         unsubRef.current = null;
       }
     };
-  }, [chatId]);
+  }, [chatId, limitN]);
 
-  return { messages, loading, error };
+  const loadMore = () => setLimitN((n) => n + PAGE_SIZE);
+
+  return { messages, loading, error, hasMore, loadMore };
 }

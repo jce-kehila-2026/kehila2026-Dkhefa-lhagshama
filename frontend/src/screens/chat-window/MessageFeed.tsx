@@ -62,6 +62,14 @@ interface MessageFeedProps {
   isRtl: boolean;
   downloading: Record<string, boolean>;
   onDownload: (att: NonNullable<ChatMessage["attachment"]>) => void;
+  /** Paginated history: true while older messages remain to fetch. */
+  hasMore: boolean;
+  /** Fetch the next page of older messages. */
+  onLoadMore: () => void;
+  /** Localized "load earlier messages" label. */
+  loadEarlierLabel: string;
+  /** Scroll listener so the parent can track near-bottom for auto-scroll. */
+  onFeedScroll: () => void;
 }
 
 // MessageFeed — ref-forwarding component; the ref targets the scroll container
@@ -77,6 +85,10 @@ export const MessageFeed = forwardRef<HTMLDivElement, MessageFeedProps>(function
     isRtl,
     downloading,
     onDownload,
+    hasMore,
+    onLoadMore,
+    loadEarlierLabel,
+    onFeedScroll,
   },
   feedRef,
 ) {
@@ -144,6 +156,7 @@ export const MessageFeed = forwardRef<HTMLDivElement, MessageFeedProps>(function
       aria-live="polite"
       aria-label={c.inlineHeader.eyebrow}
       tabIndex={0}
+      onScroll={onFeedScroll}
     >
       {msgsLoading &&
         renderFeedState({
@@ -172,6 +185,20 @@ export const MessageFeed = forwardRef<HTMLDivElement, MessageFeedProps>(function
           icon: <MessagesSquare size={26} />,
           body: c.noMessages,
         })}
+
+      {hasMore && !msgsLoading && messages.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            paddingBlock: "var(--sp-2)",
+          }}
+        >
+          <button type="button" className="btn btn-outline btn-sm" onClick={onLoadMore}>
+            {loadEarlierLabel}
+          </button>
+        </div>
+      )}
 
       {messages.map((msg) => {
         // System notes render as a centered muted line, not a bubble.

@@ -142,14 +142,14 @@ export function ChatComposer({
         value={inputText}
         onChange={(e) => onInputChange(e.target.value)}
         placeholder={c.inputPH}
-        disabled={sending}
+        disabled={uploading || sending}
         aria-label={c.inputPH}
         style={{ direction: isRtl ? "rtl" : "ltr" }}
       />
       <button
         type="submit"
         className={`btn btn-ember ${styles.sendBtn}`}
-        disabled={sending || !inputText.trim()}
+        disabled={uploading || sending || !inputText.trim()}
       >
         {sending ? c.sending : c.send}
         <Send size={15} style={{ transform: isRTL ? "scaleX(-1)" : "none" }} />

@@ -28,7 +28,7 @@ export function filterBusinesses(
   let data = businesses
   if (bizCat !== 'all') data = data.filter(b => b.category === bizCat)
   if (bizSearch.trim()) {
-    const q = bizSearch.toLowerCase()
+    const q = bizSearch.trim().toLowerCase()
     data = data.filter(b =>
       L(b.name).toLowerCase().includes(q) ||
       L(b.description).toLowerCase().includes(q) ||

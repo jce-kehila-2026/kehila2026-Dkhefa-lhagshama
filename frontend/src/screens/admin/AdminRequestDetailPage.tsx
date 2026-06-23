@@ -62,7 +62,10 @@ export default function AdminRequestDetailPage() {
         {a.reqDetail.back}
       </Link>
 
-      {error && (
+      {/* Only the initial-load failure (no request yet) gets the big
+          ErrorState. Once a request is loaded, action failures surface via
+          toast instead, so a transient error never replaces the detail. */}
+      {error && !request && (
         <div className={styles.errorSpacing}>
           <ErrorState message={error} onRetry={() => load()} retryLabel={a.ui.retry} />
         </div>

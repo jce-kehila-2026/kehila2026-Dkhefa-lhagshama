@@ -84,7 +84,8 @@ export function useReferralAndDocs({ id, lang, lc, toast, setError, load }: Deps
       })
       if (!res.ok) {
         const msg = res.status === 409 || res.status === 422 ? lc.actions.illegalTransition : lc.referral.error
-        setError(msg)
+        // Toast surfaces the error; setError would double-report (and now
+        // also trip the top-level ErrorState).
         toast(msg, 'error')
         return
       }
@@ -95,7 +96,7 @@ export function useReferralAndDocs({ id, lang, lc, toast, setError, load }: Deps
       setReferAnswerId('')
       setReferNote('')
     } catch {
-      setError(lc.referral.error)
+      // Toast-only (see above) — avoid double-reporting via setError.
       toast(lc.referral.error, 'error')
     } finally {
       setReferring(false)

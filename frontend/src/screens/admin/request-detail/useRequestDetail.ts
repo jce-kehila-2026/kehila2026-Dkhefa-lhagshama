@@ -139,6 +139,10 @@ export function useRequestDetail(id: string | string[] | undefined) {
       // FIX 2 — flip the aside back to the assigned summary; the silent reload
       // (FIX 1) has already refreshed request.assignedVolunteerId.
       setReassigning(false)
+      // Reset the candidate filter so the next reassign opens on a clean,
+      // best-first list (clearing the search also re-homes the carousel to
+      // its first card via the candidateQuery effect).
+      setCandidateSearch('')
       toast(a.claims.assignSuccess, 'success')
     } else toast(a.claims.assignError, 'error')
   }
@@ -172,6 +176,9 @@ export function useRequestDetail(id: string | string[] | undefined) {
     if (ok) {
       // FIX 2 — assigning a claimant also flips the aside to the summary.
       setReassigning(false)
+      // Reset the candidate filter (also re-homes the carousel via the
+      // candidateQuery effect) so a later reassign starts clean.
+      setCandidateSearch('')
       toast(a.claims.assignSuccess, 'success')
     } else toast(a.claims.assignError, 'error')
   }
@@ -203,7 +210,8 @@ export function useRequestDetail(id: string | string[] | undefined) {
             })
       if (!res.ok) {
         const msg = res.status === 409 || res.status === 422 ? lc.actions.illegalTransition : copy.error
-        setError(msg)
+        // The toast already surfaces the failure; setError here would
+        // double-report (and now also raise the top-level ErrorState).
         toast(msg, 'error')
         return
       }
@@ -212,7 +220,7 @@ export function useRequestDetail(id: string | string[] | undefined) {
       await load({ silent: true })
       toast(copy.success, 'success')
     } catch {
-      setError(copy.error)
+      // Toast-only (see above) — avoid double-reporting via setError.
       toast(copy.error, 'error')
     } finally {
       setSaving(false)

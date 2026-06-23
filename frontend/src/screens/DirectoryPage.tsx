@@ -45,6 +45,7 @@ import { makeLoadBusinesses, makeLoadAnswers } from './directory/loaders'
 import { makeOpenBusinessModal, makeOpenAnswerModal } from './directory/detailModals'
 import { makeHandleRegisterSubmit } from './directory/registerSubmit'
 import { useDirectoryDeepLink } from './directory/useDirectoryDeepLink'
+import { pickLang as pickShared, pickLangArray as pickArrShared } from '@/lib/bilingual'
 import styles from './DirectoryPage.module.css'
 
 export default function DirectoryPage() {
@@ -64,18 +65,14 @@ export default function DirectoryPage() {
   // strings / missing values, so `.toLowerCase()`/`.map()` never throw on
   // live data.
   const L = useCallback(
-    (v: Bilingual): string => ((v && typeof v === 'object') ? (v[lang] ?? v.he ?? '') : (v ?? '')) as string,
+    (v: Bilingual): string => pickShared(v as Parameters<typeof pickShared>[0], lang),
     [lang],
   )
   // `tags` is `{ he: string[], en: string[] }` (or, defensively, a bare array).
-  const L_arr = useCallback((v: Bilingual): string[] => {
-    if (Array.isArray(v)) return v as string[]
-    if (v && typeof v === 'object') {
-      const arr = v[lang] ?? v.he
-      return Array.isArray(arr) ? (arr as string[]) : []
-    }
-    return []
-  }, [lang])
+  const L_arr = useCallback(
+    (v: Bilingual): string[] => pickArrShared(v as Parameters<typeof pickArrShared>[0], lang),
+    [lang],
+  )
 
   // ── DETAIL MODALS (Note 2) ────────────────────────────────────
   // The modal-payload builders live in ./directory/detailModals; they are wired
