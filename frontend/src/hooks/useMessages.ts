@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   collection,
-  limit,
+  limitToLast,
   onSnapshot,
   orderBy,
   query,
@@ -112,18 +112,21 @@ export function useMessages(chatId: string | null): UseMessagesResult {
     setLoading(true);
     setError(null);
 
+    // limitToLast on ASC order returns the newest `limitN` messages already in
+    // chronological order — and reuses the existing (chatId ASC, timestamp ASC)
+    // composite index, so pagination needs no new Firestore index to deploy.
     const q = query(
       collection(firebaseDb, 'messages'),
       where('chatId', '==', chatId),
-      orderBy('timestamp', 'desc'),
-      limit(limitN),
+      orderBy('timestamp', 'asc'),
+      limitToLast(limitN),
     );
 
     unsubRef.current = onSnapshot(
       q,
       (snap) => {
         setHasMore(snap.docs.length >= limitN);
-        const msgs: ChatMessage[] = snap.docs.slice().reverse().map((doc) => {
+        const msgs: ChatMessage[] = snap.docs.map((doc) => {
           const d = doc.data() as RawMessageDoc;
           return {
             id: doc.id,
