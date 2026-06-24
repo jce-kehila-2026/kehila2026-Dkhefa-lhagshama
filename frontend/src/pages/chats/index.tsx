@@ -5,8 +5,15 @@
  * keeping the route file thin lets the screen be tested/reused independently of routing.
  */
 import ChatListPage from "@/screens/ChatListPage";
+import AuthedGate from "@/components/gates/AuthedGate";
 
-// default export = the page Next.js mounts at /chats; just renders the screen.
+// default export = the page Next.js mounts at /chats. Wrapped in AuthedGate so a
+// signed-out visitor is redirected to login (consistent with admin/volunteer
+// routes) instead of rendering the screen unguarded — audit Prompt 4.
 export default function Page() {
-  return <ChatListPage />;
+  return (
+    <AuthedGate>
+      <ChatListPage />
+    </AuthedGate>
+  );
 }

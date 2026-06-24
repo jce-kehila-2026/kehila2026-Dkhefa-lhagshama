@@ -7,8 +7,15 @@
  * keep this file dumb; behavior lives in the screen and its hooks.
  */
 import ChatWindowPage from "@/screens/ChatWindowPage";
+import AuthedGate from "@/components/gates/AuthedGate";
 
-// route entry point next renders for /chats/:id; no props, the screen pulls the id from the router.
+// route entry point next renders for /chats/:id. Wrapped in AuthedGate so a
+// signed-out visitor is redirected to login (consistent with the rest of the
+// app) — audit Prompt 4. The screen still pulls the id from the router.
 export default function Page() {
-  return <ChatWindowPage />;
+  return (
+    <AuthedGate>
+      <ChatWindowPage />
+    </AuthedGate>
+  );
 }

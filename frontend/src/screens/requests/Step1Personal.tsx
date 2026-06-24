@@ -82,7 +82,11 @@ export default function Step1Personal({
           <Label required>{s2.idType.label}</Label>
           <HelpTooltip text={s2.idType.tip} label={s2.idType.tipLabel} />
         </span>
-        <div className={styles.pillGroupSpaced}>
+        {/* role=radiogroup + aria-label expose the radio SET as one labelled
+            group to screen readers (audit Prompt 7 M1) — the visible heading is
+            a bare Label, so without this the radios aren't announced as a group.
+            Mirrors Step2RequestType, which already does this. */}
+        <div className={styles.pillGroupSpaced} role="radiogroup" aria-label={s2.idType.label}>
           {[
             ['israeli_id', s2.idType.israeliId],
             ['passport',   s2.idType.passport],
@@ -162,7 +166,8 @@ export default function Step1Personal({
 
       <FormGroup>
         <Label>{rq.step1.gender}</Label>
-        <div className={styles.pillGroup}>
+        {/* radiogroup semantics for the gender radio set (audit Prompt 7 M1). */}
+        <div className={styles.pillGroup} role="radiogroup" aria-label={rq.step1.gender}>
           {[['M', rq.step1.genderM], ['F', rq.step1.genderF], ['O', rq.step1.genderO]].map(([val, label]) => (
             <label key={val} className={`opt-pill${values.gender === val ? ' is-on' : ''}`}>
               <input type="radio" name="gender" value={val}
