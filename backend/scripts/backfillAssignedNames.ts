@@ -24,6 +24,20 @@ async function main(): Promise<void> {
   let fixed = 0;
   let skipped = 0;
 
+  // BATCHING (audit Prompt 8): accumulate the rewrites into Firestore batches
+  // (max 500 ops/batch; we cap at 400 for headroom) and commit when full,
+  // instead of one awaited .update() per doc. On a large requests collection the
+  // per-doc round-trips would be slow and risk timing out / hitting quota.
+  const BATCH_LIMIT = 400;
+  let batch = db().batch();
+  let pending = 0;
+  const flush = async (): Promise<void> => {
+    if (pending === 0) return;
+    await batch.commit();
+    batch = db().batch();
+    pending = 0;
+  };
+
   for (const doc of snap.docs) {
     const data = doc.data();
     const uid = (data.assignedVolunteerId as string | null | undefined) ?? null;
@@ -42,13 +56,17 @@ async function main(): Promise<void> {
       skipped += 1;
       continue;
     }
-    await doc.ref.update({
+    batch.update(doc.ref, {
       assignedVolunteerName: resolved,
       updatedAt: FieldValue.serverTimestamp(),
     });
+    pending += 1;
     fixed += 1;
     console.log(`OK   ${doc.id} -> ${resolved}`);
+    if (pending >= BATCH_LIMIT) await flush();
   }
+
+  await flush(); // commit the final partial batch
 
   console.log(`Done. assigned=${scanned} fixed=${fixed} skipped=${skipped}`);
   process.exit(0);
