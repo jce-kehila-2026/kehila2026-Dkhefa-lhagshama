@@ -89,17 +89,32 @@ export async function openChat(req: Request, res: Response): Promise<void> {
     participants.push(requestData.assignedVolunteerId);
   }
 
-  const chatRef = db().collection('chats').doc();
-  await chatRef.set({
-    requestId,
-    participants,
-    kind: 'request',
-    createdBy: uid,
-    title: null,
-    active: true,
-    lastMessageAt: FieldValue.serverTimestamp(),
-    createdAt: FieldValue.serverTimestamp(),
-  });
-
-  res.status(201).json({ chatId: chatRef.id });
+  // DUPLICATE-RACE FIX (audit MODERATE #2): use a DETERMINISTIC id = requestId
+  // and `.create()` (first-write-wins) instead of a random id + `.set()`. Two
+  // concurrent opens (double-click, two participants, a retried 201) used to
+  // both observe `existing.empty` and each mint a distinct chat, violating the
+  // one-chat-per-request invariant. Now the second create throws ALREADY_EXISTS
+  // and we reuse the winner's chat. (The where-query above still reuses any
+  // legacy random-id chat created before this change.)
+  const chatRef = db().collection('chats').doc(requestId);
+  try {
+    await chatRef.create({
+      requestId,
+      participants,
+      kind: 'request',
+      createdBy: uid,
+      title: null,
+      active: true,
+      lastMessageAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    res.status(201).json({ chatId: chatRef.id });
+  } catch (err) {
+    // gRPC ALREADY_EXISTS (6): a concurrent open won the race — reuse it (200).
+    if ((err as { code?: number }).code === 6) {
+      res.status(200).json({ chatId: chatRef.id });
+      return;
+    }
+    throw err; // any other error → central errorHandler (asyncHandler-wrapped)
+  }
 }

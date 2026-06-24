@@ -86,19 +86,36 @@ export async function ensureChatForRequest({
       }),
     );
   } else {
-    // Create new chat with both participants
-    const chatRef = chatsRef.doc();
-    chatId = chatRef.id;
-    await chatRef.set({
-      requestId,
-      participants: [beneficiaryId, volunteerId],
-      kind: 'request',
-      createdBy: 'system',
-      title: null,
-      active: true,
-      lastMessageAt: FieldValue.serverTimestamp(),
-      createdAt: FieldValue.serverTimestamp(),
-    });
+    // Create the chat with a DETERMINISTIC id = requestId via `.create()`
+    // (audit MODERATE #2): first-write-wins, so this can't race openChat (or a
+    // retried assign) into two chats for one request. The where-query above
+    // already reused any legacy random-id chat, so we only reach here when none
+    // exists yet.
+    const chatRef = chatsRef.doc(requestId);
+    chatId = requestId;
+    try {
+      await chatRef.create({
+        requestId,
+        participants: [beneficiaryId, volunteerId],
+        kind: 'request',
+        createdBy: 'system',
+        title: null,
+        active: true,
+        lastMessageAt: FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (err) {
+      // ALREADY_EXISTS (6): a concurrent creator (e.g. openChat) won the race —
+      // just ensure the incoming volunteer is a participant on the winner's chat.
+      if ((err as { code?: number }).code === 6) {
+        await chatRef.update({
+          participants: FieldValue.arrayUnion(volunteerId),
+          lastMessageAt: FieldValue.serverTimestamp(),
+        });
+      } else {
+        throw err;
+      }
+    }
   }
 
   // Post a system message to notify about the assignment

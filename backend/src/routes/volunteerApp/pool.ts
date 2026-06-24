@@ -33,8 +33,18 @@ export async function getPool(req: Request, res: Response): Promise<void> {
       .limit(500)
       .get();
 
+    // Defense-in-depth (audit MODERATE #4): exclude any terminal-status request
+    // that is still flagged poolStatus:'available'. Admin task requests are born
+    // pending+available and only `assign` resets poolStatus; if an admin drives a
+    // pooled task to closed/rejected/referred WITHOUT assigning, the flag lingers
+    // and the dead case would otherwise show in the pool as claimable. Filtering
+    // on status here (and in the claim guard below) survives any future writer
+    // that forgets to reset the flag.
+    const TERMINAL = new Set(['closed', 'rejected', 'referred']);
     // keep the raw doc alongside the sort keys so we can rebuild cards in priority order.
-    const sortable = snap.docs.map((d) => {
+    const sortable = snap.docs
+      .filter((d) => !TERMINAL.has((d.data().status as string) ?? ''))
+      .map((d) => {
       const data = d.data();
       return {
         _doc: d,
@@ -92,9 +102,14 @@ export async function claimPoolRequest(req: Request, res: Response): Promise<voi
       }
       const data = snap.data() as {
         poolStatus?: string;
+        status?: string;
         claims?: Array<{ volunteerId?: string }>;
       };
-      if (data.poolStatus !== 'available') {
+      // Reject claiming a terminal request even if poolStatus still says
+      // 'available' (audit MODERATE #4 — a pooled task driven to a terminal state
+      // without going through assign keeps the stale flag).
+      const TERMINAL = new Set(['closed', 'rejected', 'referred']);
+      if (data.poolStatus !== 'available' || TERMINAL.has(data.status ?? '')) {
         throw new OpError(409, 'not_available', { poolStatus: data.poolStatus ?? null });
       }
       const claims = data.claims ?? [];
