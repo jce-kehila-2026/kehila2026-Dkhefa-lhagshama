@@ -25,7 +25,7 @@ const {
   assertFails,
 } = require('@firebase/rules-unit-testing');
 
-const { doc, getDoc, setDoc, deleteDoc } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, deleteDoc } = require('firebase/firestore');
 
 const PROJECT_ID = 'push-for-fulfillment-test';
 const RULES_PATH = path.resolve(__dirname, '../../firestore.rules');
@@ -151,6 +151,38 @@ describe('/users', () => {
   test('self-write (role escalation) is denied', async () => {
     await assertFails(
       setDoc(doc(asUser('alice'), 'users/alice'), { role: 'admin' }),
+    );
+  });
+
+  // photoURL self-write carve-out (Note 11) — the ONE field a client may write
+  // on its own profile. Previously untested (audit Prompt 8).
+  test('owner may update only their own photoURL', async () => {
+    await assertSucceeds(
+      updateDoc(doc(asUser('alice'), 'users/alice'), { photoURL: 'avatars/alice.png' }),
+    );
+  });
+
+  test('owner cannot update a non-photoURL field via the carve-out', async () => {
+    await assertFails(
+      updateDoc(doc(asUser('alice'), 'users/alice'), { displayName: 'Alice A.' }),
+    );
+  });
+
+  test('owner cannot smuggle another field alongside photoURL', async () => {
+    await assertFails(
+      updateDoc(doc(asUser('alice'), 'users/alice'), { photoURL: 'p.png', role: 'admin' }),
+    );
+  });
+
+  test('photoURL must be a string', async () => {
+    await assertFails(
+      updateDoc(doc(asUser('alice'), 'users/alice'), { photoURL: 123 }),
+    );
+  });
+
+  test('non-owner cannot update photoURL', async () => {
+    await assertFails(
+      updateDoc(doc(asUser('bob'), 'users/alice'), { photoURL: 'p.png' }),
     );
   });
 });
@@ -587,6 +619,90 @@ describe('/volunteers availability (WS-7)', () => {
   test('a volunteer cannot read another volunteer doc', async () => {
     await seed((dbx) => setDoc(doc(dbx, 'volunteers/vol2'), { active: true }));
     await assertFails(getDoc(doc(asVolunteer(), 'volunteers/vol2')));
+  });
+});
+
+// ── /ratings — experience ratings (#80) ─────────────────────────────────────
+// Previously had ZERO rules-test coverage despite carrying PII access logic
+// (audit Prompt 8). The owning beneficiary + admins read; clients never write.
+describe('/ratings', () => {
+  beforeEach(() =>
+    seed((db) =>
+      setDoc(doc(db, 'ratings/req1'), {
+        beneficiaryId: 'alice',
+        volunteerId: 'vol1',
+        stars: 5,
+      }),
+    ),
+  );
+
+  test('owning beneficiary can read their own rating', async () => {
+    await assertSucceeds(getDoc(doc(asUser('alice'), 'ratings/req1')));
+  });
+
+  test('admin can read any rating', async () => {
+    await assertSucceeds(getDoc(doc(asAdmin(), 'ratings/req1')));
+  });
+
+  test('an unrelated user cannot read a rating', async () => {
+    await assertFails(getDoc(doc(asUser('bob'), 'ratings/req1')));
+  });
+
+  test('the rated volunteer cannot read the rating directly', async () => {
+    await assertFails(getDoc(doc(asVolunteer(), 'ratings/req1')));
+  });
+
+  test('anonymous cannot read a rating', async () => {
+    await assertFails(getDoc(doc(anon(), 'ratings/req1')));
+  });
+
+  test('client create is denied (server-only)', async () => {
+    await assertFails(
+      setDoc(doc(asUser('alice'), 'ratings/req2'), { beneficiaryId: 'alice', stars: 4 }),
+    );
+  });
+
+  test('client update is denied (server-only)', async () => {
+    await assertFails(updateDoc(doc(asUser('alice'), 'ratings/req1'), { stars: 1 }));
+  });
+});
+
+// ── /volunteerApplications — Stream 3 signup (#70) ───────────────────────────
+// Previously untested (audit Prompt 8). The applicant reads their own; admins
+// read all; the client never writes (Express + Admin SDK own all mutations).
+describe('/volunteerApplications', () => {
+  beforeEach(() =>
+    seed((db) =>
+      setDoc(doc(db, 'volunteerApplications/app1'), { uid: 'alice', status: 'pending' }),
+    ),
+  );
+
+  test('applicant can read their own application', async () => {
+    await assertSucceeds(getDoc(doc(asUser('alice'), 'volunteerApplications/app1')));
+  });
+
+  test('admin can read any application', async () => {
+    await assertSucceeds(getDoc(doc(asAdmin(), 'volunteerApplications/app1')));
+  });
+
+  test('an unrelated user cannot read an application', async () => {
+    await assertFails(getDoc(doc(asUser('bob'), 'volunteerApplications/app1')));
+  });
+
+  test('anonymous cannot read an application', async () => {
+    await assertFails(getDoc(doc(anon(), 'volunteerApplications/app1')));
+  });
+
+  test('client create is denied (server-only)', async () => {
+    await assertFails(
+      setDoc(doc(asUser('alice'), 'volunteerApplications/app2'), { uid: 'alice', status: 'pending' }),
+    );
+  });
+
+  test('client update (self-approve) is denied', async () => {
+    await assertFails(
+      updateDoc(doc(asUser('alice'), 'volunteerApplications/app1'), { status: 'approved' }),
+    );
   });
 });
 
