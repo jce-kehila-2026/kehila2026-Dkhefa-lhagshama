@@ -14,6 +14,7 @@ import 'dotenv/config';
 import { FieldValue } from 'firebase-admin/firestore';
 
 import { initializeFirebaseAdmin, auth, db } from '@/lib/firebaseAdmin';
+import { assertSafeToRun } from './lib/guard';
 
 async function main(): Promise<void> {
   const email = process.argv[2];
@@ -21,6 +22,10 @@ async function main(): Promise<void> {
     console.error('Usage: npm run set-volunteer -- <email>');
     process.exit(1);
   }
+
+  // Audit HIGH: privilege grant — block accidental runs against production
+  // (staging/emulator only, or --allow-nonstaging to override).
+  assertSafeToRun({ action: 'grant volunteer role' });
 
   initializeFirebaseAdmin();
 

@@ -13,6 +13,7 @@
 import 'dotenv/config';
 
 import { initializeFirebaseAdmin, auth } from '@/lib/firebaseAdmin';
+import { assertSafeToRun } from './lib/guard';
 
 async function main(): Promise<void> {
   const email = process.argv[2];
@@ -20,6 +21,12 @@ async function main(): Promise<void> {
     console.error('Usage: npm run set-admin -- <email>');
     process.exit(1);
   }
+
+  // Audit HIGH: granting admin is the most security-critical mutation here and
+  // was previously UNguarded — a wrong GOOGLE_APPLICATION_CREDENTIALS could grant
+  // admin on production. Block any non-staging/non-emulator project (override
+  // with --allow-nonstaging for a deliberate dev project).
+  assertSafeToRun({ action: 'grant admin role' });
 
   initializeFirebaseAdmin();
 

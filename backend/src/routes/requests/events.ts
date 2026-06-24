@@ -40,18 +40,28 @@ export async function listEvents(req: Request, res: Response): Promise<void> {
       res.status(404).json({ error: 'not_found' });
       return;
     }
-    const data = snap.data() as { beneficiaryId?: string; handler?: string | null };
+    const data = snap.data() as {
+      beneficiaryId?: string;
+      handler?: string | null;
+      assignedVolunteerId?: string | null;
+    };
     const isOwner   = data.beneficiaryId === req.user.uid;
     const isHandler = data.handler       === req.user.uid;
+    // Audit M-2: the assigned volunteer is staff too. The canonical staff check
+    // elsewhere (getOne.ts/attachments.ts/done.ts) keys off assignedVolunteerId,
+    // not just handler; mirror it here so a volunteer assigned via
+    // assignedVolunteerId (should the two fields ever diverge) isn't 403'd off
+    // their own case timeline, and is consistently treated as internal-visible.
+    const isAssignedVolunteer = data.assignedVolunteerId === req.user.uid;
     const isAdmin   = req.user.role      === 'admin';
 
-    if (!isOwner && !isHandler && !isAdmin) {
+    if (!isOwner && !isHandler && !isAssignedVolunteer && !isAdmin) {
       res.status(403).json({ error: 'forbidden' });
       return;
     }
 
     // Determine which visibility levels this caller may see.
-    const canSeeInternal = isAdmin || isHandler;
+    const canSeeInternal = isAdmin || isHandler || isAssignedVolunteer;
 
     // Sort client-side by createdAt (ascending) instead of Firestore orderBy
     // so this equality query needs no composite index — the set is small.

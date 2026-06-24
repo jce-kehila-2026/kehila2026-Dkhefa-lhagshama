@@ -32,9 +32,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Gate: lint + build + tests must pass BEFORE we ship (audit Prompt 6 H1) ──
+  # Deploy and CI used to be independent push-triggered workflows, so a push that
+  # failed CI (broken Jest/lint) still deployed in parallel. This job re-runs the
+  # checks and the deploy job `needs:` it, so a red build never reaches staging.
+  verify:
+    name: Lint + build + test (gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
+      - name: Backend — install, lint, build, test
+        working-directory: backend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+          npm test
+      - name: Frontend — install, lint, build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
   # ── One framework-aware deploy: Hosting + Functions + Firestore rules/indexes ─
   deploy:
     name: Build & deploy (Hosting + Functions + Firestore rules/indexes)
+    needs: verify # do not ship unless the gate above is green
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

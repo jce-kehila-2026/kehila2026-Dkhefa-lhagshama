@@ -7,8 +7,16 @@
  * keeping page files minimal is the convention across src/pages here.
  */
 import RequestsPage from '@/screens/RequestsPage'
+import AuthedGate from '@/components/gates/AuthedGate'
 
-// next.js page component for /requests; delegates entirely to the screen.
+// Wrapped in AuthedGate (audit Prompt 4 H1): like /my-requests, the submit-request
+// screen used a bespoke timeout redirect that could flash content to signed-out
+// users. The gate redirects them to /login synchronously with no flash; the
+// screen's submit/role logic still runs for signed-in beneficiaries/volunteers.
 export default function Page() {
-  return <RequestsPage />
+  return (
+    <AuthedGate>
+      <RequestsPage />
+    </AuthedGate>
+  )
 }

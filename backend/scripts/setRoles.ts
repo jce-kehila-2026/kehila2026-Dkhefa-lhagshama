@@ -13,6 +13,7 @@ import 'dotenv/config';
 import { FieldValue } from 'firebase-admin/firestore';
 
 import { initializeFirebaseAdmin, auth, db } from '@/lib/firebaseAdmin';
+import { assertSafeToRun } from './lib/guard';
 
 const VALID_ROLES = ['beneficiary', 'businessOwner', 'volunteer', 'admin'] as const;
 type Role = (typeof VALID_ROLES)[number];
@@ -44,6 +45,10 @@ async function main(): Promise<void> {
     }
     pairs.push({ email, role });
   }
+
+  // Audit HIGH: bulk privilege grant — block accidental runs against production
+  // (staging/emulator only, or --allow-nonstaging to override).
+  assertSafeToRun({ action: 'bulk set roles' });
 
   initializeFirebaseAdmin();
 
