@@ -74,13 +74,20 @@ describe('/requests', () => {
     ),
   );
 
-  test('owner can read own request', async () => {
-    await assertSucceeds(getDoc(doc(asUser('alice'), 'requests/req1')));
+  // SECURITY FIX (audit CRITICAL): the owner must NOT read their own request
+  // via the client SDK. The raw doc carries staff-only fields (internal notes,
+  // other volunteers' claims/dropReports) that Firestore rules cannot project
+  // away; the owner reads through GET /api/requests/:id|/mine, which strips
+  // them. So a direct client read by the owner is now DENIED — only admins may
+  // read /requests directly. (Was `assertSucceeds` before the fix.)
+  test('owner cannot read own request directly (server-mediated, redacts staff fields)', async () => {
+    await assertFails(getDoc(doc(asUser('alice'), 'requests/req1')));
   });
 
-  // F2-B (commit 7115a8c): direct client-SDK reads are owner-or-admin ONLY.
-  // Staff (assigned handler / volunteer) must use GET /api/requests/:id, which
-  // projects away the national-ID scan and internal notes the raw doc carries.
+  // Direct client-SDK reads of /requests are ADMIN-ONLY. Everyone else (owner,
+  // assigned handler, assigned volunteer) reads via GET /api/requests/:id,
+  // which projects away the national-ID scan and internal notes the raw doc
+  // carries.
   test('assigned handler cannot read directly (server-mediated)', async () => {
     await assertFails(getDoc(doc(asUser('handler1'), 'requests/req1')));
   });

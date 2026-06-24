@@ -21,19 +21,29 @@ service cloud.firestore {
     }
 
     // ── /requests — UC-01 ────────────────────────────────────────────────
-    // Beneficiaries can read the requests they own; the assigned handler can
-    // read theirs; admins can read all. Writes are server-only (Express +
-    // Admin SDK bypass these rules) — the client never writes to /requests.
+    // BIG PICTURE: a request document is the most PII-dense record in the
+    // system. Besides the beneficiary's own data it accumulates STAFF-ONLY
+    // fields over its lifecycle: internal admin `notes`, the `claims` of every
+    // interested volunteer (their identity + a private note), `dropReports`
+    // (names + free-text reasons of volunteers who abandoned the case), and the
+    // internal `handler`/`assignedVolunteerId`. The Express API
+    // (GET /api/requests/:id, /mine) strips all of these before returning a
+    // request to its owner — but Firestore rules CANNOT do field-level
+    // projection: `allow read` returns the WHOLE raw document.
+    //
+    // SECURITY FIX (audit CRITICAL): the previous rule also let the OWNER read
+    // their own request directly via the client SDK
+    // (`resource.data.beneficiaryId == request.auth.uid`). That bypassed the
+    // API's redaction entirely — a beneficiary could open the browser console
+    // and `getDoc(doc(db,'requests', myId))` to read the internal staff notes
+    // and other volunteers' PII on their own case. We verified NO frontend code
+    // reads /requests via the client SDK (all reads go through the redacting
+    // Express endpoints), so we drop the owner grant and make direct client
+    // reads ADMIN-ONLY. Beneficiaries/staff are unaffected — they read through
+    // the API, which is the real, field-aware security boundary.
+    // (Takes effect on the next `firebase deploy --only firestore:rules`.)
     match /requests/{requestId} {
-      // F2-B: direct client reads are limited to the owner and admins. Staff
-      // (assigned handler/volunteer) read via GET /api/requests/:id, which
-      // strips the national ID / internal notes the full doc would otherwise
-      // leak (Firestore has no field-level projection). The app never reads
-      // /requests via the client SDK today — this is defense-in-depth.
-      allow read: if isSignedIn() && (
-        resource.data.beneficiaryId == request.auth.uid
-        || isAdmin()
-      );
+      allow read: if isAdmin();
       // Note 6/8: status, referral and archived are lifecycle fields written
       // ONLY through Express (Admin SDK) — done/status/refer/archive endpoints.
       // No client write carve-out: the client SDK never mutates a request.
