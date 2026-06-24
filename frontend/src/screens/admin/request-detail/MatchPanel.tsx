@@ -1,3 +1,15 @@
+// MatchPanel — the volunteer matching + assignment block inside the admin
+// request-detail action aside (UC-05). It owns one job: render either the
+// "already assigned" summary or the searchable, ranked candidate carousel, and
+// let the admin assign/reassign. It is fully controlled — every piece of data
+// (ranked candidates, search term, carousel index, in-flight assign uid) and
+// every handler is passed down by the parent request-detail screen, which does
+// the actual fetch (GET /api/admin/requests/:id/candidates, best-first from the
+// rule-based matcher) and mutation. Collaborators: lucide-react icons, the
+// shared LanguageContext Translations, ./types, and co-located MatchPanel.module.css.
+// Big-picture invariant: an assigned request (with no active reassign) shows the
+// assignee + their match reasons; otherwise the ranked list. HE/RTL aware (the
+// prev/next chevrons swap on isRTL).
 import {
   AlertTriangle,
   MapPin,

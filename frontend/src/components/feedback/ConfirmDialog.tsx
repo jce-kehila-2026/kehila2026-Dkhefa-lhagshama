@@ -6,6 +6,14 @@ import { AlertTriangle, HelpCircle } from 'lucide-react'
  * window.confirm()/alert() so copy stays bilingual (all labels arrive via
  * props bound to t.*) and the surface matches the editorial "Sky" system.
  *
+ * Collaborators: purely presentational and self-contained. It owns ONLY the
+ * confirm/notice surface plus its focus + keyboard behaviour; callers (e.g.
+ * ChatWindow's mark-done flow) own the open state and the confirm/cancel
+ * handlers. Icons come from lucide-react; all visual styling lives in the
+ * global `.confirm-*` classes; React's useId keeps the aria wiring collision
+ * -free across multiple dialogs. No context, data fetching, or i18n lookups
+ * here, the parent passes already-translated strings.
+ *
  * Behaviour:
  *  - role="dialog" + aria-modal, labelled by its title and described by its body.
  *  - Focus moves to the primary action on open; focus is trapped inside the

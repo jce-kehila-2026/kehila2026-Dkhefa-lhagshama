@@ -1,3 +1,20 @@
+/*
+ * VolunteerLayout — the page shell wrapped around every /volunteer-hub/* screen.
+ *
+ * Its single responsibility is structural chrome: it pairs the persistent
+ * VolunteerSidebar (dark nav on desktop, bottom tab bar on mobile) with an
+ * optional header (title/subtitle/actions) and the page's content area. It owns
+ * no data and no state — callers pass their own header bits and children.
+ *
+ * Collaborators: VolunteerSidebar (the nav), and _app.tsx (which hides the
+ * global Navbar/Footer for these routes so this shell stands alone). It
+ * deliberately reuses the admin shell CSS classes (`admin-*`) so the volunteer
+ * hub stays visually consistent with AdminLayout; `volapp-shell` is the only
+ * volunteer-specific override.
+ *
+ * Big picture: this is a dumb presentational wrapper. Auth/route-guarding and
+ * data fetching happen in the pages that render it, not here.
+ */
 import type { ReactNode } from 'react'
 import VolunteerSidebar from './VolunteerSidebar'
 

@@ -1,3 +1,16 @@
+/**
+ * AccountDisabledPage — the calm "your account is disabled" landing screen.
+ *
+ * Its one job: render a static, reassuring page (icon + title + body + a contact
+ * mailto + a back-home button) for a user the platform has already signed out and
+ * redirected here. It owns no auth logic itself; the disabled-detection and sign-out
+ * happen upstream in AuthContext. Collaborators: useLanguage (HE/EN copy + RTL flag),
+ * the shared Reveal motion wrapper, lucide icons, and styles/screens/account-disabled.css.
+ *
+ * Big picture: this is a pure presentational dead-end screen, so there is no state,
+ * no effects, no data fetching. RTL is handled by flipping only the back-arrow glyph;
+ * everything else is driven by logical-property CSS.
+ */
 import Link from 'next/link'
 import { ShieldOff, Mail, ArrowLeft, ArrowRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'

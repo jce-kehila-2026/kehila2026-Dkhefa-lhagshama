@@ -1,3 +1,18 @@
+/*
+ * useRequestDetail — the headless brain of the admin request-detail screen.
+ * Its one job: own every piece of state, data fetch and action handler for a
+ * single request so the page component can stay a dumb presentational shell that
+ * just spreads this hook's return object into its children. It collaborates with
+ * the Express admin API (apiJson/apiFetch against `/api/admin/requests/:id`,
+ * /volunteers, /candidates, /assign, /note, /status, /archive), LanguageContext
+ * (bilingual copy + locale-aware date formatting), AppContext (toasts), and the
+ * companion useReferralAndDocs hook (referral + document-viewer flows). Big
+ * picture: this is where the WS-6 rule-based volunteer matcher surfaces as a
+ * ranked, filterable, one-at-a-time candidate carousel, and where lifecycle
+ * status moves are gated to legal transitions. Key invariant: every successful
+ * mutation re-fetches via `load({ silent: true })` so the detail body updates in
+ * place instead of flashing back to the loading skeleton.
+ */
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'

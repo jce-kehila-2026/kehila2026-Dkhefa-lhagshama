@@ -1,3 +1,19 @@
+/*
+ * insightsChrome — shared visual chrome for the recharts-based insights dashboards.
+ *
+ * WHAT: a small kit of brand-aligned constants and helpers (no rendered chart of
+ * its own) that the admin and volunteer insights screens import so their charts
+ * look identical and stay on the design system's palette.
+ *
+ * ONE RESPONSIBILITY: bridge tokens.css to recharts. recharts paints SVG fills
+ * and cannot resolve CSS custom properties, so the brand colors are mirrored here
+ * as literal hex/rgba strings (each annotated with the token it shadows). If a
+ * token changes in tokens.css, update the matching literal here too.
+ *
+ * COLLABORATORS: imported by the insights chart components; `makeTooltip` returns
+ * a recharts TooltipContent component, and the `insights-tooltip*` class names it
+ * emits are styled in the global insights stylesheet.
+ */
 import type { ReactNode } from 'react'
 import type { TooltipContentProps } from 'recharts'
 

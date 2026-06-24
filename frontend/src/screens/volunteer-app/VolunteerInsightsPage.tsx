@@ -1,3 +1,14 @@
+// VolunteerInsightsPage — the analytics dashboard for a single volunteer's own
+// activity (volunteer-app screen). It owns one job: fetch GET /api/volunteer/insights
+// and render it as four cards inside VolunteerLayout — a requests-over-time area
+// chart, two scalar stats (current load + average resolution days), and category
+// and status bar charts. Pure read-only view; the only state is the fetch result
+// plus loading/error/mounted flags, and `load` is retried via the ErrorState button.
+// Collaborates with: useLanguage (t.volunteerApp.insights + RTL axis side),
+// useCategories.labelFor (bilingual category axis labels), recharts (all charts),
+// and the shared insightsChrome palette/tooltip so volunteer and admin insights
+// stay visually consistent. Backend emits synthetic 'unknown'/'uncategorized' ids
+// for ungrouped requests, resolved to localized labels here before reaching the charts.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ResponsiveContainer,
