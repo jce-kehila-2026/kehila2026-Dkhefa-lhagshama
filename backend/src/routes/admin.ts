@@ -84,9 +84,77 @@ router.get('/pending', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// Statuses from which a moderation decision is still allowed. Re-deciding an
+// already approved/rejected entity is blocked (409 already_decided) — flipping a
+// finished decision is a deliberate "reopen", not a queue action. A missing
+// status is treated as decidable (legacy docs created before the status field).
+const DECIDABLE_STATUSES = new Set<string | undefined>(['pending', 'needs_changes', undefined]);
+
+// Local error so the transaction body can bail out with a specific HTTP status.
+class ModerationError extends Error {
+  constructor(public readonly httpStatus: number, public readonly code: string) {
+    super(code);
+    this.name = 'ModerationError';
+  }
+}
+
+/**
+ * Shared transactional moderation applier for approve / reject / request-changes
+ * (DRY: the three handlers were near-identical — audit code-quality).
+ *
+ * RACE FIX (audit): the originals did a plain existence `.get()` then an
+ * unconditional `.update()`, so two admins acting on the SAME pending entity
+ * could BOTH succeed (last-write-wins) AND both append a contradictory audit
+ * log. Here the read-check-write runs in a transaction with a "still decidable"
+ * precondition, so only the first decision commits; a stale second decision
+ * gets 409 already_decided (or 409 concurrent_update if it lost the race).
+ */
+async function applyDecision(opts: {
+  entityType: (typeof ENTITY_TYPES)[number];
+  entityId: string;
+  actorId: string;
+  status: string;
+  stamp: Record<string, unknown>;
+  auditAction: string;
+  note?: string;
+}): Promise<void> {
+  const ref = db().collection(opts.entityType).doc(opts.entityId);
+  await db().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new ModerationError(404, 'not_found');
+    const current = snap.data()!.status as string | undefined;
+    if (!DECIDABLE_STATUSES.has(current)) throw new ModerationError(409, 'already_decided');
+    tx.update(ref, { status: opts.status, ...opts.stamp });
+  });
+  // Audit only after the decision committed (so a refused/aborted decision never
+  // leaves an orphan log).
+  await writeAuditLog({
+    actorId: opts.actorId,
+    action: opts.auditAction,
+    entityType: opts.entityType,
+    entityId: opts.entityId,
+    details: { note: opts.note ?? null },
+  });
+}
+
+// Shared error→HTTP translation for the decision routes.
+function respondDecisionError(res: Response, err: unknown, ctx: string): void {
+  if (err instanceof ModerationError) {
+    res.status(err.httpStatus).json({ error: err.code });
+    return;
+  }
+  // gRPC ABORTED (code 10): the txn lost a race after retries.
+  if ((err as { code?: number }).code === 10) {
+    res.status(409).json({ error: 'concurrent_update' });
+    return;
+  }
+  console.error(`${ctx}:`, err);
+  res.status(500).json({ error: 'internal_error' });
+}
+
 // POST /api/admin/approve — body { entityType, entityId, note? } (actionSchema).
-// 400 invalid_input / 404 not_found, else sets status='approved' + approver
-// stamps, writes an audit log, and returns { ok: true }.
+// 400 invalid_input / 404 not_found / 409 already_decided|concurrent_update,
+// else sets status='approved' + approver stamps, audit-logs, returns { ok: true }.
 router.post('/approve', async (req: Request, res: Response): Promise<void> => {
   const parsed = actionSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -95,38 +163,20 @@ router.post('/approve', async (req: Request, res: Response): Promise<void> => {
   }
   const { entityType, entityId, note } = parsed.data;
   const actorId = req.user!.uid;
-
   try {
-    const ref = db().collection(entityType).doc(entityId);
-    if (!(await ref.get()).exists) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
-
-    await ref.update({
+    await applyDecision({
+      entityType, entityId, actorId, note,
       status: 'approved',
-      approvedBy: actorId,
-      approvedAt: FieldValue.serverTimestamp(),
-      ...(note ? { approvalNote: note } : {}),
+      stamp: { approvedBy: actorId, approvedAt: FieldValue.serverTimestamp(), ...(note ? { approvalNote: note } : {}) },
+      auditAction: 'approve',
     });
-
-    await writeAuditLog({
-      actorId,
-      action: 'approve',
-      entityType,
-      entityId,
-      details: { note: note ?? null },
-    });
-
     res.json({ ok: true });
   } catch (err) {
-    console.error('[admin] POST /approve:', err);
-    res.status(500).json({ error: 'internal_error' });
+    respondDecisionError(res, err, '[admin] POST /approve');
   }
 });
 
-// POST /api/admin/reject — same contract as /approve; sets status='rejected'
-// + rejecter stamps, audit-logs, returns { ok: true }.
+// POST /api/admin/reject — same contract as /approve; sets status='rejected'.
 router.post('/reject', async (req: Request, res: Response): Promise<void> => {
   const parsed = actionSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -135,38 +185,20 @@ router.post('/reject', async (req: Request, res: Response): Promise<void> => {
   }
   const { entityType, entityId, note } = parsed.data;
   const actorId = req.user!.uid;
-
   try {
-    const ref = db().collection(entityType).doc(entityId);
-    if (!(await ref.get()).exists) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
-
-    await ref.update({
+    await applyDecision({
+      entityType, entityId, actorId, note,
       status: 'rejected',
-      rejectedBy: actorId,
-      rejectedAt: FieldValue.serverTimestamp(),
-      ...(note ? { rejectionNote: note } : {}),
+      stamp: { rejectedBy: actorId, rejectedAt: FieldValue.serverTimestamp(), ...(note ? { rejectionNote: note } : {}) },
+      auditAction: 'reject',
     });
-
-    await writeAuditLog({
-      actorId,
-      action: 'reject',
-      entityType,
-      entityId,
-      details: { note: note ?? null },
-    });
-
     res.json({ ok: true });
   } catch (err) {
-    console.error('[admin] POST /reject:', err);
-    res.status(500).json({ error: 'internal_error' });
+    respondDecisionError(res, err, '[admin] POST /reject');
   }
 });
 
-// POST /api/admin/request-changes — same contract as /approve; sets
-// status='needs_changes' + requester stamps, audit-logs, returns { ok: true }.
+// POST /api/admin/request-changes — same contract; sets status='needs_changes'.
 router.post('/request-changes', async (req: Request, res: Response): Promise<void> => {
   const parsed = actionSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -175,33 +207,16 @@ router.post('/request-changes', async (req: Request, res: Response): Promise<voi
   }
   const { entityType, entityId, note } = parsed.data;
   const actorId = req.user!.uid;
-
   try {
-    const ref = db().collection(entityType).doc(entityId);
-    if (!(await ref.get()).exists) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
-
-    await ref.update({
+    await applyDecision({
+      entityType, entityId, actorId, note,
       status: 'needs_changes',
-      changesRequestedBy: actorId,
-      changesRequestedAt: FieldValue.serverTimestamp(),
-      ...(note ? { changesNote: note } : {}),
+      stamp: { changesRequestedBy: actorId, changesRequestedAt: FieldValue.serverTimestamp(), ...(note ? { changesNote: note } : {}) },
+      auditAction: 'request_changes',
     });
-
-    await writeAuditLog({
-      actorId,
-      action: 'request_changes',
-      entityType,
-      entityId,
-      details: { note: note ?? null },
-    });
-
     res.json({ ok: true });
   } catch (err) {
-    console.error('[admin] POST /request-changes:', err);
-    res.status(500).json({ error: 'internal_error' });
+    respondDecisionError(res, err, '[admin] POST /request-changes');
   }
 });
 

@@ -137,14 +137,37 @@ export async function dropRequest(req: Request, res: Response): Promise<void> {
       if (!snap.exists) {
         throw new OpError(404, 'not_found');
       }
-      const data = snap.data() as { assignedVolunteerId?: string | null };
+      const data = snap.data() as {
+        assignedVolunteerId?: string | null;
+        status?: string;
+      };
       if (!isAdmin && data.assignedVolunteerId !== uid) {
         throw new OpError(403, 'forbidden');
+      }
+
+      // STATE-MACHINE GUARD (audit MODERATE): a drop is only legal from an
+      // actively-worked request (in_progress or awaiting_review). dropRequest is
+      // the one status-changing path that did NOT consult the canonical
+      // transition map, so without this guard a drop on a terminal
+      // (closed/referred/rejected) or already-pending request would resurrect it
+      // to pending/available — discarding a finished outcome (a closed request
+      // may even already carry a rating). The admin "send back" / reopen flows
+      // live in the status endpoint + requestTransitions map; this keeps drop
+      // narrow and explicit.
+      const status = (data.status as string) ?? '';
+      const DROPPABLE = new Set(['in_progress', 'awaiting_review']);
+      if (!DROPPABLE.has(status)) {
+        throw new OpError(409, 'invalid_state');
       }
 
       tx.update(ref, {
         assignedVolunteerId: null,
         handler: null,
+        // Clear the denormalized assignment display fields too (audit LOW):
+        // otherwise the admin request-detail screen shows a phantom assigned
+        // volunteer name + stale assignedAt on a request that is back in the pool.
+        assignedVolunteerName: null,
+        assignedAt: null,
         status: 'pending',
         poolStatus: 'available',
         wasPreviouslyTaken: true,
