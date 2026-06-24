@@ -93,22 +93,48 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const volunteerId = request.assignedVolunteerId ?? request.handler ?? null;
     const ratingRef = db().collection('ratings').doc(input.requestId);
 
+    // Helper: recompute the {count, sum, average} aggregate from a snapshot by
+    // applying signed deltas, flooring count at 0 so a decrement can't go
+    // negative on legacy data.
+    const applyAgg = (
+      snap: FirebaseFirestore.DocumentSnapshot | null,
+      dCount: number,
+      dSum: number,
+    ) => {
+      const agg = snap?.exists
+        ? (snap.data()?.ratingAggregate as { count?: number; sum?: number } | undefined)
+        : undefined;
+      const count = Math.max(0, (agg?.count ?? 0) + dCount);
+      const sum = (agg?.sum ?? 0) + dSum;
+      const average = count > 0 ? Number((sum / count).toFixed(2)) : 0;
+      return { count, sum, average };
+    };
+
     // Run the write + aggregate update in a transaction so concurrent
     // re-submissions can't corrupt the volunteer aggregate.
     await db().runTransaction(async (tx) => {
-      // ── All reads first: Firestore requires every read in a transaction to
-      // run before any write. We read the existing rating AND the volunteer
-      // aggregate up front, then perform the writes below. ──
+      // ── All reads first (Firestore requires reads before writes). ──
       const existingSnap = await tx.get(ratingRef);
       const existing = existingSnap.exists
-        ? (existingSnap.data() as { stars?: number })
+        ? (existingSnap.data() as { stars?: number; volunteerId?: string | null })
         : null;
       const previousStars = existing?.stars ?? null;
+      // ATTRIBUTION FIX (audit MODERATE #5): credit the volunteer the EXISTING
+      // rating was attributed to (stored on the rating doc), not the live
+      // assignee. A request can be reopened, reassigned to volunteer B, re-closed
+      // and re-rated; the old code applied the delta to B's aggregate without
+      // incrementing B's count and never decremented A's — permanently inflating
+      // A and corrupting B's average. We now reconcile BOTH volunteers.
+      const previousVolunteerId = existing?.volunteerId ?? null;
+      const sameVolunteer = previousVolunteerId === volunteerId;
 
-      const volunteerRef = volunteerId
-        ? db().collection('volunteers').doc(volunteerId)
-        : null;
-      const volunteerSnap = volunteerRef ? await tx.get(volunteerRef) : null;
+      const curVolRef = volunteerId ? db().collection('volunteers').doc(volunteerId) : null;
+      const prevVolRef =
+        previousVolunteerId && !sameVolunteer
+          ? db().collection('volunteers').doc(previousVolunteerId)
+          : null;
+      const curVolSnap = curVolRef ? await tx.get(curVolRef) : null;
+      const prevVolSnap = prevVolRef ? await tx.get(prevVolRef) : null;
 
       // ── Writes ──
       tx.set(ratingRef, {
@@ -121,36 +147,37 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         ...(existingSnap.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
       }, { merge: true });
 
-      // Maintain the volunteer aggregate when a volunteer is attached.
-      if (volunteerRef) {
-        const agg = volunteerSnap?.exists
-          ? (volunteerSnap.data()?.ratingAggregate as
-              | { count?: number; sum?: number }
-              | undefined)
-          : undefined;
-
-        let count = agg?.count ?? 0;
-        let sum = agg?.sum ?? 0;
-
-        if (previousStars === null) {
-          // First rating for this request.
-          count += 1;
-          sum += input.stars;
-        } else {
-          // Re-rating: replace the previous contribution.
-          sum += input.stars - previousStars;
+      if (sameVolunteer) {
+        // Same volunteer as before (or both null): apply the simple delta.
+        if (curVolRef) {
+          const [dCount, dSum] =
+            previousStars === null
+              ? [1, input.stars] // first rating for this request
+              : [0, input.stars - previousStars]; // re-rate: replace contribution
+          tx.set(
+            curVolRef,
+            { ratingAggregate: applyAgg(curVolSnap, dCount, dSum), updatedAt: FieldValue.serverTimestamp() },
+            { merge: true },
+          );
         }
-
-        const average = count > 0 ? Number((sum / count).toFixed(2)) : 0;
-
-        tx.set(
-          volunteerRef,
-          {
-            ratingAggregate: { count, sum, average },
-            updatedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+      } else {
+        // The attributed volunteer changed since the last rating (or this is the
+        // first rating). Remove the previous contribution from the OLD volunteer
+        // and credit the NEW one as a fresh rating.
+        if (prevVolRef && previousStars !== null) {
+          tx.set(
+            prevVolRef,
+            { ratingAggregate: applyAgg(prevVolSnap, -1, -previousStars), updatedAt: FieldValue.serverTimestamp() },
+            { merge: true },
+          );
+        }
+        if (curVolRef) {
+          tx.set(
+            curVolRef,
+            { ratingAggregate: applyAgg(curVolSnap, 1, input.stars), updatedAt: FieldValue.serverTimestamp() },
+            { merge: true },
+          );
+        }
       }
     });
 
