@@ -2,6 +2,13 @@ import 'dotenv/config';
 import { Timestamp } from 'firebase-admin/firestore';
 import { initializeFirebaseAdmin, db } from '../src/lib/firebaseAdmin';
 import { seedOrgs } from './seedOrgs';
+import { assertSafeToRun } from './lib/guard';
+
+// Audit HIGH: block this upsert seed from running against a non-staging /
+// non-emulator project (e.g. an accidental production key) before it touches any
+// data. Upsert-only, so not destructive — emulator or staging runs freely; any
+// other project needs --allow-nonstaging.
+assertSafeToRun({ action: 'seed taxonomy + directories' });
 
 initializeFirebaseAdmin();
 const firestore = db();

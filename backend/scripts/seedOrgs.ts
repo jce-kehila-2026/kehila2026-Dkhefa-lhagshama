@@ -400,6 +400,13 @@ export async function seedOrgs(firestore: Firestore): Promise<number> {
 //  Only runs when this file is the main module (not when imported by seed.ts).
 // ─────────────────────────────────────────────────────────────
 async function main(): Promise<void> {
+  // Audit HIGH: gate standalone runs (npm run seed:orgs) so an accidental
+  // production key cannot clobber the real `answers` directory. Upsert-only, so
+  // emulator/staging run freely; any other project needs --allow-nonstaging.
+  // (Only runs here, the standalone path — not when imported by seed.ts, which
+  // applies its own guard.)
+  const { assertSafeToRun } = await import('./lib/guard');
+  assertSafeToRun({ action: 'seed NPO organizations' });
   // Lazy import so importing this module (from seed.ts) does NOT re-init the
   // Admin SDK or load dotenv twice.
   await import('dotenv/config');

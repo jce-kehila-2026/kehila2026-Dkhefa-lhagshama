@@ -17,12 +17,11 @@
  */
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { initializeFirebaseAdmin, db, auth } from '../src/lib/firebaseAdmin';
 import { formatDisplayId } from '../src/lib/displayId';
 import { exportFirestore } from './exportFirestore';
+import { assertSafeToRun } from './lib/guard';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const E2E_EMAILS = {
@@ -54,28 +53,8 @@ const daysFromNow = (n: number): Date => new Date(Date.now() + n * 24 * 60 * 60 
 const tsDaysAgo = (n: number): Timestamp => Timestamp.fromDate(daysFromNow(-n));
 
 // ── Safety guard ─────────────────────────────────────────────────────────--
-function assertSafeToRun(): void {
-  if (!process.argv.includes('--confirm')) {
-    console.error('Refusing to run without --confirm. This wipes staging data.');
-    console.error('Usage: npx tsx scripts/seedDemoData.ts --confirm');
-    process.exit(1);
-  }
-  // Resolve project id from the service account key the backend uses.
-  let projectId = '';
-  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
-    ? path.resolve(process.cwd(), process.env.GOOGLE_APPLICATION_CREDENTIALS)
-    : path.join(__dirname, '..', 'serviceAccountKey.json');
-  try {
-    projectId = JSON.parse(fs.readFileSync(credPath, 'utf8')).project_id ?? '';
-  } catch {
-    projectId = process.env.GCLOUD_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT ?? '';
-  }
-  if (!projectId.includes('staging')) {
-    console.error(`Refusing to run: project "${projectId}" is not a staging project.`);
-    process.exit(1);
-  }
-  console.log(`Guard OK — project: ${projectId}`);
-}
+// Destructive (wipes collections), so the strict gate: --confirm + a staging
+// project, no override. Shared with seed.ts/seedOrgs.ts via scripts/lib/guard.ts.
 
 // ── Batched wipe ─────────────────────────────────────────────────────────--
 async function wipeCollection(name: string, preserveIds: Set<string>): Promise<number> {
@@ -144,7 +123,7 @@ async function getOrCreateAuthUser(email: string, name: string, role: string): P
 
 async function main(): Promise<void> {
   initializeFirebaseAdmin();
-  assertSafeToRun();
+  assertSafeToRun({ action: 'seed demo data', destructive: true });
 
   // 1. Backup first.
   console.log('\n[1/7] Backing up current data…');
