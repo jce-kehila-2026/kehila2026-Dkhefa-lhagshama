@@ -11,7 +11,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 
 import { db, storage } from '@/lib/firebaseAdmin';
-import { formatDisplayId } from '@/lib/displayId';
 
 /** Structured attachment metadata persisted on `requests.attachments`. */
 interface AttachmentMeta {
@@ -41,14 +40,32 @@ interface AttachmentMeta {
  * volunteerVisible flag the upload route stamps onto the object). Best-effort:
  * a Storage failure leaves `attachmentPaths` intact, so the create still
  * succeeds. Returns the count written (for logging / audit detail).
+ *
+ * OWNERSHIP FILTER (audit L11): the pre-create upload flow authorizes writes
+ * purely on the unguessable request UUID, so in principle any authed user could
+ * have dropped objects under this prefix. We therefore adopt ONLY objects whose
+ * Storage `uploadedBy` metadata matches the submitter — a stray object uploaded
+ * by anyone else is ignored (and logged), so the UUID secrecy is no longer the
+ * sole control over what becomes a request attachment.
  */
-export async function reconcileAttachmentsFromStorage(requestId: string): Promise<number> {
+export async function reconcileAttachmentsFromStorage(
+  requestId: string,
+  submitterUid: string,
+): Promise<number> {
   const prefix = `requests/${requestId}/`;
   const [files] = await storage().getFiles({ prefix });
 
+  let skipped = 0;
   const attachments: AttachmentMeta[] = files
     // Skip any "directory placeholder" object equal to the prefix itself.
     .filter((f) => f.name && f.name !== prefix)
+    // Adopt only objects the submitter uploaded (audit L11).
+    .filter((f) => {
+      const uploadedBy = ((f.metadata?.metadata ?? {}) as Record<string, string | undefined>).uploadedBy;
+      if (uploadedBy === submitterUid) return true;
+      skipped += 1;
+      return false;
+    })
     .map((f) => {
       const md = (f.metadata ?? {}) as {
         contentType?: string;
@@ -71,6 +88,13 @@ export async function reconcileAttachmentsFromStorage(requestId: string): Promis
       };
     });
 
+  if (skipped > 0) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[requests.reconcile] ${requestId}: ignored ${skipped} object(s) not uploaded by the submitter`,
+    );
+  }
+
   if (attachments.length === 0) return 0;
 
   await db().collection('requests').doc(requestId).update({
@@ -92,21 +116,9 @@ export class TransitionError extends Error {
   }
 }
 
-// ── Friendly request reference allocation (WS-3) ────────────────────────────
-// Allocate the next sequential integer from a single `counters/requests` doc
-// inside a transaction, then format it as REQ-####. The transaction's
-// read-then-write on the same doc serializes concurrent allocations, so two
-// requests created at the same instant get distinct numbers (no collision).
-// The counter is the ONLY shared doc touched here; the request doc itself is
-// created separately (its UUID id already guarantees uniqueness).
-export async function allocateNextRequestNumber(): Promise<{ n: number; displayId: string }> {
-  const counterRef = db().collection('counters').doc('requests');
-  const n = await db().runTransaction(async (tx) => {
-    const snap = await tx.get(counterRef);
-    const current = snap.exists ? Number((snap.data() as { next?: unknown }).next) : 0;
-    const next = (Number.isFinite(current) && current > 0 ? current : 0) + 1;
-    tx.set(counterRef, { next }, { merge: true });
-    return next;
-  });
-  return { n, displayId: formatDisplayId(n) };
-}
+// NOTE (audit L8): the WS-3 friendly-reference allocation (counters/requests ->
+// REQ-####) USED to be a standalone transaction here, committed BEFORE the
+// request `create()`. That burned a sequence number whenever the create failed
+// (duplicate id / error), leaving permanent gaps. It now lives INSIDE the single
+// create transaction in create.ts, so a failed create rolls the counter back.
+// `formatDisplayId` (lib/displayId) is the shared int->REQ-#### formatter.

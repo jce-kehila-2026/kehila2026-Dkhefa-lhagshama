@@ -96,6 +96,23 @@ export const createRequestSchema = z
         message: 'unknown category',
       });
     }
+
+    // Attachment paths must live under THIS request's own Storage prefix
+    // (audit L12). A client could otherwise persist an arbitrary path string
+    // that a future consumer might trust as a Storage key (path confusion). The
+    // authoritative `attachments` array is rebuilt from Storage at create time,
+    // so this hardens the raw `attachmentPaths` field against misuse.
+    const attachmentPrefix = `requests/${data.requestId}/`;
+    for (const p of data.attachmentPaths ?? []) {
+      if (!p.startsWith(attachmentPrefix) || p.includes('..') || p.includes('\\')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['attachmentPaths'],
+          message: 'attachmentPaths must be under requests/<requestId>/',
+        });
+        break;
+      }
+    }
   });
 
 // Parsed+defaulted shape the POST /api/requests handler consumes (post-validation).
