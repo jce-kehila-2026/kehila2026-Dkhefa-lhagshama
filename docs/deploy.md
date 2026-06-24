@@ -26,12 +26,27 @@ firebase deploy --only hosting
 > local git-worktree setups (where node_modules is shared via symlink) hit this;
 > run a plain `npm install` inside `frontend/` to get a real node_modules.
 
-## Backend
+## Backend (Express → Cloud Function `api`)
 
-**Decision pending — Cloud Run or Vercel.** The deploy workflow has both
-options scaffolded (commented out) under the `backend` job, guarded by
-`if: false`. Once the target is chosen, uncomment the relevant block, add its
-secrets, and remove the guard. See `.github/workflows/deploy.yml`.
+**This is decided and live** (the earlier "Cloud Run vs Vercel — pending" note
+was stale). The Express backend runs as a **2nd-gen Cloud Function** named `api`
+(`backend/src/function.ts` wraps the Express app in `onRequest`). `firebase.json`
+declares a `functions` codebase with `source: backend`, `runtime: nodejs22`, and
+a `predeploy` that builds the backend (`tsc && tsc-alias`). The browser reaches
+it **same-origin** through the Hosting rewrite `"/api/** -> function api"`, so
+there is no separate backend URL and no CORS in production.
+
+```
+# build runs automatically via firebase.json functions.predeploy
+firebase deploy --only functions
+```
+
+Because frontend (Hosting), backend (Functions) and security rules all live on
+the one Firebase project, CI deploys them together:
+
+```
+firebase deploy --only hosting,functions,firestore:rules,firestore:indexes
+```
 
 ## Firestore rules / indexes / storage
 
@@ -47,7 +62,6 @@ firebase deploy --only firestore:rules,firestore:indexes,storage
 
 | Secret | Used by | Notes |
 |---|---|---|
-| `FIREBASE_SERVICE_ACCOUNT` | frontend deploy | SA JSON: Hosting Admin + Cloud Functions Admin + Service Account User |
-| `FIREBASE_PROJECT_ID` | frontend deploy | e.g. `push-for-fulfillment-staging` (see `.firebaserc`) |
-| `NEXT_PUBLIC_API_BASE_URL` | frontend build | public backend URL |
-| `GCP_SA_KEY` / `VERCEL_TOKEN` | backend deploy | only once a backend target is chosen |
+| `FIREBASE_SERVICE_ACCOUNT` | deploy | SA JSON: Hosting Admin + Cloud Functions Admin + Cloud Datastore Owner (rules/indexes) + Service Account User |
+| `FIREBASE_PROJECT_ID` | deploy | e.g. `push-for-fulfillment-staging` (see `.firebaserc`) |
+| `NEXT_PUBLIC_API_BASE_URL` | frontend build | empty/relative `/api` for the same-origin Hosting rewrite |
