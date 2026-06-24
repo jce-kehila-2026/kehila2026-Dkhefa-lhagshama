@@ -53,6 +53,11 @@ router.get('/', async (_req: Request, res: Response) => {
       .collection('businesses')
       .where('status', '==', 'approved')
       .orderBy('createdAt', 'desc')
+      // Bound the read (audit M-1): this is a PUBLIC, unauthenticated feed, so an
+      // unbounded full-collection scan is a latency + Firestore-cost DoS surface
+      // as the directory grows. 500 comfortably covers the catalog; cursor
+      // pagination is the follow-up if it ever approaches the cap.
+      .limit(500)
       .get();
 
     const items = snapshot.docs.map((doc) => {

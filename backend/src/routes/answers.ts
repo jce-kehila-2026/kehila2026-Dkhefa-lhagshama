@@ -52,7 +52,10 @@ router.get('/', async (req: Request, res: Response) => {
     // string equality filter can never match. They are filtered client-side in
     // DirectoryPage against the active-language value instead.
 
-    const snapshot = await query.get();
+    // Bound the read (audit M-1): public, unauthenticated feed — cap the scan so
+    // it can't grow into a full-collection DoS/cost surface. 500 covers the
+    // catalog; cursor pagination is the follow-up if needed.
+    const snapshot = await query.limit(500).get();
     const items = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {

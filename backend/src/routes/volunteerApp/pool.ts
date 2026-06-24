@@ -27,6 +27,10 @@ export async function getPool(req: Request, res: Response): Promise<void> {
     const snap = await db()
       .collection('requests')
       .where('poolStatus', '==', 'available')
+      // Bound the read (audit M-1): cap the available-pool scan so it can't grow
+      // unbounded. 500 far exceeds any realistic concurrent pool; if it's ever
+      // approached, switch to priority-ordered cursor pagination.
+      .limit(500)
       .get();
 
     // keep the raw doc alongside the sort keys so we can rebuild cards in priority order.
