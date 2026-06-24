@@ -75,32 +75,40 @@ export async function getInsights(req: Request, res: Response): Promise<void> {
       }
     }
 
-    // Try to refine close timestamps from requestEvents (status_changed→closed).
-    // Single-field equality query per request keeps us index-free; the closed
-    // set is small. Failures degrade gracefully to updatedAt.
-    for (const c of closedRequestIds) {
-      let closedAtMs: number | null = null;
-      try {
-        const evSnap = await db()
-          .collection('requestEvents')
-          .where('requestId', '==', c.id)
-          .get();
-        for (const e of evSnap.docs) {
-          const ev = e.data();
-          if (ev.type === 'status_changed' && ev.details?.to === 'closed') {
-            const evIso = toIso(ev.createdAt);
-            const evMs = evIso ? Date.parse(evIso) : null;
-            // keep the latest close event (a request may be reopened/reclosed)
-            if (evMs !== null) closedAtMs = closedAtMs === null ? evMs : Math.max(closedAtMs, evMs);
+    // Refine close timestamps from requestEvents (status_changed→closed).
+    // N+1 FIX (audit Prompt 3): the old loop awaited one query per closed
+    // request SEQUENTIALLY (total latency ∝ number of closed requests). Each
+    // query is still a single-field equality (index-free); Promise.all fans them
+    // out so the wall-clock is ~one round-trip regardless of count. Per-request
+    // failures still degrade gracefully to updatedAt.
+    const refinedSpans = await Promise.all(
+      closedRequestIds.map(async (c) => {
+        let closedAtMs: number | null = null;
+        try {
+          const evSnap = await db()
+            .collection('requestEvents')
+            .where('requestId', '==', c.id)
+            .get();
+          for (const e of evSnap.docs) {
+            const ev = e.data();
+            if (ev.type === 'status_changed' && ev.details?.to === 'closed') {
+              const evIso = toIso(ev.createdAt);
+              const evMs = evIso ? Date.parse(evIso) : null;
+              // keep the latest close event (a request may be reopened/reclosed)
+              if (evMs !== null) closedAtMs = closedAtMs === null ? evMs : Math.max(closedAtMs, evMs);
+            }
           }
+        } catch {
+          // ignore — fall back to updatedAt below
         }
-      } catch {
-        // ignore — fall back to updatedAt below
-      }
-      const endMs = closedAtMs ?? c.updatedAtMs;
-      if (c.createdAtMs !== null && endMs !== null && endMs >= c.createdAtMs) {
-        closedSpansDays.push((endMs - c.createdAtMs) / (1000 * 60 * 60 * 24));
-      }
+        const endMs = closedAtMs ?? c.updatedAtMs;
+        return c.createdAtMs !== null && endMs !== null && endMs >= c.createdAtMs
+          ? (endMs - c.createdAtMs) / (1000 * 60 * 60 * 24)
+          : null;
+      }),
+    );
+    for (const span of refinedSpans) {
+      if (span !== null) closedSpansDays.push(span);
     }
 
     const avgResolutionDays =

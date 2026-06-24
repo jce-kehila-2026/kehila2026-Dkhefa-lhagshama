@@ -87,18 +87,23 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
       const isHandlerRole = req.user?.role === 'volunteer' || req.user?.role === 'admin';
       if (!isHandlerRole || !chatData.requestId) return;
 
-      const last = chatData.lastReplyNotifyAt
-        ? Date.parse(chatData.lastReplyNotifyAt)
-        : NaN;
       const nowMs = Date.now();
-      if (!Number.isNaN(last) && nowMs - last < REPLY_NOTIFY_THROTTLE_MS) return;
+      // RACE FIX (audit L7): the throttle previously read lastReplyNotifyAt from
+      // the stale top-of-handler snapshot, so two near-simultaneous replies (or a
+      // retry) both passed the gate and double-emailed the beneficiary. Claim the
+      // window inside a transaction that RE-READS lastReplyNotifyAt — only the
+      // send that wins the window proceeds.
+      const wonWindow = await db().runTransaction(async (tx) => {
+        const ref = db().collection('chats').doc(chatId);
+        const fresh = await tx.get(ref);
+        const lastIso = fresh.data()?.lastReplyNotifyAt as string | undefined;
+        const last = lastIso ? Date.parse(lastIso) : NaN;
+        if (!Number.isNaN(last) && nowMs - last < REPLY_NOTIFY_THROTTLE_MS) return false;
+        tx.update(ref, { lastReplyNotifyAt: new Date(nowMs).toISOString() });
+        return true;
+      });
 
-      await db()
-        .collection('chats')
-        .doc(chatId)
-        .update({ lastReplyNotifyAt: new Date(nowMs).toISOString() });
-
-      await notifyBeneficiaryOfRequest(chatData.requestId, 'reply');
+      if (wonWindow) await notifyBeneficiaryOfRequest(chatData.requestId, 'reply');
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn('[chats.messages] reply notify failed:', err);
