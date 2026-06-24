@@ -17,6 +17,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ToastContainer from '@/components/feedback/Toast'
 import Modal from '@/components/feedback/Modal'
+import ErrorBoundary from '@/components/feedback/ErrorBoundary'
 import styles from './_app.module.css'
 import '@/styles/globals.css'
 import '@/styles/tokens.css'
@@ -69,7 +70,12 @@ export default function App({ Component, pageProps }: AppProps) {
             {!hideChrome && <Navbar />}
             {/* key on route → a single calm page-enter on each navigation. */}
             <div id="main-content" className={`page-enter ${styles.main}`} key={router.pathname}>
-              <Component {...pageProps} />
+              {/* Catch any render throw in a page so it shows a calm, translatable
+                  fallback (and keeps the navbar/footer usable) instead of a blank
+                  white screen. resetKey=route clears the error on navigation. */}
+              <ErrorBoundary resetKey={router.pathname}>
+                <Component {...pageProps} />
+              </ErrorBoundary>
             </div>
             {!hideChrome && <Footer />}
             <ToastContainer />

@@ -1019,6 +1019,10 @@ const base = {
       skipToContent: 'דילוג לתוכן',
       uncategorized: 'ללא קטגוריה',
       unknown: 'לא ידוע',
+      // Error-boundary fallback copy (audit: global React error boundary).
+      errorTitle: 'משהו השתבש',
+      errorBody: 'אירעה שגיאה בלתי צפויה. נסו לרענן את הדף.',
+      errorRetry: 'רענון הדף',
     },
 
     // ── FOOTER ────────────────────────────────────────────────
@@ -2304,6 +2308,10 @@ const base = {
       skipToContent: 'Skip to content',
       uncategorized: 'Uncategorized',
       unknown: 'Unknown',
+      // Error-boundary fallback copy (audit: global React error boundary).
+      errorTitle: 'Something went wrong',
+      errorBody: 'An unexpected error occurred. Try reloading the page.',
+      errorRetry: 'Reload page',
     },
 
     footer: {
