@@ -395,36 +395,40 @@ router.post('/:uid/categories', async (req: Request, res: Response): Promise<voi
   const ref = db().collection('volunteers').doc(uid);
 
   try {
-    const snap = await ref.get();
-    if (!snap.exists) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
-    const data = snap.data() ?? {};
-    const requested = (data.requestedCategories as Array<Record<string, unknown>> | undefined) ?? [];
-    const nextStatus = action === 'approve' ? 'approved' : 'rejected';
-    let matched = false;
-    const updatedRequested = requested.map((c) => {
-      if (c.category === category && (c.status ?? 'pending') === 'pending') {
-        matched = true;
-        return { ...c, status: nextStatus, decidedAt: new Date().toISOString() };
+    // RACE FIX (audit MODERATE #3): this whole-array read-map-write used to run
+    // outside a transaction, so a volunteer concurrently appending a new request
+    // via FieldValue.arrayUnion (volunteerApp/me.ts) could be silently clobbered
+    // (admin reads [A], volunteer commits [A,B], admin overwrites with [A]). Two
+    // admins deciding different entries also lost one. Running the read-map-write
+    // in a transaction makes Firestore re-read on conflict, so the rewrite always
+    // includes the latest entries. approvedCategories stays an atomic arrayUnion.
+    await db().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new VolDecisionError(404, 'not_found');
+      const data = snap.data() ?? {};
+      const requested = (data.requestedCategories as Array<Record<string, unknown>> | undefined) ?? [];
+      const nextStatus = action === 'approve' ? 'approved' : 'rejected';
+      let matched = false;
+      const updatedRequested = requested.map((c) => {
+        if (c.category === category && (c.status ?? 'pending') === 'pending') {
+          matched = true;
+          return { ...c, status: nextStatus, decidedAt: new Date().toISOString() };
+        }
+        return c;
+      });
+      if (!matched) throw new VolDecisionError(404, 'no_pending_request_for_category');
+
+      const update: Record<string, unknown> = {
+        requestedCategories: updatedRequested,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      if (action === 'approve') {
+        update.approvedCategories = FieldValue.arrayUnion(category);
       }
-      return c;
+      tx.set(ref, update, { merge: true });
     });
-    if (!matched) {
-      res.status(404).json({ error: 'no_pending_request_for_category' });
-      return;
-    }
 
-    const update: Record<string, unknown> = {
-      requestedCategories: updatedRequested,
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-    if (action === 'approve') {
-      update.approvedCategories = FieldValue.arrayUnion(category);
-    }
-    await ref.set(update, { merge: true });
-
+    // Audit only after the decision committed.
     await writeAuditLog({
       actorId: req.user!.uid,
       action: action === 'approve' ? 'volunteer.category_approve' : 'volunteer.category_reject',
@@ -435,6 +439,14 @@ router.post('/:uid/categories', async (req: Request, res: Response): Promise<voi
 
     res.json({ ok: true });
   } catch (err) {
+    if (err instanceof VolDecisionError) {
+      res.status(err.httpStatus).json({ error: err.code, ...err.extra });
+      return;
+    }
+    if ((err as { code?: number }).code === 10) {
+      res.status(409).json({ error: 'concurrent_update' });
+      return;
+    }
     console.error('[adminVolunteers] POST /:uid/categories:', err);
     res.status(500).json({ error: 'internal_error' });
   }
