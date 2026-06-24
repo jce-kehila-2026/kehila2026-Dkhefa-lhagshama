@@ -66,23 +66,23 @@ export async function ensureChatForRequest({
         ? prevVolunteerId
         : null;
 
+    // ATOMICITY FIX (audit MODERATE #1): use field-atomic arrayRemove/arrayUnion
+    // instead of reading the array and overwriting the whole thing. The whole-
+    // array overwrite could clobber a concurrent admin add-participant
+    // (FieldValue.arrayUnion via mutateParticipants) that landed between our read
+    // and write — a last-write-wins loss of a security-relevant membership entry.
+    // arrayUnion/arrayRemove are idempotent, so no change-detection is needed.
     await Promise.all(
       existing.docs.map(async (chatDoc) => {
-        const chatData = chatDoc.data() as { participants?: string[] };
-        const current = Array.isArray(chatData.participants) ? chatData.participants : [];
-        const next = new Set(current);
-        if (removing) next.delete(removing);
-        const wasMember = current.includes(volunteerId);
-        next.add(volunteerId);
-
-        // only write when membership actually changed (incoming volunteer was
-        // new, or an outgoing one is being dropped) to avoid a redundant update
-        if (removing || !wasMember) {
-          await chatDoc.ref.update({
-            participants: Array.from(next),
-            lastMessageAt: FieldValue.serverTimestamp(),
-          });
+        // arrayRemove + arrayUnion can't target the same field in ONE update, so
+        // the re-assign case does two atomic writes (remove old, then add new).
+        if (removing) {
+          await chatDoc.ref.update({ participants: FieldValue.arrayRemove(removing) });
         }
+        await chatDoc.ref.update({
+          participants: FieldValue.arrayUnion(volunteerId),
+          lastMessageAt: FieldValue.serverTimestamp(),
+        });
       }),
     );
   } else {
@@ -151,20 +151,35 @@ export async function removeVolunteerFromRequestChat(
   const chatsRef = db().collection('chats');
   // Reconcile EVERY chat for the request (no .limit(1)): a duplicate/orphan chat
   // would otherwise keep the dropped volunteer in its participants and leave them
-  // read access (audit #1/#6). Errors propagate to the caller, which logs them.
-  const existing = await chatsRef.where('requestId', '==', requestId).get();
-  if (existing.empty) return;
-
-  await Promise.all(
-    existing.docs.map(async (chatDoc) => {
-      const chatData = chatDoc.data() as { participants?: string[] };
-      if (!Array.isArray(chatData.participants) || !chatData.participants.includes(volunteerId)) {
-        return;
-      }
-      await chatDoc.ref.update({
-        participants: FieldValue.arrayRemove(volunteerId),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    }),
-  );
+  // read access (audit #1/#6). arrayRemove is atomic + idempotent.
+  //
+  // RESILIENCE (audit MODERATE #3): chat access is gated on participants
+  // membership, so if this removal fails ENTIRELY on a transient error the
+  // dropped volunteer keeps read access until the next lifecycle action. Retry a
+  // few times to narrow that window; on persistent failure we rethrow so the
+  // caller logs it (a periodic reconciliation job is the full durability fix).
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const existing = await chatsRef.where('requestId', '==', requestId).get();
+      if (existing.empty) return;
+      await Promise.all(
+        existing.docs.map((chatDoc) => {
+          const chatData = chatDoc.data() as { participants?: string[] };
+          if (!Array.isArray(chatData.participants) || !chatData.participants.includes(volunteerId)) {
+            return Promise.resolve();
+          }
+          return chatDoc.ref.update({
+            participants: FieldValue.arrayRemove(volunteerId),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }),
+      );
+      return;
+    } catch (err) {
+      lastErr = err;
+      await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }
