@@ -41,6 +41,7 @@ import volunteersRouter from '@/routes/volunteers';
 import volunteerAppRouter from '@/routes/volunteerApp';
 import { authenticate } from '@/middleware/auth';
 import { requireNotDisabled } from '@/middleware/requireNotDisabled';
+import { requireVerifiedEmail } from '@/middleware/requireVerifiedEmail';
 import { authWriteLimiter, globalLimiter } from '@/middleware/rateLimit'; // #82
 import { errorHandler } from '@/middleware/errorHandler';
 
@@ -146,10 +147,24 @@ app.get('/api/me', authenticate, (req: Request, res: Response) => {
 // routers remain self-contained. /api/auth is excluded — its routes run before
 // a user could be considered disabled and must stay reachable.
 const authedMutation = [authenticate, requireNotDisabled];
+
+// Email-verification gate (audit H-1). The requireVerifiedEmail middleware was
+// fully built but wired to ZERO routes, so an account with an unverified email
+// could still submit requests (with a national-ID number) and post messages.
+// We now wire it onto the content-write paths — but GATED behind
+// ENFORCE_EMAIL_VERIFICATION so it stays OFF by default on staging/demo, where a
+// freshly-registered account isn't verified yet and must still be able to submit
+// during a live demo. Flip ENFORCE_EMAIL_VERIFICATION=true in production to
+// activate it. When off, verifiedMutation === authedMutation (transparent).
+const ENFORCE_EMAIL_VERIFICATION = process.env.ENFORCE_EMAIL_VERIFICATION === 'true';
+const verifiedMutation = ENFORCE_EMAIL_VERIFICATION
+  ? [authenticate, requireNotDisabled, requireVerifiedEmail]
+  : authedMutation;
+
 app.use('/api/auth',       authWriteLimiter, authRouter);
-app.use('/api/chats',      authWriteLimiter, ...authedMutation, chatsRouter);
+app.use('/api/chats',      authWriteLimiter, ...verifiedMutation, chatsRouter);
 app.use('/api/profile',    authWriteLimiter, ...authedMutation, profileRouter);
-app.use('/api/requests',   authWriteLimiter, ...authedMutation, requestsRouter);
+app.use('/api/requests',   authWriteLimiter, ...verifiedMutation, requestsRouter);
 app.use('/api/uploads',    authWriteLimiter, ...authedMutation, uploadsRouter);
 app.use('/api/users',      authWriteLimiter, ...authedMutation, usersRouter);
 app.use('/api/ratings',    authWriteLimiter, ...authedMutation, ratingsRouter); // #80
