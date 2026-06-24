@@ -40,9 +40,24 @@ import { z } from 'zod';
 import { db, auth as adminAuth } from '@/lib/firebaseAdmin';
 import { authenticate, requireRole } from '@/middleware/auth';
 import { writeAuditLog } from '@/lib/audit';
+import { writeRequestEvent } from '@/lib/requestEvents';
+import { removeVolunteerFromRequestChat } from '@/lib/chatOnAssign';
 
 const router = Router();
 router.use(authenticate, requireRole('admin'));
+
+// Thrown inside a transaction to bail out with a specific HTTP status (mirrors
+// the TransitionError pattern used by the adminRequests handlers).
+class VolDecisionError extends Error {
+  constructor(
+    public readonly httpStatus: number,
+    public readonly code: string,
+    public readonly extra: Record<string, unknown> = {},
+  ) {
+    super(code);
+    this.name = 'VolDecisionError';
+  }
+}
 
 // ── GET /api/admin/volunteers ─────────────────────────────────────────────
 // Returns pending applications + active volunteers list.
@@ -145,63 +160,54 @@ router.post('/:id/approve', async (req: Request, res: Response): Promise<void> =
 
   try {
     const appRef = db().collection('volunteerApplications').doc(applicationId);
-    const appSnap = await appRef.get();
-    if (!appSnap.exists) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
 
-    const appData = appSnap.data()!;
-    // One-shot guard: approve/reject only acts on a still-pending application.
-    // Without this, re-POSTing approve on an already-approved app would re-grant
-    // the volunteer claim + re-activate volunteers/{uid} — silently resurrecting
-    // a deactivated volunteer — and approve could flip a rejected app (and reject
-    // an approved one) to the opposite terminal state. The happy-path admin UI
-    // only surfaces status=='pending' rows, but the endpoint must reject stale
-    // clients and direct calls.
-    if (appData.status !== 'pending') {
-      res.status(409).json({ error: 'already_decided', status: appData.status });
-      return;
-    }
-    // The uid may be stored as 'uid' or the doc id may BE the uid (Stream 3 decides).
-    // We check both defensively.
-    const volunteerUid: string = (appData.uid as string) ?? applicationId;
+    // Captured inside the transaction, consumed by the post-commit writes.
+    let volunteerUid = applicationId;
+    let rosterDoc: Record<string, unknown> = {};
 
-    // 1. Update application status
-    await appRef.update({
-      status: 'approved',
-      approvedBy: actorId,
-      approvedAt: FieldValue.serverTimestamp(),
-      ...(note ? { approvalNote: note } : {}),
+    // RACE FIX (audit L10): the pending-guard previously ran on a plain .get()
+    // snapshot, so two concurrent approves could BOTH pass it (and re-grant the
+    // claim / re-activate the volunteer twice). Re-assert "still pending" INSIDE
+    // the transaction so only the first approve commits; a stale second one gets
+    // 409 already_decided (or concurrent_update if it loses the race).
+    await db().runTransaction(async (tx) => {
+      const appSnap = await tx.get(appRef);
+      if (!appSnap.exists) throw new VolDecisionError(404, 'not_found');
+      const appData = appSnap.data()!;
+      if (appData.status !== 'pending') {
+        throw new VolDecisionError(409, 'already_decided', { status: appData.status });
+      }
+      // uid may be stored as 'uid' or the doc id may BE the uid — check both.
+      volunteerUid = (appData.uid as string) ?? applicationId;
+      // Resolve dual application shapes (see doc-shape comment at top) so the
+      // roster gets a real name instead of a null fullName falling back to uid.
+      const composedName = [appData.firstName, appData.lastName].filter(Boolean).join(' ');
+      rosterDoc = {
+        uid: volunteerUid,
+        fullName: appData.fullName ?? (composedName || null),
+        email: appData.email ?? null,
+        profession: appData.profession ?? null,
+        languages: appData.languages ?? [],
+        areas: appData.areas ?? appData.areasOfHelp ?? [],
+        availability: appData.availability ?? null,
+        active: true,
+        approvedBy: actorId,
+        approvedAt: FieldValue.serverTimestamp(),
+      };
+      tx.update(appRef, {
+        status: 'approved',
+        approvedBy: actorId,
+        approvedAt: FieldValue.serverTimestamp(),
+        ...(note ? { approvalNote: note } : {}),
+      });
     });
 
-    // 2. Create/update volunteers/{uid} doc
-    // Resolve dual application shapes (see doc-shape comment at top) so the
-    // roster gets a real name instead of a null fullName falling back to uid.
-    const composedName = [appData.firstName, appData.lastName].filter(Boolean).join(' ');
-    await db()
-      .collection('volunteers')
-      .doc(volunteerUid)
-      .set(
-        {
-          uid: volunteerUid,
-          fullName: appData.fullName ?? (composedName || null),
-          email: appData.email ?? null,
-          profession: appData.profession ?? null,
-          languages: appData.languages ?? [],
-          areas: appData.areas ?? appData.areasOfHelp ?? [],
-          availability: appData.availability ?? null,
-          active: true,
-          approvedBy: actorId,
-          approvedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-    // 3. Set custom claim: role = 'volunteer'
+    // Post-commit side effects. The roster doc (a different collection) and the
+    // Auth custom claim are not part of the application-status transaction, so
+    // they run only after it committed — ordering: roster, then role claim, then
+    // audit. A second concurrent approve never reaches here (it 409'd above).
+    await db().collection('volunteers').doc(volunteerUid).set(rosterDoc, { merge: true });
     await adminAuth().setCustomUserClaims(volunteerUid, { role: 'volunteer' });
-
-    // 4. Audit log
     await writeAuditLog({
       actorId,
       action: 'volunteer.approve',
@@ -212,6 +218,14 @@ router.post('/:id/approve', async (req: Request, res: Response): Promise<void> =
 
     res.json({ ok: true, volunteerUid });
   } catch (err) {
+    if (err instanceof VolDecisionError) {
+      res.status(err.httpStatus).json({ error: err.code, ...err.extra });
+      return;
+    }
+    if ((err as { code?: number }).code === 10) {
+      res.status(409).json({ error: 'concurrent_update' });
+      return;
+    }
     console.error('[adminVolunteers] POST /:id/approve:', err);
     res.status(500).json({ error: 'internal_error' });
   }
@@ -226,25 +240,22 @@ router.post('/:id/reject', async (req: Request, res: Response): Promise<void> =>
 
   try {
     const appRef = db().collection('volunteerApplications').doc(applicationId);
-    const appSnap = await appRef.get();
-    if (!appSnap.exists) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
 
-    // One-shot guard (mirrors approve): only a still-pending application can be
-    // rejected, so reject can't flip an already-approved volunteer to rejected.
-    const appData = appSnap.data()!;
-    if (appData.status !== 'pending') {
-      res.status(409).json({ error: 'already_decided', status: appData.status });
-      return;
-    }
-
-    await appRef.update({
-      status: 'rejected',
-      rejectedBy: actorId,
-      rejectedAt: FieldValue.serverTimestamp(),
-      ...(note ? { rejectionNote: note } : {}),
+    // RACE FIX (audit L10): re-assert "still pending" inside the transaction
+    // (mirrors approve) so a reject can't flip an already-approved volunteer and
+    // concurrent decisions can't both commit.
+    await db().runTransaction(async (tx) => {
+      const appSnap = await tx.get(appRef);
+      if (!appSnap.exists) throw new VolDecisionError(404, 'not_found');
+      if (appSnap.data()!.status !== 'pending') {
+        throw new VolDecisionError(409, 'already_decided', { status: appSnap.data()!.status });
+      }
+      tx.update(appRef, {
+        status: 'rejected',
+        rejectedBy: actorId,
+        rejectedAt: FieldValue.serverTimestamp(),
+        ...(note ? { rejectionNote: note } : {}),
+      });
     });
 
     await writeAuditLog({
@@ -257,6 +268,14 @@ router.post('/:id/reject', async (req: Request, res: Response): Promise<void> =>
 
     res.json({ ok: true });
   } catch (err) {
+    if (err instanceof VolDecisionError) {
+      res.status(err.httpStatus).json({ error: err.code, ...err.extra });
+      return;
+    }
+    if ((err as { code?: number }).code === 10) {
+      res.status(409).json({ error: 'concurrent_update' });
+      return;
+    }
     console.error('[adminVolunteers] POST /:id/reject:', err);
     res.status(500).json({ error: 'internal_error' });
   }
@@ -292,6 +311,56 @@ router.post('/:uid/deactivate', async (req: Request, res: Response): Promise<voi
       entityId: volunteerUid,
       details: {},
     });
+
+    // RECONCILE IN-FLIGHT CASES (audit MODERATE): deactivating a volunteer used
+    // to touch only the volunteers doc + the role claim, STRANDING every request
+    // still assigned to them — the case stayed in_progress with a handler who can
+    // no longer act (their role claim is gone, so requireAnyRole('volunteer')
+    // now blocks them from even dropping it), they kept chat/PII access via the
+    // participants array, and nothing surfaced the problem. We return each
+    // non-terminal assigned request to the pool, strip the volunteer from its
+    // chat, and emit a visible timeline event so the hand-off is transparent.
+    // Best-effort: this runs after the deactivate already committed, so a failure
+    // here is logged but never fails the response.
+    try {
+      const assigned = await db()
+        .collection('requests')
+        .where('assignedVolunteerId', '==', volunteerUid)
+        .get();
+      const NON_TERMINAL = new Set(['pending', 'in_progress', 'awaiting_review']);
+      const toPool = assigned.docs.filter((d) => NON_TERMINAL.has((d.data().status as string) ?? ''));
+      if (toPool.length) {
+        // One batched write returns them all to the pool atomically.
+        const batch = db().batch();
+        for (const d of toPool) {
+          batch.update(d.ref, {
+            assignedVolunteerId: null,
+            handler: null,
+            assignedVolunteerName: null,
+            assignedAt: null,
+            status: 'pending',
+            poolStatus: 'available',
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+        await batch.commit();
+        // Per-request follow-ups: revoke chat access + record the event.
+        await Promise.all(
+          toPool.map(async (d) => {
+            await removeVolunteerFromRequestChat(d.id, volunteerUid).catch(() => {});
+            await writeRequestEvent({
+              requestId: d.id,
+              type: 'status_changed',
+              actorId,
+              visibility: 'all',
+              details: { kind: 'volunteer_deactivated', to: 'pending', poolStatus: 'available' },
+            }).catch(() => {});
+          }),
+        );
+      }
+    } catch (err) {
+      console.error('[adminVolunteers] deactivate reconcile failed:', err);
+    }
 
     res.json({ ok: true });
   } catch (err) {
