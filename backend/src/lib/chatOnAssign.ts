@@ -42,18 +42,21 @@ export async function ensureChatForRequest({
 }: EnsureChatInput): Promise<string> {
   const chatsRef = db().collection('chats');
 
-  // Check if a chat already exists for this request
+  // Find every chat tied to this request. We intentionally DON'T .limit(1):
+  // a past create race (audit #6) can leave more than one chat for a request,
+  // and an orphan we skip would keep granting a dropped/re-assigned volunteer
+  // participants-based read access to the beneficiary's conversation. Reconciling
+  // all matching chats closes that hole.
   const existing = await chatsRef
     .where('requestId', '==', requestId)
-    .limit(1)
     .get();
 
   let chatId: string;
 
   if (!existing.empty) {
-    const chatDoc = existing.docs[0];
-    chatId = chatDoc.id;
-    const chatData = chatDoc.data() as { participants: string[] };
+    // Return the first chat as the canonical one, but reconcile membership on
+    // EVERY matching chat (not just docs[0]).
+    chatId = existing.docs[0].id;
 
     // On a re-assign, drop the outgoing volunteer so they lose chat read/write/
     // attachment access to a case they no longer serve. Keep the beneficiary and
@@ -63,19 +66,25 @@ export async function ensureChatForRequest({
         ? prevVolunteerId
         : null;
 
-    const next = new Set(chatData.participants);
-    if (removing) next.delete(removing);
-    const wasMember = chatData.participants.includes(volunteerId);
-    next.add(volunteerId);
+    await Promise.all(
+      existing.docs.map(async (chatDoc) => {
+        const chatData = chatDoc.data() as { participants?: string[] };
+        const current = Array.isArray(chatData.participants) ? chatData.participants : [];
+        const next = new Set(current);
+        if (removing) next.delete(removing);
+        const wasMember = current.includes(volunteerId);
+        next.add(volunteerId);
 
-    // only write when membership actually changed (incoming volunteer was new,
-    // or an outgoing one is being dropped) to avoid a redundant update
-    if (removing || !wasMember) {
-      await chatsRef.doc(chatId).update({
-        participants: Array.from(next),
-        lastMessageAt: FieldValue.serverTimestamp(),
-      });
-    }
+        // only write when membership actually changed (incoming volunteer was
+        // new, or an outgoing one is being dropped) to avoid a redundant update
+        if (removing || !wasMember) {
+          await chatDoc.ref.update({
+            participants: Array.from(next),
+            lastMessageAt: FieldValue.serverTimestamp(),
+          });
+        }
+      }),
+    );
   } else {
     // Create new chat with both participants
     const chatRef = chatsRef.doc();
@@ -123,17 +132,22 @@ export async function removeVolunteerFromRequestChat(
   volunteerId: string,
 ): Promise<void> {
   const chatsRef = db().collection('chats');
-  const existing = await chatsRef.where('requestId', '==', requestId).limit(1).get();
+  // Reconcile EVERY chat for the request (no .limit(1)): a duplicate/orphan chat
+  // would otherwise keep the dropped volunteer in its participants and leave them
+  // read access (audit #1/#6). Errors propagate to the caller, which logs them.
+  const existing = await chatsRef.where('requestId', '==', requestId).get();
   if (existing.empty) return;
 
-  const chatDoc = existing.docs[0];
-  const chatData = chatDoc.data() as { participants?: string[] };
-  if (!Array.isArray(chatData.participants) || !chatData.participants.includes(volunteerId)) {
-    return;
-  }
-
-  await chatsRef.doc(chatDoc.id).update({
-    participants: FieldValue.arrayRemove(volunteerId),
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+  await Promise.all(
+    existing.docs.map(async (chatDoc) => {
+      const chatData = chatDoc.data() as { participants?: string[] };
+      if (!Array.isArray(chatData.participants) || !chatData.participants.includes(volunteerId)) {
+        return;
+      }
+      await chatDoc.ref.update({
+        participants: FieldValue.arrayRemove(volunteerId),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }),
+  );
 }
