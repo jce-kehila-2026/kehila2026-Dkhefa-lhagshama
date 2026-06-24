@@ -10,6 +10,11 @@
  * that set, so firestore rules and the matching ui both see who is allowed in.
  * collaborates with the requests collection (source of truth for membership) and
  * the chats collection (this handler is the only writer that bootstraps a thread).
+ *
+ * Crash-safety: unlike its sibling handlers this function has no local try/catch;
+ * it is mounted via `asyncHandler(openChat)` (see chats/index.ts), so any rejected
+ * Firestore await is forwarded to the central errorHandler and returned as a clean
+ * 500 rather than hanging the request or crashing the instance (audit CRITICAL C1).
  */
 import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';

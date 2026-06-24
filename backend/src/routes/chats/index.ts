@@ -26,6 +26,7 @@
 import express, { Router } from 'express';
 
 import { authenticate, requireRole } from '@/middleware/auth';
+import { asyncHandler } from '@/middleware/errorHandler';
 
 import { openChat } from './openChat';
 import { createDirectChat } from './directChat';
@@ -39,7 +40,10 @@ export { chatKind, chatIsActive, postSystemMessage } from './helpers';
 const router = Router();
 
 // ── POST /api/chats ───────────────────────────────────────────────────────
-router.post('/', authenticate, openChat);
+// openChat is the one handler without its own try/catch; asyncHandler forwards
+// any rejected Firestore call to the central errorHandler (clean 500) instead of
+// hanging the request / crashing the instance (audit CRITICAL C1).
+router.post('/', authenticate, asyncHandler(openChat));
 
 // ── POST /api/chats/direct ────────────────────────────────────────────────
 // admin-only: only staff may spin up direct (staff/group) chats outside a request.

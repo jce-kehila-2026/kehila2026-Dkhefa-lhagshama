@@ -7,6 +7,11 @@
  * same app in an HTTPS function (no listen()).
  */
 import { app, ALLOWED_ORIGINS } from '@/app';
+import { installProcessSafetyNets } from '@/middleware/errorHandler';
+
+// Last-resort process listeners: a stray unhandledRejection/uncaughtException is
+// logged loudly instead of silently killing the dev server (audit CRITICAL).
+installProcessSafetyNets();
 
 // dev port; 3001 is the local default the frontend points NEXT_PUBLIC_API_BASE_URL at.
 // note: Cloud Functions reserves PORT, which is why deploys go through function.ts, not here.

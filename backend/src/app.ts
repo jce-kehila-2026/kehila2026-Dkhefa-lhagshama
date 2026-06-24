@@ -42,6 +42,7 @@ import volunteerAppRouter from '@/routes/volunteerApp';
 import { authenticate } from '@/middleware/auth';
 import { requireNotDisabled } from '@/middleware/requireNotDisabled';
 import { authWriteLimiter, globalLimiter } from '@/middleware/rateLimit'; // #82
+import { errorHandler } from '@/middleware/errorHandler';
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
 // Dev origins: localhost, 127.0.0.1, and any private-LAN IPv4 (so the app works
@@ -187,6 +188,13 @@ app.use('/api/volunteer', ...authedMutation, volunteerAppRouter);
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'not_found' });
 });
+
+// Central error handler (audit CRITICAL). MUST be the last `app.use` — Express
+// only routes errors to a 4-argument middleware, and only one registered after
+// all routes. Any error thrown synchronously, or forwarded via `next(err)` from
+// an `asyncHandler`-wrapped handler, lands here and becomes a clean 500 with no
+// stack-trace leak. See middleware/errorHandler.ts for the full rationale.
+app.use(errorHandler);
 
 // Named export for index.ts/function.ts; ALLOWED_ORIGINS is re-exported for
 // reuse (e.g. socket/CORS checks elsewhere). Default export mirrors `app`.

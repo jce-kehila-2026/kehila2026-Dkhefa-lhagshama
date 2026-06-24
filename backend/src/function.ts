@@ -15,6 +15,11 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { app } from '@/app';
+import { installProcessSafetyNets } from '@/middleware/errorHandler';
+
+// Last-resort process listeners so a stray async error logs loudly instead of
+// silently terminating the Cloud Functions instance (audit CRITICAL).
+installProcessSafetyNets();
 
 // Region matches the Hosting frameworksBackend region (us-east1) so Hosting and
 // the function are co-located. maxInstances caps concurrent instances to bound
