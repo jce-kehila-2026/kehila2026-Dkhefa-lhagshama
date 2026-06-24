@@ -45,8 +45,17 @@ const taskAttachmentSchema = z.object({
   volunteerVisible: z.boolean().optional().default(false),
 });
 
+// Client-generated v4 UUID (mirrors createRequestSchema) — accepted so a retry
+// is idempotent (see clientRequestId below).
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const taskSchema = z
   .object({
+    // Optional client-supplied id for idempotency (audit L2): if a network retry
+    // re-POSTs with the SAME id, the create() guard 409s instead of minting a
+    // duplicate task. When omitted we fall back to a fresh server UUID (so a
+    // client that doesn't send one keeps working, just non-idempotently).
+    clientRequestId: z.string().regex(UUID_V4).optional(),
     title:       z.string().trim().min(1).max(200),
     description: z.string().trim().min(1).max(4000),
     category:    z.string().trim().min(1).max(80),
@@ -82,7 +91,8 @@ export async function createTask(req: Request, res: Response): Promise<void> {
 
   const input = parsed.data;
   const actorId = req.user!.uid;
-  const requestId = randomUUID();
+  // Prefer the client-supplied id (idempotent retries); else a fresh server UUID.
+  const requestId = input.clientRequestId ?? randomUUID();
 
   // Storage-isolation guard: every attachment path MUST live under this
   // request's own prefix. Otherwise a task's attachment could point at another

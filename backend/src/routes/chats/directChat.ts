@@ -24,6 +24,11 @@ import { findUnknownUids, postSystemMessage } from './helpers';
 export const directSchema = z.object({
   participantUids: z.array(z.string().trim().min(1).max(128)).min(1).max(20),
   title: z.string().trim().min(1).max(120).optional(),
+  // Optional client-supplied id for idempotency (audit L1): a double-click or
+  // network retry that re-POSTs with the SAME id reuses the existing chat
+  // instead of creating a duplicate (+ duplicate system message + audit log).
+  // Omitted -> a fresh server id (non-idempotent, the previous behavior).
+  clientRequestId: z.string().trim().min(8).max(128).optional(),
 });
 
 /**
@@ -57,8 +62,13 @@ export async function createDirectChat(req: Request, res: Response): Promise<voi
       return;
     }
 
-    const chatRef = db().collection('chats').doc();
-    await chatRef.set({
+    // Idempotency (audit L1): with a clientRequestId, use it as the doc id and
+    // `.create()` (first-write-wins). A retry with the same id throws
+    // ALREADY_EXISTS, which we treat as "reuse the existing chat" — no duplicate
+    // chat, system message, or audit log. Without a key, fall back to a random
+    // id + set() (previous behavior).
+    const clientId = parsed.data.clientRequestId;
+    const chatDoc = {
       requestId: null,
       participants,
       kind: 'direct',
@@ -67,7 +77,32 @@ export async function createDirectChat(req: Request, res: Response): Promise<voi
       active: true,
       lastMessageAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
-    });
+    };
+
+    let chatRef;
+    if (clientId) {
+      chatRef = db().collection('chats').doc(clientId);
+      try {
+        await chatRef.create(chatDoc);
+      } catch (err) {
+        if ((err as { code?: number }).code === 6 /* ALREADY_EXISTS */) {
+          // Idempotent hit: the chat already exists — return it without
+          // re-posting the system message / audit log.
+          res.status(200).json({
+            id: chatRef.id,
+            kind: 'direct',
+            title: parsed.data.title ?? null,
+            participants,
+            active: true,
+          });
+          return;
+        }
+        throw err;
+      }
+    } else {
+      chatRef = db().collection('chats').doc();
+      await chatRef.set(chatDoc);
+    }
 
     await postSystemMessage(chatRef.id, 'chat_created');
 
