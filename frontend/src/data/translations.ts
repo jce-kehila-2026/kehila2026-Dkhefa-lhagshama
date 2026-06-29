@@ -1053,7 +1053,7 @@ const base = {
     accountDisabled: {
       title:        'החשבון שלך הושבת',
       body:         'הגישה לחשבון זה הושבתה. אם לדעתך מדובר בטעות, נשמח לעמוד לרשותך, אנא צרו קשר עם צוות העמותה ונסייע בהקדם.',
-      contactEmail: 'support@push4f.org',
+      contactEmail: 'info@push4ful.org.il',
       backHome:     'חזרה לדף הבית',
     },
 
@@ -2340,7 +2340,7 @@ const base = {
     accountDisabled: {
       title:        'Your account has been disabled',
       body:         'Access to this account has been disabled. If you believe this is a mistake, we are happy to help, please contact the team and we will sort it out as soon as we can.',
-      contactEmail: 'support@push4f.org',
+      contactEmail: 'info@push4ful.org.il',
       backHome:     'Back to Home',
     },
 
