@@ -17,7 +17,12 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const config = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  // CI or any build without env (e.g. GitHub Actions) may leave these unset. A
+  // non-empty placeholder lets `next build` collect page data without the
+  // Firebase SDK throwing `auth/invalid-api-key`; real builds inline the real
+  // NEXT_PUBLIC_FIREBASE_* values (see frontend/.env.*), so the deployed app
+  // always uses the live config — the placeholder only affects keyless builds.
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'ci-build-placeholder-key',
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,

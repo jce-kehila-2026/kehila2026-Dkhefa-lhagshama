@@ -13,6 +13,18 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    # `next build` evaluates pages at build time; the Firebase web SDK init needs
+    # these public NEXT_PUBLIC_* values or it throws auth/invalid-api-key. They
+    # are public client config (safe in CI). If a secret is unset the value is
+    # empty and firebase.ts falls back to a placeholder so the build still passes.
+    env:
+      NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +81,9 @@ jobs:
         run: npm install -g firebase-tools
 
       - name: Install test dependencies
-        run: npm install
+        # @firebase/rules-unit-testing@4 peer-wants firebase@11 but the repo
+        # pins firebase@10; --legacy-peer-deps installs the compatible tree.
+        run: npm install --legacy-peer-deps
         working-directory: tests
 
       - name: Run rules tests
