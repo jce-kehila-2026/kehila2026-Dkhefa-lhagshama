@@ -31,6 +31,7 @@ import authRouter from '@/routes/auth';
 import businessesRouter from '@/routes/businesses';
 import categoriesRouter from '@/routes/categories';
 import chatsRouter from '@/routes/chats';
+import citiesRouter from '@/routes/cities';
 import profileRouter from '@/routes/profile';
 import ratingsRouter from '@/routes/ratings';
 import requestsRouter from '@/routes/requests';
@@ -175,6 +176,9 @@ app.use('/api/answers',    answersRouter);
 // label resolution, so the strict 30 req/15 min write limiter would throttle
 // normal browsing. globalLimiter still applies as the abuse backstop.
 app.use('/api/categories', categoriesRouter);
+// Same reasoning as /api/categories: a read-only reference table every city
+// picker fetches on page load, so it stays off the write limiter.
+app.use('/api/cities',     citiesRouter);
 app.use('/api/suggestions', suggestionsRouter); // UC-01 A1: public, no limiter
 // Admin sub-routers (Stream 4: #73 #74 #75 #76 #77). Each enforces
 // authenticate + requireRole('admin') internally. Mount BEFORE the generic

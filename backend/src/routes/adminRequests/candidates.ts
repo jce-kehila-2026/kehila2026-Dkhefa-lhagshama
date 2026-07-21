@@ -86,6 +86,7 @@ export async function listCandidates(req: Request, res: Response): Promise<void>
         availabilityWindows:
           (v.availabilityWindows as MatchVolunteer['availabilityWindows'] | undefined) ?? [],
         city: (v.city as string | undefined) ?? null,
+        cityCode: (v.cityCode as string | undefined) ?? null,
         avgRating: agg && agg.count > 0 ? agg.sum / agg.count : null,
         ratingCount: agg?.count ?? 0,
       };
@@ -99,6 +100,7 @@ export async function listCandidates(req: Request, res: Response): Promise<void>
         deadline: (reqData.deadline as string | null | undefined) ?? null,
         urgency: (reqData.urgency as 'low' | 'medium' | 'high' | null | undefined) ?? null,
         city: (reqData.city as string | undefined) ?? null,
+        cityCode: (reqData.cityCode as string | undefined) ?? null,
       },
       volunteers,
     );

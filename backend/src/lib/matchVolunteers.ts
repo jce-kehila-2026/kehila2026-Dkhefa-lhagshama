@@ -40,8 +40,10 @@ export interface MatchRequest {
   deadline?: string | null;
   /** Drives the urgency factor over the time-sensitive signals. */
   urgency?: 'low' | 'medium' | 'high' | string | null;
-  /** Requester city — enables the proximity signal. */
+  /** Requester city name — the legacy proximity input, kept for old records. */
   city?: string | null;
+  /** Requester CBS locality code — the preferred, spelling-proof proximity key. */
+  cityCode?: string | null;
 }
 
 export interface MatchVolunteer {
@@ -54,8 +56,10 @@ export interface MatchVolunteer {
   /** Count of the volunteer's currently-open assigned requests. */
   openLoad: number;
   availabilityWindows: AvailabilityWindow[];
-  /** Volunteer city — compared to the request city for the proximity signal. */
+  /** Volunteer city name — the legacy proximity input, kept for old records. */
   city?: string | null;
+  /** Volunteer CBS locality code — the preferred, spelling-proof proximity key. */
+  cityCode?: string | null;
   /** Average rating (1-5) restricted to requests IN THIS CATEGORY, or null. */
   avgRating?: number | null;
   /** How many category-specific ratings `avgRating` is based on. */
@@ -112,6 +116,20 @@ function norm(v: unknown): string {
   return String(v ?? '').trim().toLowerCase();
 }
 
+/**
+ * Do the request and the volunteer sit in the same locality? Codes win when
+ * both sides have one (exact, language-independent); otherwise fall back to
+ * comparing normalised names so pre-picker records still score.
+ */
+function sameCity(request: MatchRequest, volunteer: MatchVolunteer): boolean {
+  const reqCode = norm(request.cityCode);
+  const volCode = norm(volunteer.cityCode);
+  if (reqCode && volCode) return reqCode === volCode;
+
+  const reqName = norm(request.city);
+  return Boolean(reqName) && norm(volunteer.city) === reqName;
+}
+
 /** Category-restricted rating boost: points per star above 3.0, capped. */
 function ratingBoost(v: MatchVolunteer): number {
   if (typeof v.avgRating !== 'number' || (v.ratingCount ?? 0) <= 0) return 0;
@@ -133,7 +151,9 @@ function maxScoreFor(request: MatchRequest, urgencyFactor: number): number {
   max += WEIGHTS.workStatusFree * urgencyFactor;
   if (request.deadline) max += WEIGHTS.availableBeforeDeadline * urgencyFactor;
   if (norm(request.preferredLanguage)) max += WEIGHTS.language;
-  if (norm(request.city)) max += WEIGHTS.sameCity;
+  // Either locality key enables the proximity signal, so either one has to
+  // raise the ceiling — otherwise a code-only request could score above 100%.
+  if (norm(request.city) || norm(request.cityCode)) max += WEIGHTS.sameCity;
   max += WEIGHTS.ratingMax;
   // Guard against a degenerate request (no category/city/lang/deadline): the
   // free-status term keeps this strictly positive, so the division is safe.
@@ -153,7 +173,6 @@ export function scoreVolunteers(
 ): ScoredVolunteer[] {
   const cat = norm(request.category);
   const wantLang = norm(request.preferredLanguage);
-  const reqCity = norm(request.city);
   const uf = URGENCY_FACTOR[norm(request.urgency)] ?? 1;
   const maxScore = maxScoreFor(request, uf);
 
@@ -202,8 +221,12 @@ export function scoreVolunteers(
       reasons.push({ key: 'speaksLanguage', lang: wantLang });
     }
 
-    // 5. Proximity — same city as the requester.
-    if (reqCity && norm(v.city) === reqCity) {
+    // 5. Proximity — same city as the requester. Prefer the CBS locality code:
+    // it is immune to the spelling and language differences that made a name
+    // comparison ("תל אביב" vs "תל אביב - יפו" vs "Tel Aviv - Yafo") miss. Only
+    // records predating the city picker lack a code, and those still fall back
+    // to the normalised name so historical data keeps scoring.
+    if (sameCity(request, v)) {
       score += WEIGHTS.sameCity;
       reasons.push({ key: 'nearby' });
     }

@@ -35,7 +35,13 @@ export const createRequestSchema = z
 
     phone:     z.string().trim().min(1).max(40),
     email:     z.string().trim().email().max(120),
+    // Locality. `cityCode` is the CBS code from GET /api/cities and is the real
+    // value; `city` is the display name the client happened to show. The server
+    // re-derives the name from the code (lib/cities.resolveCityFields), so a
+    // spoofed or stale pair cannot be stored. `city` stays required for legacy
+    // clients that predate the picker.
     city:      z.string().trim().min(1).max(80),
+    cityCode:  z.string().trim().max(20).optional().default(''),
     age:       z.coerce.number().int().min(0).max(120),
     gender:    z.enum(['male', 'female', 'other', '']).default(''),
 

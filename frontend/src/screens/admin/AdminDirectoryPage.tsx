@@ -15,9 +15,11 @@ import { Building2, Store, Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useApp } from '@/contexts/AppContext'
 import { useCategories } from '@/hooks/useCategories'
+import { useCities } from '@/hooks/useCities'
 import { apiJson } from '@/lib/apiClient'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog'
+import CitySelect from '@/components/forms/CitySelect'
 import Reveal from '../../components/motion/Reveal'
 import {
   StatusBadge,
@@ -67,6 +69,7 @@ interface BusinessRow {
   phone: string | null
   category: string | null
   city: Bilingual
+  cityCode: string | null
   description: Bilingual
   website: string | null
   tags: { he?: string[]; en?: string[] } | string[] | null
@@ -162,6 +165,17 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
   const [ownerName, setOwnerName] = useState(business?.ownerName ?? '')
   const [phone, setPhone] = useState(business?.phone ?? '')
   const [city, setCity] = useState(L(business?.city, lang))
+  const [cityCode, setCityCode] = useState(business?.cityCode ?? '')
+  // Entries created before the picker stored a free-text name and no code. Once
+  // the locality list is in, reconcile that name to its official code so the
+  // picker shows the real value and editing the entry upgrades it in place.
+  // A name that matches nothing is left alone (the payload keeps it verbatim).
+  const { codeForName } = useCities()
+  useEffect(() => {
+    if (cityCode || !city) return
+    const resolved = codeForName(city)
+    if (resolved) setCityCode(resolved)
+  }, [cityCode, city, codeForName])
   const [description, setDescription] = useState(L(business?.description, lang))
   const [website, setWebsite] = useState(business?.website ?? '')
   const [tagsText, setTagsText] = useState(tagsOf(business?.tags ?? null, lang).join(', '))
@@ -232,6 +246,7 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
       phone: phone.trim(),
       category,
       city: city.trim(),
+      cityCode,
       description: description.trim(),
       website: site,
       tags: tagsText.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 12),
@@ -395,7 +410,21 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
                   ))}
                 </select>
               </div>
-              {field('dir-biz-city', dm.fieldCity, city, setCity)}
+              <div className={`field ${styles.field}`}>
+                <label className="form-label" htmlFor="dir-biz-city">{dm.fieldCity}</label>
+                {/* Official locality list, so admin-created entries key on the
+                    same codes as self-registered ones. */}
+                <CitySelect
+                  id="dir-biz-city"
+                  value={cityCode}
+                  fallbackName={city}
+                  onChange={(code, picked) => {
+                    setCityCode(code)
+                    setCity(picked ? picked.nameHe : '')
+                  }}
+                  disabled={busy}
+                />
+              </div>
               {item && (
                 <div className={`field ${styles.field}`}>
                   <label className="form-label" htmlFor="dir-biz-status">{dm.fieldStatus}</label>

@@ -68,6 +68,17 @@ export interface Category {
 }
 
 /**
+ * An Israeli locality, served by GET /api/cities from the government open-data
+ * table. `code` is the CBS locality code (`סמל_ישוב`) and is the value we
+ * STORE — names differ by language and spelling, codes do not.
+ */
+export interface City {
+  code: string;
+  nameHe: string;
+  nameEn: string;
+}
+
+/**
  * Canonical lifecycle status of a beneficiary request (request-lifecycle spec).
  *
  * Authority is the backend transition map; these are the only states the

@@ -186,6 +186,11 @@ router.post('/:id/approve', async (req: Request, res: Response): Promise<void> =
         uid: volunteerUid,
         fullName: appData.fullName ?? (composedName || null),
         email: appData.email ?? null,
+        // Carry the locality onto the roster: the matcher's same-city signal
+        // reads it from the volunteer doc, and before this it was never copied
+        // over from the application, so proximity could never score.
+        city: appData.city ?? null,
+        cityCode: appData.cityCode ?? null,
         profession: appData.profession ?? null,
         languages: appData.languages ?? [],
         areas: appData.areas ?? appData.areasOfHelp ?? [],

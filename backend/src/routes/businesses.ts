@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { db } from '@/lib/firebaseAdmin';
 import { authenticate } from '@/middleware/auth';
 import { requireNotDisabled } from '@/middleware/requireNotDisabled';
+import { resolveBilingualCity } from '@/lib/cities';
 import { writeAuditLog } from '@/lib/audit';
 
 const router = Router();
@@ -26,7 +27,11 @@ const createBusinessSchema = z.object({
   ownerName: z.string().trim().min(1).max(120),
   phone: z.string().trim().min(1).max(40),
   category: businessCategorySchema,
+  // Locality: `cityCode` is the CBS code from GET /api/cities; the bilingual
+  // display pair is re-derived from it server-side (lib/cities). `city` stays
+  // required for legacy clients that predate the picker.
   city: z.string().trim().min(1).max(80),
+  cityCode: z.string().trim().max(20).optional().default(''),
   description: z.string().trim().min(10).max(1200),
   // Optional public website for the business; validated as a URL when present.
   // Scheme is restricted to http(s) — zod's .url() alone accepts javascript:
@@ -72,6 +77,7 @@ router.get('/', async (_req: Request, res: Response) => {
         phone: data.phone ?? null,
         category: data.category ?? null,
         city: data.city ?? null,
+        cityCode: data.cityCode ?? null,
         description: data.description ?? null,
         tags: data.tags ?? { he: [], en: [] },
         // Optional public website (URL string), null when not set.
@@ -128,12 +134,15 @@ router.post('/', authenticate, requireNotDisabled, async (req: Request, res: Res
     // owner actually supplied one — an empty string means "not provided".
     const website = input.website?.trim() ? input.website.trim() : null;
 
+    const resolvedCity = resolveBilingualCity(input.cityCode, input.city);
+
     const docRef = await db().collection('businesses').add({
       name: { he: input.name, en: input.name },
       ownerName: input.ownerName,
       phone: input.phone,
       category: input.category,
-      city: { he: input.city, en: input.city },
+      city: resolvedCity.city,
+      cityCode: resolvedCity.cityCode,
       description: { he: input.description, en: input.description },
       website,
       tags: { he: [], en: [] },

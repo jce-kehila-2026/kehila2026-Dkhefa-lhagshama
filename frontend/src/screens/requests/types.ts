@@ -16,7 +16,9 @@ export interface RequestFormValues {
   firstName: string; lastName: string;
   idType: string; idNumber: string; idNote: string;
   phone: string; email: string;
-  city: string; age: string; gender: string;
+  // `cityCode` is the CBS locality code (the value that matters); `city` is the
+  // display name kept alongside it for the summary step and legacy consumers.
+  city: string; cityCode: string; age: string; gender: string;
   category: string; description: string; urgency: string;
   deadline: string;
   preferredLanguage: string;

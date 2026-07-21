@@ -1,0 +1,102 @@
+/* CitySelect — searchable locality combobox.
+   RTL-safe throughout: insets and padding use logical properties so the
+   trailing affordance and the dropdown flip with the document direction. */
+
+.wrap {
+  position: relative;
+}
+
+/* Leave room for the trailing clear/chevron affordance. */
+.input {
+  padding-inline-end: 2.25rem;
+}
+
+.trailingIcon,
+.trailingBtn {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 0.625rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-600);
+  pointer-events: none;
+}
+
+.trailingBtn {
+  pointer-events: auto;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.trailingBtn:hover {
+  color: var(--ink);
+  background: var(--gray-100);
+}
+
+.trailingBtn:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 1px;
+}
+
+.list {
+  position: absolute;
+  z-index: 40;
+  inset-block-start: calc(100% + 4px);
+  inset-inline: 0;
+  max-height: 17rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--paper);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.option {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.optionActive {
+  background: var(--ember-soft);
+}
+
+.option[aria-selected='true'] .optionPrimary {
+  font-weight: 600;
+}
+
+.optionPrimary {
+  color: var(--ink);
+}
+
+/* The other-language name, so a selection is unambiguous in either UI language. */
+.optionSecondary {
+  margin-inline-start: auto;
+  font-size: 0.8125rem;
+  color: var(--gray-600);
+  /* Latin names inside an RTL list would otherwise reorder around punctuation. */
+  unicode-bidi: isolate;
+}
+
+.empty,
+.more {
+  padding: 0.625rem;
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+.more {
+  border-block-start: 1px solid var(--gray-200);
+  margin-block-start: 0.25rem;
+}

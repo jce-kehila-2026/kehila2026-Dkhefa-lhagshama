@@ -125,6 +125,7 @@ export default function MyRequestsPage() {
           lastName:  saveOffer.lastName,
           phone:     saveOffer.phone,
           city:      saveOffer.city,
+          cityCode:  saveOffer.cityCode,
           age:       Number(saveOffer.age) || undefined,
           gender:    saveOffer.gender || undefined,
         }),

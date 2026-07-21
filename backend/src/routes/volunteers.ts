@@ -14,6 +14,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
+import { resolveCityFields } from '@/lib/cities';
 import { writeAuditLog } from '@/lib/audit';
 import { authenticate } from '@/middleware/auth';
 
@@ -29,7 +30,11 @@ const applySchema = z.object({
   lastName:     z.string().trim().min(1).max(80),
   phone:        z.string().trim().min(1).max(40),
   email:        z.string().trim().email().max(120),
+  // Locality: `cityCode` is the CBS code from GET /api/cities and is the real
+  // value; the display name is re-derived server-side (lib/cities). Storing the
+  // code is what makes the matcher's same-city comparison reliable.
   city:         z.string().trim().min(1).max(80),
+  cityCode:     z.string().trim().max(20).optional().default(''),
 
   // Volunteering specifics
   profession:   z.string().trim().max(120).optional().default(''),
@@ -77,6 +82,8 @@ router.post('/apply', authenticate, async (req: Request, res: Response) => {
   }
 
   const input: ApplyInput = parsed.data;
+  // Canonicalise the locality so the stored name always matches the stored code.
+  const resolvedCity = resolveCityFields(input.cityCode, input.city);
 
   // An already-approved volunteer must not re-enter the admin queue: they hold no
   // pending application, so the pending-only guard below would let them create a
@@ -115,7 +122,8 @@ router.post('/apply', authenticate, async (req: Request, res: Response) => {
         firstName: input.firstName,
         lastName:  input.lastName,
         phone:     input.phone,
-        city:      input.city,
+        city:      resolvedCity.city,
+        cityCode:  resolvedCity.cityCode,
 
         // Volunteer-specific fields
         profession:   input.profession,

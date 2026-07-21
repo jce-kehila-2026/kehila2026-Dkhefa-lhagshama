@@ -123,6 +123,7 @@ export default function DirectoryPage() {
     phone: '',
     category: 'food',
     city: '',
+    cityCode: '',
     desc: '',
     website: '',
   })

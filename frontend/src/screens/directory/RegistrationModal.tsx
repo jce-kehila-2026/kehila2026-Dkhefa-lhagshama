@@ -10,6 +10,7 @@
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { TNode } from '@/types'
+import CitySelect from '@/components/forms/CitySelect'
 import { REG_AUTOCOMPLETE } from './constants'
 import styles from './RegistrationModal.module.css'
 
@@ -21,6 +22,8 @@ type RegisterForm = {
   phone: string
   category: string
   city: string
+  /** CBS locality code — the committed value; `city` is its display name. */
+  cityCode: string
   desc: string
   website: string
 }
@@ -76,6 +79,17 @@ export default function RegistrationModal({
                   rows={3}
                   value={registerForm.desc}
                   onChange={(e) => updateRegisterField('desc', e.target.value)}
+                />
+              ) : field === 'city' ? (
+                /* Locality picked from the official list, never free text, so
+                   two spellings can't become two different places. */
+                <CitySelect
+                  id={`dir-reg-${field}`}
+                  value={registerForm.cityCode}
+                  onChange={(code, picked) => {
+                    updateRegisterField('cityCode', code)
+                    updateRegisterField('city', picked ? picked.nameHe : '')
+                  }}
                 />
               ) : field === 'category' ? (
                 <select

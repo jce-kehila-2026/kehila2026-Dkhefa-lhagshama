@@ -52,6 +52,8 @@ export interface SaveProfileOffer {
   lastName?: string;
   phone?: string;
   city?: string;
+  /** CBS locality code — the value the profile actually keys on. */
+  cityCode?: string;
   age?: string;
   gender?: string;
 }

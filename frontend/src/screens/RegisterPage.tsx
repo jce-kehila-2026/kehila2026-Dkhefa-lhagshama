@@ -31,6 +31,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useApp } from '../contexts/AppContext'
 import { validateRedirect } from '../utils/validateRedirect'
 import { apiFetch } from '../lib/apiClient'
+import CitySelect from '@/components/forms/CitySelect'
 import { getIdToken } from '../lib/auth'
 import UploadArea from '../components/forms/UploadArea'
 import Reveal from '../components/motion/Reveal'
@@ -333,7 +334,10 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, accountCreated, onAcco
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
+  // Locality: the CBS code is the committed value; the Hebrew name rides along
+  // for display and for legacy consumers that still read a name.
   const [city, setCity] = useState('')
+  const [cityCode, setCityCode] = useState('')
   const [profession, setProfession] = useState('')
   const [selectedAreas, setSelectedAreas] = useState<string[]>([])
   const [languagesRaw, setLanguagesRaw] = useState('')
@@ -422,6 +426,7 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, accountCreated, onAcco
           phone,
           email: accountData.email,
           city,
+          cityCode,
           profession,
           areasOfHelp: selectedAreas,
           languages: langs,
@@ -487,12 +492,18 @@ function VolunteerStep2({ v, a, lang, isRTL, accountData, accountCreated, onAcco
           onChange={(e) => setPhone(e.target.value)} className="form-input" />
       </label>
 
-      <label className="reg-field" htmlFor="vol-city">
-        {v.city}
-        <input id="vol-city" type="text" name="address-level2" autoComplete="address-level2"
-          required value={city}
-          onChange={(e) => setCity(e.target.value)} className="form-input" />
-      </label>
+      <div className="reg-field">
+        <label htmlFor="vol-city">{v.city}</label>
+        <CitySelect
+          id="vol-city"
+          value={cityCode}
+          onChange={(code, picked) => {
+            setCityCode(code)
+            setCity(picked ? picked.nameHe : '')
+          }}
+          required
+        />
+      </div>
 
       <label className="reg-field" htmlFor="vol-profession">
         {v.profession}

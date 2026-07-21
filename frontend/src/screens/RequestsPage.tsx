@@ -29,6 +29,7 @@ import { sendEmailVerification } from 'firebase/auth' // #86
 import { firebaseAuth } from '../lib/firebase' // #86
 import { useForm } from '../hooks/useForm'
 import { useCategories } from '../hooks/useCategories'
+import { useCities } from '../hooks/useCities'
 import { validateStep1, validateStep2, validateStep4 } from '../utils/validators'
 import { apiFetch, apiJson } from '../lib/apiClient'
 import type { Suggestion } from '@/types'
@@ -49,6 +50,8 @@ export default function RequestsPage() {
   const { user, role, loading: authLoading } = useAuth()
   // Admin-managed taxonomy: tile list + bilingual label resolution.
   const { categories, loading: catsLoading, labelFor, refresh: refreshCats } = useCategories()
+  // Reconciles a legacy free-text profile city to its official locality code.
+  const { codeForName } = useCities()
   const navigate = useNavigate()
   const router = useRouter()
   const BackArrow  = isRTL ? ArrowRight : ArrowLeft
@@ -82,7 +85,7 @@ export default function RequestsPage() {
   // submit to decide whether the save-to-profile offer is worth stashing.
   const profileSnapshot = useRef<{
     firstName: string; lastName: string; phone: string;
-    city: string; age: string; gender: string;
+    city: string; cityCode: string; age: string; gender: string;
   } | null>(null)
 
   // Client-generated UUID — stable per form session (#93 + upload path prefix)
@@ -107,7 +110,7 @@ export default function RequestsPage() {
     firstName:'', lastName:'',
     idType: 'israeli_id', idNumber:'', idNote:'',
     phone:'', email:'',
-    city:'', age:'', gender:'',
+    city:'', cityCode:'', age:'', gender:'',
     category:'', description:'', urgency:'low',
     deadline: '',
     preferredLanguage: '',
@@ -194,7 +197,8 @@ export default function RequestsPage() {
     try {
       const data = await apiJson('/api/users/me') as {
         profile?: {
-          firstName?: string; lastName?: string; phone?: string; city?: string;
+          firstName?: string; lastName?: string; phone?: string;
+          city?: string; cityCode?: string;
           age?: string | number; gender?: string; email?: string;
         }
       }
@@ -204,6 +208,7 @@ export default function RequestsPage() {
         lastName:  p.lastName  || '',
         phone:     p.phone     || '',
         city:      p.city      || '',
+        cityCode:  p.cityCode  || '',
         age:       p.age ? String(p.age) : '',
         gender:    p.gender    || '',
       }
@@ -211,7 +216,12 @@ export default function RequestsPage() {
       if (p.firstName)   { setValue('firstName', p.firstName); filledAny = true }
       if (p.lastName)    { setValue('lastName',  p.lastName);  filledAny = true }
       if (p.phone)       { setValue('phone',     p.phone);     filledAny = true }
-      if (p.city)        { setValue('city',      p.city);      filledAny = true }
+      // Prefer the stored code; a profile saved before the picker existed has
+      // only a free-text name, so reconcile it to its official code. A name
+      // that matches nothing leaves the picker empty for the user to choose.
+      const prefillCode = p.cityCode || codeForName(p.city)
+      if (prefillCode)   { setValue('cityCode',  prefillCode);
+                           setValue('city',      p.city || '');  filledAny = true }
       if (p.age)         { setValue('age',       String(p.age)); filledAny = true }
       if (p.gender) {
         // Canonical gender from DB (male/female/other) → UI code (M/F/O)
@@ -232,7 +242,7 @@ export default function RequestsPage() {
     } finally {
       setProfileLoading(false)
     }
-  }, [profileLoading, user, setValue, toast, s2.autoFill])
+  }, [profileLoading, user, setValue, toast, s2.autoFill, codeForName])
 
   // Explicit "auto-fill from my profile" button handler (#67) — always runs.
   const fillFromProfile = useCallback(() => loadProfileInto(true), [loadProfileInto])
@@ -297,6 +307,7 @@ export default function RequestsPage() {
         phone:     values.phone,
         email:     values.email,
         city:      values.city,
+        cityCode:  values.cityCode,
         age:       Number(values.age) || 0,
         gender:    toCanonicalGender(values.gender),
         category:  values.category,
@@ -347,6 +358,7 @@ export default function RequestsPage() {
         lastName:  values.lastName,
         phone:     values.phone,
         city:      values.city,
+        cityCode:  values.cityCode,
         age:       values.age,
         gender:    toCanonicalGender(values.gender),
       }
@@ -411,6 +423,7 @@ export default function RequestsPage() {
             handleChange={handleChange}
             profileLoading={profileLoading}
             fillFromProfile={fillFromProfile}
+            setValue={setValue}
           />
         )}
 

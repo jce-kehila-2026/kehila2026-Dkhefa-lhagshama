@@ -275,7 +275,6 @@ const base = {
         needDesc:    'יש לתאר את הבקשה',
         needConsent: 'יש לאשר את התנאים להמשך',
       },
-      cities: ['תל אביב','חיפה','ירושלים','באר שבע','נתניה','אשדוד','ראשון לציון','רמלה','לוד','פתח תקווה','בני ברק','הרצליה','כפר סבא','רעננה','אחר'],
     },
 
     // ── DIRECTORY ─────────────────────────────────────────────
@@ -982,6 +981,16 @@ const base = {
         d7: '7 ימים', d30: '30 ימים', d90: '90 ימים', m12: '12 חודשים', all: 'הכול', custom: 'מותאם',
         from: 'מתאריך', to: 'עד תאריך',
       },
+      // Searchable locality picker (CitySelect) — shared by every city field.
+      citySelect: {
+        placeholder:  'הקלד/י שם יישוב…',
+        loading:      'טוען יישובים…',
+        noResults:    'לא נמצא יישוב מתאים',
+        loadFailed:   'לא הצלחנו לטעון את רשימת היישובים. נסה/י לרענן את הדף.',
+        moreResults:  'מוצגות {n} התוצאות הראשונות - המשך/י להקליד לצמצום',
+        clear:        'נקה בחירה',
+        instructions: 'הקלד/י כדי לחפש ובחר/י יישוב מהרשימה',
+      },
       loading:    'טוען…',
       save:       'שמור',
       cancel:     'ביטול',
@@ -1572,7 +1581,6 @@ const base = {
         needDesc:    'Please describe your request',
         needConsent: 'You must agree to the terms to continue',
       },
-      cities: ['Tel Aviv','Haifa','Jerusalem','Beer Sheva','Netanya','Ashdod','Rishon LeZion','Ramla','Lod','Petah Tikva','Bnei Brak','Herzliya','Kfar Saba','Ra\'anana','Other'],
     },
 
     directory: {
@@ -2269,6 +2277,16 @@ const base = {
         label: 'Time range',
         d7: '7 days', d30: '30 days', d90: '90 days', m12: '12 months', all: 'All', custom: 'Custom',
         from: 'From', to: 'To',
+      },
+      // Searchable locality picker (CitySelect) — shared by every city field.
+      citySelect: {
+        placeholder:  'Type a locality name…',
+        loading:      'Loading localities…',
+        noResults:    'No matching locality',
+        loadFailed:   'We could not load the locality list. Try reloading the page.',
+        moreResults:  'Showing the first {n} matches - keep typing to narrow down',
+        clear:        'Clear selection',
+        instructions: 'Type to search, then pick a locality from the list',
       },
       loading:    'Loading…',
       save:       'Save',

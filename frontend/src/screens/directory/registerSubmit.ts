@@ -17,6 +17,7 @@ type RegisterForm = {
   phone: string
   category: string
   city: string
+  cityCode: string
   desc: string
   website: string
 }
@@ -49,6 +50,7 @@ export function makeHandleRegisterSubmit({
       phone: registerForm.phone.trim(),
       category: registerForm.category,
       city: registerForm.city.trim(),
+      cityCode: registerForm.cityCode,
       description: registerForm.desc.trim(),
       // Optional: only sent when the owner provided a website. Validated below.
       website: registerForm.website.trim(),
@@ -85,7 +87,7 @@ export function makeHandleRegisterSubmit({
       })
       // Reset + close the form, then surface a branded success notice.
       setShowRegForm(false)
-      setRegisterForm({ business_name: '', owner_name: '', phone: '', category: 'food', city: '', desc: '', website: '' })
+      setRegisterForm({ business_name: '', owner_name: '', phone: '', category: 'food', city: '', cityCode: '', desc: '', website: '' })
       setNotice({ message: d.submitSuccess })
     } catch (rawErr) {
       // Surface the real backend error so failures are diagnosable instead of a

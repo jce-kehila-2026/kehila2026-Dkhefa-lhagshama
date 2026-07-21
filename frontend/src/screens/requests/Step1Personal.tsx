@@ -9,7 +9,8 @@
  * are the two non-trivial bits; everything else is plain bound fields.
  */
 import { Sparkles } from 'lucide-react'
-import { FormGroup, Label, Input, Select, FormRow } from '@/components/forms/FormElements'
+import { FormGroup, Label, Input, FormRow } from '@/components/forms/FormElements'
+import CitySelect from '@/components/forms/CitySelect'
 import HelpTooltip from '@/components/feedback/HelpTooltip'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { RequestFormValues, FormChangeHandler } from './types'
@@ -22,6 +23,9 @@ interface Step1PersonalProps {
   handleChange: FormChangeHandler
   profileLoading: boolean
   fillFromProfile: () => void
+  // direct field setter — CitySelect commits a code + name pair, which the
+  // event-shaped `handleChange` cannot express
+  setValue: (name: string, value: string | boolean) => void
 }
 
 // renders the step-1 fieldset. key props: values/errors (controlled state owned by parent),
@@ -34,6 +38,7 @@ export default function Step1Personal({
   handleChange,
   profileLoading,
   fillFromProfile,
+  setValue,
 }: Step1PersonalProps) {
   const { t, lang } = useLanguage()
   // rq = generic request copy, s2 = stream-2 copy (auto-fill + id-type strings); both bilingual
@@ -150,11 +155,17 @@ export default function Step1Personal({
       <FormRow>
         <FormGroup>
           <Label htmlFor="city" required>{rq.step1.city}</Label>
-          <Select id="city" name="city" value={values.city} onChange={handleChange}
-            autoComplete="address-level2" aria-invalid={!!errors.city} error={errors.city}>
-            <option value="">{lang === 'he' ? 'בחר עיר…' : 'Select city…'}</option>
-            {rq.cities.map(c => <option key={c} value={c}>{c}</option>)}
-          </Select>
+          {/* Locality comes from the official list (GET /api/cities); we commit
+              the code and keep the display name beside it for the summary step. */}
+          <CitySelect
+            id="city"
+            value={values.cityCode}
+            onChange={(code, city) => {
+              setValue('cityCode', code)
+              setValue('city', city ? city.nameHe : '')
+            }}
+            error={errors.city}
+          />
         </FormGroup>
         <FormGroup>
           <Label htmlFor="age">{rq.step1.age}</Label>

@@ -15,6 +15,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
+import { resolveCityFields } from '@/lib/cities';
 import { authenticate } from '@/middleware/auth';
 
 const router = Router();
@@ -27,7 +28,10 @@ const profileSchema = z
     firstName:   z.string().trim().max(80).optional(),
     lastName:    z.string().trim().max(80).optional(),
     phone:       z.string().trim().max(40).optional(),
+    // Locality: `cityCode` is the CBS code from GET /api/cities and is the real
+    // value; the display name is re-derived from it below (lib/cities).
     city:        z.string().trim().max(80).optional(),
+    cityCode:    z.string().trim().max(20).optional(),
     age:         z.coerce.number().int().min(0).max(120).optional(),
     gender:      z.enum(['male', 'female', 'other', '']).optional(),
     preferredLang: z.enum(['he', 'en']).optional(),
@@ -44,6 +48,7 @@ function defaultProfile(user: NonNullable<Request['user']>) {
     lastName: '',
     phone: '',
     city: '',
+    cityCode: null as string | null,
     age: null as number | null,
     gender: '' as 'male' | 'female' | 'other' | '',
     preferredLang: 'he' as 'he' | 'en',
@@ -125,8 +130,16 @@ router.patch('/me', authenticate, async (req: Request, res: Response) => {
     if (!snap.exists) {
       await ref.set(defaultProfile(req.user));
     }
+    // Canonicalise the locality so a stored profile can never carry a name that
+    // disagrees with its code.
+    const patch: Record<string, unknown> = { ...parsed.data };
+    if (parsed.data.cityCode !== undefined || parsed.data.city !== undefined) {
+      const resolved = resolveCityFields(parsed.data.cityCode, parsed.data.city);
+      patch.city = resolved.city;
+      patch.cityCode = resolved.cityCode;
+    }
     await ref.set(
-      { ...parsed.data, updatedAt: FieldValue.serverTimestamp() },
+      { ...patch, updatedAt: FieldValue.serverTimestamp() },
       { merge: true },
     );
     const updated = await ref.get();

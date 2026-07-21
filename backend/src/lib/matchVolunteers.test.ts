@@ -22,6 +22,7 @@ function vol(p: Partial<MatchVolunteer> & { uid: string }): MatchVolunteer {
     openLoad: p.openLoad ?? 0,
     availabilityWindows: p.availabilityWindows ?? [],
     city: p.city ?? null,
+    cityCode: p.cityCode ?? null,
     avgRating: p.avgRating ?? null,
     ratingCount: p.ratingCount ?? 0,
   };
@@ -164,6 +165,42 @@ describe('scoreVolunteers', () => {
     expect(near.score - far.score).toBe(WEIGHTS.sameCity);
     expect(near.reasons).toContainEqual({ key: 'nearby' });
     expect(far.reasons).not.toContainEqual({ key: 'nearby' });
+  });
+
+  it('matches on locality CODE across different spellings and languages', () => {
+    // The exact case the picker exists to fix: same place, three renderings of
+    // the name. A name comparison misses all of them; the code matches.
+    const req: MatchRequest = { ...baseReq, city: 'תל אביב - יפו', cityCode: '5000' };
+    const spelled = scoreVolunteers(req, [vol({ uid: 's', city: 'תל אביב', cityCode: '5000' })])[0];
+    const latin = scoreVolunteers(req, [vol({ uid: 'l', city: 'Tel Aviv - Yafo', cityCode: '5000' })])[0];
+    const other = scoreVolunteers(req, [vol({ uid: 'o', city: 'חיפה', cityCode: '4000' })])[0];
+
+    expect(spelled.reasons).toContainEqual({ key: 'nearby' });
+    expect(latin.reasons).toContainEqual({ key: 'nearby' });
+    expect(other.reasons).not.toContainEqual({ key: 'nearby' });
+    expect(spelled.score - other.score).toBe(WEIGHTS.sameCity);
+  });
+
+  it('falls back to the name when either side predates the city picker', () => {
+    // Legacy records carry a name and no code; they must still score.
+    const req: MatchRequest = { ...baseReq, city: 'Haifa' };
+    const legacy = scoreVolunteers(req, [vol({ uid: 'legacy', city: 'haifa' })])[0];
+    expect(legacy.reasons).toContainEqual({ key: 'nearby' });
+
+    // A coded request vs an uncoded volunteer also falls back to the name.
+    const mixed = scoreVolunteers(
+      { ...baseReq, city: 'חיפה', cityCode: '4000' },
+      [vol({ uid: 'mixed', city: 'חיפה' })],
+    )[0];
+    expect(mixed.reasons).toContainEqual({ key: 'nearby' });
+  });
+
+  it('keeps matchPercent within bounds for a code-only request', () => {
+    // The proximity ceiling must count a code-only request, or the raw score
+    // could exceed the max and push the percentage past 100.
+    const req: MatchRequest = { ...baseReq, cityCode: '5000' };
+    const best = scoreVolunteers(req, [vol({ uid: 'b', cityCode: '5000', avgRating: 5, ratingCount: 9 })])[0];
+    expect(best.matchPercent).toBeLessThanOrEqual(100);
   });
 
   it('boosts a highly-rated volunteer and emits the highlyRated reason', () => {

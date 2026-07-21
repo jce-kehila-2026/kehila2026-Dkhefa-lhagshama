@@ -16,6 +16,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { type Request, type Response } from 'express';
 
 import { db } from '@/lib/firebaseAdmin';
+import { resolveCityFields } from '@/lib/cities';
 import { formatDisplayId } from '@/lib/displayId';
 import { writeAuditLog } from '@/lib/audit';
 import { writeRequestEvent } from '@/lib/requestEvents';
@@ -65,6 +66,10 @@ export async function createRequest(req: Request, res: Response): Promise<void> 
   const docRef = db().collection('requests').doc(input.requestId);
   const counterRef = db().collection('counters').doc('requests');
 
+  // Canonicalise the locality up front so the stored name always matches the
+  // stored code (see lib/cities). Legacy bodies without a code keep their name.
+  const resolvedCity = resolveCityFields(input.cityCode, input.city);
+
   let displayId: string;
   try {
     // ATOMICITY FIX (audit L8): allocate the friendly REQ-#### number AND create
@@ -101,7 +106,9 @@ export async function createRequest(req: Request, res: Response): Promise<void> 
         idNote:    input.idNote,
         phone:     input.phone,
         email:     input.email,
-        city:      input.city,
+        // Name derived from the code, never trusted from the body (lib/cities).
+        city:      resolvedCity.city,
+        cityCode:  resolvedCity.cityCode,
         age:       input.age,
         gender:    input.gender,
 

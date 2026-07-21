@@ -15,6 +15,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 
 import { db } from '@/lib/firebaseAdmin';
+import { resolveBilingualCity } from '@/lib/cities';
 import { authenticate, requireRole } from '@/middleware/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { isAllowedCategory } from '@/lib/categoriesCache';
@@ -312,7 +313,10 @@ const businessFieldsSchema = z.object({
   ownerName: z.string().trim().min(1).max(120),
   phone: z.string().trim().min(1).max(40),
   category: businessCategorySchema,
+  // Locality: `cityCode` is the CBS code from GET /api/cities; the bilingual
+  // display pair is re-derived from it server-side (lib/cities).
   city: z.string().trim().min(1).max(80),
+  cityCode: z.string().trim().max(20).optional().default(''),
   description: z.string().trim().min(10).max(1200),
   website: httpUrlSchema,
   tags: tagsSchema,
@@ -339,6 +343,7 @@ router.get('/businesses', async (req: Request, res: Response): Promise<void> => 
           phone: data.phone ?? null,
           category: data.category ?? null,
           city: data.city ?? null,
+          cityCode: data.cityCode ?? null,
           description: data.description ?? null,
           website: data.website ?? null,
           tags: data.tags ?? { he: [], en: [] },
@@ -374,12 +379,15 @@ router.post('/businesses', async (req: Request, res: Response): Promise<void> =>
     const website = input.website?.trim() ? input.website.trim() : null;
     const tags = input.tags ?? [];
 
+    const createdCity = resolveBilingualCity(input.cityCode, input.city);
+
     const docRef = await db().collection('businesses').add({
       name: { he: input.name, en: input.name },
       ownerName: input.ownerName,
       phone: input.phone,
       category: input.category,
-      city: { he: input.city, en: input.city },
+      city: createdCity.city,
+      cityCode: createdCity.cityCode,
       description: { he: input.description, en: input.description },
       website,
       tags: { he: tags, en: tags },
@@ -426,7 +434,11 @@ router.patch('/businesses/:id', async (req: Request, res: Response): Promise<voi
   if (input.ownerName !== undefined) updates.ownerName = input.ownerName;
   if (input.phone !== undefined) updates.phone = input.phone;
   if (input.category !== undefined) updates.category = input.category;
-  if (input.city !== undefined) updates.city = { he: input.city, en: input.city };
+  if (input.city !== undefined || input.cityCode !== undefined) {
+    const resolved = resolveBilingualCity(input.cityCode, input.city);
+    updates.city = resolved.city;
+    updates.cityCode = resolved.cityCode;
+  }
   if (input.description !== undefined) {
     updates.description = { he: input.description, en: input.description };
   }
