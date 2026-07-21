@@ -20,6 +20,7 @@ import { randomUUID } from 'crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { initializeFirebaseAdmin, db, auth } from '../src/lib/firebaseAdmin';
 import { formatDisplayId } from '../src/lib/displayId';
+import { completeIsraeliId } from '../src/lib/israeliId';
 import { exportFirestore } from './exportFirestore';
 import { assertSafeToRun } from './lib/guard';
 
@@ -264,7 +265,11 @@ async function main(): Promise<void> {
       firstName: pick(FIRST_HE, i),
       lastName: pick(LAST_HE, i + 1),
       idType: pick(ID_TYPES, i),
-      idNumber: pick(ID_TYPES, i) === 'none' ? '' : String(300000000 + i),
+      // Checksum-valid: `300000000 + i` is only a legal ID about one time in
+      // ten, so most seeded requests carried a number the form itself would
+      // reject. Completing the check digit keeps the demo data consistent with
+      // the rule the app enforces.
+      idNumber: pick(ID_TYPES, i) === 'none' ? '' : completeIsraeliId(String(30000000 + i)),
       idNote: '',
       phone: `054-${String(3000000 + i)}`,
       email: `${bene.uid}@pff.test`,

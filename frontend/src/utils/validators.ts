@@ -5,11 +5,36 @@
 export const isRequired = (val: unknown): boolean =>
   !!val && val.toString().trim().length > 0
 
+/** Nine digits, all identical: "000000000", "111111111", ... */
+const ALL_SAME_DIGIT = /^(\d)\1{8}$/
+
+/**
+ * Israeli national ID (תעודת זהות) check. Luhn-style: double every second
+ * digit, subtract 9 above 9, total must divide by 10.
+ *
+ * That algorithm alone accepts "000000000" — a sum of 0 divides by 10 — which
+ * was also this field's placeholder, so a row of zeros passed as a real
+ * identity number. Single-repeated-digit strings are rejected explicitly.
+ *
+ * Mirrors backend/src/lib/israeliId.ts, which is the authoritative copy and
+ * the one that actually gates a submission; this exists for instant feedback.
+ * Keep the two in step.
+ */
 export const isValidIsraeliId = (id: string): boolean => {
-  const clean = id.replace(/\D/g, '')
+  const raw = (id ?? '').trim()
+  if (!raw) return false
+  // Digits and separators only, so "12345678a" cannot pass by having its
+  // letters stripped away.
+  if (!/^[\d\s-]+$/.test(raw)) return false
+
+  const clean = raw.replace(/\D/g, '')
+  // Exactly 9 — a short number is never zero-padded, since padding would turn
+  // a typo into a different valid person's ID.
   if (clean.length !== 9) return false
+  if (ALL_SAME_DIGIT.test(clean)) return false
+
   const sum = clean.split('').reduce((acc, digit, i) => {
-    let n = parseInt(digit) * ((i % 2) + 1)
+    let n = parseInt(digit, 10) * ((i % 2) + 1)
     if (n > 9) n -= 9
     return acc + n
   }, 0)

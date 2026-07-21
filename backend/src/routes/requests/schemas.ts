@@ -11,6 +11,8 @@
  */
 import { z } from 'zod';
 
+import { isValidIsraeliId } from '@/lib/israeliId';
+
 import { isAllowedCategory } from '@/lib/categoriesCache';
 
 // ── Schema ────────────────────────────────────────────────────────────────
@@ -84,13 +86,25 @@ export const createRequestSchema = z
       .optional(),
   })
   .superRefine(async (data, ctx) => {
-    // An Israeli ID number is mandatory only when idType is israeli_id (#66).
-    if (data.idType === 'israeli_id' && data.idNumber.trim().length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['idNumber'],
-        message: 'idNumber is required when idType is israeli_id',
-      });
+    // An Israeli ID number is mandatory only when idType is israeli_id (#66),
+    // and when supplied it must actually be a valid ID. This check used to live
+    // ONLY in the browser, so a direct POST could store any string — and the
+    // client rule accepted "000000000" (which satisfies the raw checksum) on
+    // top of that. lib/israeliId is the authoritative rule.
+    if (data.idType === 'israeli_id') {
+      if (data.idNumber.trim().length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['idNumber'],
+          message: 'idNumber is required when idType is israeli_id',
+        });
+      } else if (!isValidIsraeliId(data.idNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['idNumber'],
+          message: 'idNumber is not a valid Israeli ID number',
+        });
+      }
     }
 
     // Category must be an ACTIVE (non-archived) taxonomy id. Async because the
