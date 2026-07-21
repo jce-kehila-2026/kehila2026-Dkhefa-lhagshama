@@ -29,7 +29,7 @@ import { sendEmailVerification } from 'firebase/auth' // #86
 import { firebaseAuth } from '../lib/firebase' // #86
 import { useForm } from '../hooks/useForm'
 import { useCategories } from '../hooks/useCategories'
-import { validateStep1, validateStep2, validateStep3, validateStep4 } from '../utils/validators'
+import { validateStep1, validateStep2, validateStep4 } from '../utils/validators'
 import { apiFetch, apiJson } from '../lib/apiClient'
 import type { Suggestion } from '@/types'
 import type { RequestFormValues } from './requests/types'
@@ -71,7 +71,6 @@ export default function RequestsPage() {
 
   const [step, setStep] = useState(1)
   const [submitted, setSubmitted] = useState(false)
-  const [idUploaded, setIdUploaded] = useState(false)
   const [idPath, setIdPath] = useState('')
   const [supportPath, setSupportPath] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -256,7 +255,7 @@ export default function RequestsPage() {
     // expects. Values are already validation message strings.
     if (step === 1) errs = validateStep1(values, t) as unknown as Record<string, string>
     if (step === 2) errs = validateStep2(values, t) as unknown as Record<string, string>
-    if (step === 3) errs = validateStep3({ idUploaded }, t) as unknown as Record<string, string>
+    // step 3 (documents) has nothing to validate — both uploads are optional
     if (step === 4) errs = validateStep4(values, t) as unknown as Record<string, string>
 
     if (Object.keys(errs).length > 0) {
@@ -437,9 +436,7 @@ export default function RequestsPage() {
         {/* STEP 3 — DOCUMENTS */}
         {step === 3 && (
           <Step3Documents
-            errors={errors}
             requestId={requestId}
-            setIdUploaded={setIdUploaded}
             setIdPath={setIdPath}
             setSupportPath={setSupportPath}
           />

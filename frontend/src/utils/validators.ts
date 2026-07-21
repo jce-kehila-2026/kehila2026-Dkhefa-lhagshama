@@ -32,9 +32,9 @@ interface StepData {
   phone?: string
   email?: string
   city?: string
+  cityCode?: string
   category?: string
   description?: string
-  idUploaded?: boolean
   consent?: boolean
 }
 
@@ -57,7 +57,9 @@ export const validateStep1 = (data: StepData, t: ValidationT): Record<string, st
   else if (!isValidPhone(data.phone || ''))     errors.phone = t.request.validation.invalidPhone
   if (!isRequired(data.email))                  errors.email = t.request.validation.required
   else if (!isValidEmail(data.email || ''))     errors.email = t.request.validation.invalidEmail
-  if (!isRequired(data.city))                   errors.city  = t.request.validation.selectCity
+  // Validate the CODE, not the display name: only a real pick from the official
+  // list sets it, so this rejects a locality the picker never resolved.
+  if (!isRequired(data.cityCode))               errors.city  = t.request.validation.selectCity
   return errors
 }
 
@@ -68,12 +70,8 @@ export const validateStep2 = (data: StepData, t: ValidationT): Record<string, st
   return errors
 }
 
-export const validateStep3 = (data: StepData, t: ValidationT): Record<string, string> => {
-  const errors: Record<string, string> = {}
-  const idType = data.idType || 'israeli_id'
-  if (idType === 'israeli_id' && !data.idUploaded) errors.idDoc = t.request.validation.needId
-  return errors
-}
+// Step 3 (documents) has no validator: both uploads there are optional, so a
+// beneficiary without an ID document can still submit a request.
 
 export const validateStep4 = (data: StepData, t: ValidationT): Record<string, string> => {
   const errors: Record<string, string> = {}
