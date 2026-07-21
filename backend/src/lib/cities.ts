@@ -139,6 +139,53 @@ export function getCityByCode(code: string): City | undefined {
 }
 
 /**
+ * Fold a name for comparison: lowercase, drop the punctuation that varies
+ * between spellings, collapse whitespace. Mirrors the client picker's folding
+ * so "בני-ברק", "בני ברק" and "BENE BERAQ" all reconcile to one locality.
+ */
+export function foldCityName(value: string): string {
+  return value
+    .toLocaleLowerCase('he')
+    // Apostrophes and geresh vanish INSIDE a word: "Be'er Sheva" and the
+    // apostrophe-less "beer sheva" people actually type must fold alike.
+    .replace(/['"׳״]/g, '')
+    // Separators become a SPACE rather than nothing, so a hyphenated spelling
+    // still reads as two words: "בני-ברק" -> "בני ברק", not "בניברק".
+    .replace(/[-()./\\,]/g, ' ')
+    // Hebrew ktiv male/haser: people write "קריית גת", the official table uses
+    // "קרית גת". Collapsing a double yod reconciles the two spellings.
+    .replace(/יי/g, 'י')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Reverse lookup for records written before the picker existed, which stored a
+ * free-text name and no code. Matches the Hebrew name or the Latin
+ * transliteration. Returns undefined when the name is not an official locality
+ * (a typo, or a place off the list), so callers can distinguish "resolved" from
+ * "leave it alone" rather than guessing.
+ */
+export function findCityByName(name: string | null | undefined): City | undefined {
+  const wanted = foldCityName(name ?? '');
+  if (!wanted) return undefined;
+
+  const cities = getCities();
+  const exact = cities.find(
+    (c) => foldCityName(c.nameHe) === wanted || foldCityName(c.nameEn) === wanted,
+  );
+  if (exact) return exact;
+
+  // Several official names carry a second locality after a dash — "תל אביב - יפו",
+  // "Tel Aviv - Yafo" — while people write just the first part. Match on that
+  // leading segment, but ONLY when exactly one locality claims it: an ambiguous
+  // prefix must stay unresolved rather than be assigned to a coin-flip winner.
+  const head = (full: string): string => foldCityName(full.split(/\s+-\s+/)[0] ?? '');
+  const candidates = cities.filter((c) => head(c.nameHe) === wanted || head(c.nameEn) === wanted);
+  return candidates.length === 1 ? candidates[0] : undefined;
+}
+
+/**
  * Decide what a document should store for a locality. The display name is
  * ALWAYS derived from the code here rather than trusted from the request body,
  * so `city` and `cityCode` can never disagree on a record we wrote.

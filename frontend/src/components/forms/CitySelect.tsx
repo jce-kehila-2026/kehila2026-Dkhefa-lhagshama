@@ -39,7 +39,15 @@ const MAX_RESULTS = 50
 function fold(value: string): string {
   return value
     .toLocaleLowerCase('he')
-    .replace(/[-'"׳״()./\\,]/g, '')
+    // Apostrophes and geresh vanish INSIDE a word, so "Be'er Sheva" and the
+    // apostrophe-less "beer sheva" people actually type fold alike.
+    .replace(/['"׳״]/g, '')
+    // Separators become a SPACE rather than nothing, so a hyphenated spelling
+    // still reads as two words: "בני-ברק" -> "בני ברק", not "בניברק".
+    .replace(/[-()./\\,]/g, ' ')
+    // Hebrew ktiv male/haser: people write "קריית גת", the official table has
+    // "קרית גת". Collapsing a double yod reconciles the two spellings.
+    .replace(/יי/g, 'י')
     .replace(/\s+/g, ' ')
     .trim()
 }

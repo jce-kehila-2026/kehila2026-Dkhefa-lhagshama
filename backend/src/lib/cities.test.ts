@@ -8,6 +8,7 @@ import {
   normalizeCityRecords,
   getCities,
   getCityByCode,
+  findCityByName,
   resolveCityFields,
   resolveBilingualCity,
 } from './cities';
@@ -76,6 +77,37 @@ describe('committed snapshot', () => {
     expect(getCityByCode('5000')?.nameHe).toBe('תל אביב - יפו');
     expect(getCityByCode('  5000  ')?.code).toBe('5000');
     expect(getCityByCode('not-a-code')).toBeUndefined();
+  });
+});
+
+describe('findCityByName', () => {
+  it('matches an exact official name in either language', () => {
+    expect(findCityByName('חיפה')?.code).toBe('4000');
+    expect(findCityByName('Haifa')?.code).toBe('4000');
+  });
+
+  it('ignores punctuation and case differences', () => {
+    expect(findCityByName('  בני-ברק ')?.code).toBe('6100');
+    expect(findCityByName("be'er sheva")?.code).toBe('9000');
+  });
+
+  it('reconciles ktiv male against the table ktiv haser', () => {
+    // People write "קריית גת"; the official table has "קרית גת".
+    expect(findCityByName('קריית גת')?.code).toBe('2630');
+  });
+
+  it('matches the leading segment of a dashed official name', () => {
+    // Stored as "תל אביב"; official name is "תל אביב - יפו".
+    expect(findCityByName('תל אביב')?.code).toBe('5000');
+    expect(findCityByName('Tel Aviv')?.code).toBe('5000');
+  });
+
+  it('returns undefined rather than guessing for a non-locality', () => {
+    // A Jerusalem neighbourhood, not a locality in its own right.
+    expect(findCityByName('כפר עקב')).toBeUndefined();
+    expect(findCityByName('עיר שלא קיימת')).toBeUndefined();
+    expect(findCityByName('')).toBeUndefined();
+    expect(findCityByName(null)).toBeUndefined();
   });
 });
 
