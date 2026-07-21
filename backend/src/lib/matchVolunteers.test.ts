@@ -92,11 +92,18 @@ describe('scoreVolunteers', () => {
   });
 
   it('boosts a volunteer whose availability window precedes the deadline', () => {
-    const req: MatchRequest = { ...baseReq, deadline: '2026-07-10T00:00:00.000Z' };
+    // `now` is pinned (like the two day-aware tests below) because the boost is
+    // scored over the now->deadline span: left on the ambient clock, this test
+    // passed until the hardcoded deadline fell into the past and then failed
+    // for a reason that had nothing to do with the behaviour under test.
+    // now = Sunday 2026-06-14, deadline = Friday 2026-06-19, so the volunteer's
+    // Monday (day=1) window recurs inside the span.
+    const now = Date.parse('2026-06-14T00:00:00.000Z'); // Sunday
+    const req: MatchRequest = { ...baseReq, deadline: '2026-06-19T00:00:00.000Z' }; // Friday
     const covered = scoreVolunteers(req, [
       vol({ uid: 'c', availabilityWindows: [{ day: 1, start: '09:00', end: '17:00' }] }),
-    ])[0];
-    const none = scoreVolunteers(req, [vol({ uid: 'n', availabilityWindows: [] })])[0];
+    ], now)[0];
+    const none = scoreVolunteers(req, [vol({ uid: 'n', availabilityWindows: [] })], now)[0];
     expect(covered.score).toBeGreaterThan(none.score);
     expect(covered.reasons).toContainEqual({ key: 'availableBeforeDeadline' });
   });
