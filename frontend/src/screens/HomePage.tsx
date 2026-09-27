@@ -334,11 +334,11 @@ export default function HomePage() {
             </div>
           </Reveal>
 
-          {/* Proof — a small "letter of appreciation" figure from Wisdom Academy. */}
+          {/* Proof — a small "letter of appreciation" figure from the sponsored school. */}
           <Reveal delay={0.15}>
             <figure className={styles.letterFigure}>
               <AssetImage
-                slot="storyWisdomLetter"
+                slot="storyLetter"
                 rounded="var(--radius-md)"
                 border="1px solid rgba(244,238,224,0.16)"
                 shadow="var(--shadow-lg)"

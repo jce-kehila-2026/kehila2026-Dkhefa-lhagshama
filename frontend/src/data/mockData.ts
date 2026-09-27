@@ -122,18 +122,18 @@ export const mockVolunteers: Volunteer[] = [
 ]
 
 // The one real success story handed over by the NPO: its sponsorship of 7
-// students at Wisdom Academy (Mekelle, Ethiopia). The quote is sourced from
-// the academy's letter of appreciation. The gallery still supports N stories,
+// students at a school in Ethiopia (unnamed at the NGO's request). The quote is
+// sourced from the school's letter of appreciation. The gallery still supports N stories,
 // so further real stories can be appended here later.
 export const mockStories: Story[] = [
   {
     id: 1,
-    name: 'אקדמיית Wisdom',
-    nameEn: 'Wisdom Academy',
-    role: 'חסות ל-7 תלמידים נזקקים, מקלה, אתיופיה',
-    roleEn: 'Sponsoring 7 students in need, Mekelle, Ethiopia',
-    quote: 'התלמידים מאושרים ולומדים באקדמיית Wisdom בזכות התמיכה של דחיפה להגשמה.',
-    quoteEn: 'The students are happy and learning at Wisdom Academy thanks to Push for Fulfillment\'s support.',
+    name: 'בית ספר באתיופיה',
+    nameEn: 'A school in Ethiopia',
+    role: 'חסות ל-7 תלמידים נזקקים, אתיופיה',
+    roleEn: 'Sponsoring 7 students in need, Ethiopia',
+    quote: 'התלמידים מאושרים ולומדים בבית הספר בזכות התמיכה של דחיפה להגשמה.',
+    quoteEn: 'The students are happy and learning at school thanks to Push for Fulfillment\'s support.',
     rating: 5,
     image: 'story1',
   },

@@ -136,7 +136,7 @@ const base = {
       eyebrow: 'קולות מהקהילה',
       subtitle:'מה אומרים המטופלים שלנו',
       letterCaption: 'מכתב הוקרה',
-      letterSource:  'אקדמיית Wisdom, אתיופיה',
+      letterSource:  'בית ספר באתיופיה',
     },
 
     // ── CTA SECTION ───────────────────────────────────────────
@@ -1445,7 +1445,7 @@ const base = {
       eyebrow: 'Voices from the community',
       subtitle:'What our beneficiaries say about us',
       letterCaption: 'Letter of appreciation',
-      letterSource:  'Wisdom Academy, Ethiopia',
+      letterSource:  'A school in Ethiopia',
     },
 
     cta: {

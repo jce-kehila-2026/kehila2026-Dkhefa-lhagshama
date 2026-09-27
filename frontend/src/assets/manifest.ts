@@ -30,7 +30,7 @@ export type AssetSlotKey =
   | 'volunteerInvite'
   | 'heroBackground'
   | 'story1'
-  | 'storyWisdomLetter';
+  | 'storyLetter';
 
 // Single source of truth. Keyed by AssetSlotKey so the type system guarantees
 // every key has exactly one slot (no missing or stray entries).
@@ -60,22 +60,24 @@ export const assetManifest: Record<AssetSlotKey, AssetSlot> = {
     ratio: '16 / 9',
   },
   story1: {
-    // The NGO's real success story: the 7 students it sponsors at Wisdom
-    // Academy (Mekelle, Ethiopia). Local /public path.
-    src: '/photos/story-wisdom-academy.jpg',
+    // The NGO's real success story: the 7 students it sponsors at a school in
+    // Ethiopia. The school is deliberately unnamed at the NGO's request.
+    src: '/photos/story-students.jpg',
     alt: {
-      he: 'התלמידים שדחיפה להגשמה תומכת בהם באקדמיית Wisdom',
-      en: 'The students sponsored by Push for Fulfillment at Wisdom Academy',
+      he: 'התלמידים שדחיפה להגשמה תומכת בהם בבית ספר באתיופיה',
+      en: 'The students sponsored by Push for Fulfillment at a school in Ethiopia',
     },
     ratio: '4 / 5',
   },
-  storyWisdomLetter: {
-    // Scanned letter of appreciation from Wisdom Academy — shown as a small
-    // proof figure within the success-stories section. Local /public path.
-    src: '/photos/story-wisdom-academy-letter.jpg',
+  storyLetter: {
+    // Scanned letter of appreciation from the school, shown as a small proof
+    // figure in the success-stories section. The school's name, logo, contact
+    // details, address, reference number, stamp and the principal's name and
+    // signature are redacted in the image at the NGO's request.
+    src: '/photos/story-letter.jpg',
     alt: {
-      he: 'מכתב הוקרה מאקדמיית Wisdom',
-      en: 'Letter of appreciation from Wisdom Academy',
+      he: 'מכתב הוקרה מבית הספר, פרטים מזהים הושחרו',
+      en: 'Letter of appreciation from the school, identifying details redacted',
     },
     ratio: '3 / 4',
   },
