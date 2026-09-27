@@ -97,12 +97,14 @@ export default function Navbar() {
           ? [{ key: "volunteerHub", to: "/volunteer-hub", label: t.volunteerApp.navHub }]
           : []),
         ...(isAdmin ? [{ key: "admin", to: "/admin" }] : []),
+        { key: "donate", to: "/donate", label: t.donate.navLink },
       ]
     : [
         { key: "home", to: "/" },
         { key: "requests", to: "/requests" },
         { key: "directory", to: "/directory" },
         { key: "volunteers", to: "/volunteer" },
+        { key: "donate", to: "/donate", label: t.donate.navLink },
       ];
 
   const handleLogout = async () => {

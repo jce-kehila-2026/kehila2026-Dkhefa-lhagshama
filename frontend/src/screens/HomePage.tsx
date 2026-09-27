@@ -442,6 +442,9 @@ export default function HomePage() {
               <button className="btn btn-nav-outline btn-lg" onClick={() => navigate('/volunteer')}>
                 {t.cta.secondary}
               </button>
+              <button className="btn btn-nav-outline btn-lg" onClick={() => navigate('/donate')}>
+                {t.donate.homeCta}
+              </button>
             </div>
           </div>
         </Reveal>
