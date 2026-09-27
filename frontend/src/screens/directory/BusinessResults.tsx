@@ -65,9 +65,13 @@ export default function BusinessResults({
               </div>
               <div className="dir-biz-body">
                 <div className="dir-biz-name">{L(biz.name)}</div>
+                {/* City is optional. Without one, drop the pin and the
+                    separator too rather than leaving a dangling bullet and a
+                    marker pointing at nothing — the category still shows. */}
                 <div className="dir-biz-meta">
-                  <MapPin size={12} aria-hidden="true" />
-                  {d.categories[biz.category] || biz.category} • {L(biz.city)}
+                  {L(biz.city) && <MapPin size={12} aria-hidden="true" />}
+                  {d.categories[biz.category] || biz.category}
+                  {L(biz.city) && ` • ${L(biz.city)}`}
                 </div>
                 <p className="dir-biz-desc">
                   {L(biz.description)}

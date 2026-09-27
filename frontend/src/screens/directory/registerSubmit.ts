@@ -56,7 +56,10 @@ export function makeHandleRegisterSubmit({
       website: registerForm.website.trim(),
     }
 
-    if (!trimmed.name || !trimmed.ownerName || !trimmed.phone || !trimmed.city || !trimmed.description) {
+    // `city` is deliberately absent from this guard: a business need not belong
+    // to one locality (online shops, mobile services, ones serving several
+    // towns), so the picker may be left empty. Mirrors the backend zod schema.
+    if (!trimmed.name || !trimmed.ownerName || !trimmed.phone || !trimmed.description) {
       setNotice({ message: d.fillRequired, variant: 'danger' })
       return
     }

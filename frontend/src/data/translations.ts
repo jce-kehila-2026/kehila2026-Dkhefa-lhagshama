@@ -298,7 +298,7 @@ const base = {
       registerBiz: 'רשם את העסק שלך',
       referBtn:    'הפנה בקשה לארגון',
       moreBtn:     'פרטים נוספים',
-      categories:  { food:'מזון', services:'שירותים', health:'בריאות', education:'חינוך', beauty:'יופי וטיפוח', tech:'טכנולוגיה' },
+      categories:  { food:'מזון', services:'שירותים', health:'בריאות', education:'חינוך', beauty:'יופי וטיפוח', tech:'טכנולוגיה', entertainment:'בידור', tourism:'תיירות', other:'אחר' },
       ngoAreas:    { all:'הכל', education:'חינוך', employment:'תעסוקה', legal:'משפטי', social:'חברתי', housing:'דיור', health:'בריאות', welfare:'רווחה', absorption:'קליטת עלייה', community:'קהילה', youth:'נוער' },
       regionPH:    'אזור',
       audiencePH:  'קהל יעד',
@@ -314,7 +314,7 @@ const base = {
       loginRequired: 'יש להתחבר כדי לרשום עסק.',
       signIn: 'התחברות',
       submitError: 'שגיאה בשליחת העסק.',
-      fields: { business_name: 'שם העסק', owner_name: 'שם הבעלים', phone: 'טלפון', category: 'קטגוריה', city: 'עיר', desc: 'תיאור קצר' },
+      fields: { business_name: 'שם העסק', owner_name: 'שם הבעלים', phone: 'טלפון', category: 'קטגוריה', city: 'עיר (אופציונלי)', desc: 'תיאור קצר' },
       // Note 2 — detail modal
       modal: {
         details:       'פרטים',
@@ -1603,7 +1603,7 @@ const base = {
       registerBiz: 'Register Your Business',
       referBtn:    'Refer Request to Organization',
       moreBtn:     'More Details',
-      categories:  { food:'Food', services:'Services', health:'Health', education:'Education', beauty:'Beauty & Wellness', tech:'Technology' },
+      categories:  { food:'Food', services:'Services', health:'Health', education:'Education', beauty:'Beauty & Wellness', tech:'Technology', entertainment:'Entertainment', tourism:'Tourism', other:'Other' },
       ngoAreas:    { all:'All', education:'Education', employment:'Employment', legal:'Legal', social:'Social', housing:'Housing', health:'Health', welfare:'Welfare', absorption:'Immigration & Absorption', community:'Community', youth:'Youth' },
       regionPH:    'Region',
       audiencePH:  'Audience',
@@ -1619,7 +1619,7 @@ const base = {
       loginRequired: 'Please sign in to register a business.',
       signIn: 'Sign in',
       submitError: 'Failed to submit the business.',
-      fields: { business_name: 'Business Name', owner_name: 'Owner Name', phone: 'Phone', category: 'Category', city: 'City', desc: 'Short Description' },
+      fields: { business_name: 'Business Name', owner_name: 'Owner Name', phone: 'Phone', category: 'Category', city: 'City (optional)', desc: 'Short Description' },
       // Note 2 — detail modal
       modal: {
         details:       'Details',

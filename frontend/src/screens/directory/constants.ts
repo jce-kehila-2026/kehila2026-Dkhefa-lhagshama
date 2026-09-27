@@ -6,7 +6,7 @@
 // and its child components; keep in sync with the server-side ?orgType=/category
 // filters (TAB_ORDER values and BIZ_CATS must match what the API accepts).
 
-import { HeartHandshake, Globe, LayoutGrid, Utensils, Wrench, HeartPulse, GraduationCap, Sparkles, Laptop, Briefcase, Scale, Users, Home } from 'lucide-react'
+import { HeartHandshake, Globe, LayoutGrid, Utensils, Wrench, HeartPulse, GraduationCap, Sparkles, Laptop, Briefcase, Scale, Users, Home, Music, Plane, Shapes } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { TNode, Lang } from '@/types'
 
@@ -27,6 +27,11 @@ export const BIZ_CAT_ICONS: Record<string, LucideIcon> = {
   education: GraduationCap,
   beauty: Sparkles,
   tech: Laptop,
+  entertainment: Music,
+  tourism: Plane,
+  // `other` is the catch-all: a neutral mixed-shapes mark rather than a glyph
+  // that would imply a trade the business may not be in.
+  other: Shapes,
 }
 
 export const NGO_AREA_ICONS: Record<string, LucideIcon> = {
@@ -54,7 +59,13 @@ export const REG_AUTOCOMPLETE: Record<string, string> = {
   category: 'off',
 }
 
-export const BIZ_CATS = ['all', 'food', 'services', 'health', 'education', 'beauty', 'tech']
+// Filter-chip order. `all` leads; `other` is pinned last as the catch-all.
+// Must stay in sync with the backend zod enum (routes/businesses.ts) and the
+// `directory.categories` label map, which drives the registration <select>.
+export const BIZ_CATS = [
+  'all', 'food', 'services', 'health', 'education', 'beauty', 'tech',
+  'entertainment', 'tourism', 'other',
+]
 
 // The language context is exported with a precise per-key shape, but this page
 // indexes the table dynamically (and reads HE-only keys), so consume it through

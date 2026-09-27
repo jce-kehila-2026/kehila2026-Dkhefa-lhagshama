@@ -18,7 +18,10 @@ import { writeAuditLog } from '@/lib/audit';
 
 const router = Router();
 
-const businessCategorySchema = z.enum(['food', 'services', 'health', 'education', 'beauty', 'tech']);
+const businessCategorySchema = z.enum([
+  'food', 'services', 'health', 'education', 'beauty', 'tech',
+  'entertainment', 'tourism', 'other',
+]);
 
 // Validates the POST body: trims+bounds every field, restricts category to the
 // fixed enum, and accepts an optional http(s) website (or "").
@@ -28,9 +31,12 @@ const createBusinessSchema = z.object({
   phone: z.string().trim().min(1).max(40),
   category: businessCategorySchema,
   // Locality: `cityCode` is the CBS code from GET /api/cities; the bilingual
-  // display pair is re-derived from it server-side (lib/cities). `city` stays
-  // required for legacy clients that predate the picker.
-  city: z.string().trim().min(1).max(80),
+  // display pair is re-derived from it server-side (lib/cities). `city` is the
+  // free-text fallback for legacy clients that predate the picker. BOTH are
+  // optional: a business need not belong to one locality (online shops, mobile
+  // services, ones serving several towns), so an omitted city stores as an
+  // empty bilingual pair rather than failing validation.
+  city: z.string().trim().max(80).optional().default(''),
   cityCode: z.string().trim().max(20).optional().default(''),
   description: z.string().trim().min(10).max(1200),
   // Optional public website for the business; validated as a URL when present.

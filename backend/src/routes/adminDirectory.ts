@@ -304,7 +304,10 @@ router.delete('/answers/:id', async (req: Request, res: Response): Promise<void>
 // Mirrors the public submit schema in businesses.ts: flat strings that get
 // stored under the bilingual `{ he, en }` contract with the same value in both
 // languages (no translation at create/edit time; refine later if needed).
-const businessCategorySchema = z.enum(['food', 'services', 'health', 'education', 'beauty', 'tech']);
+const businessCategorySchema = z.enum([
+  'food', 'services', 'health', 'education', 'beauty', 'tech',
+  'entertainment', 'tourism', 'other',
+]);
 
 const tagsSchema = z.array(z.string().trim().min(1).max(40)).max(12);
 
@@ -314,8 +317,10 @@ const businessFieldsSchema = z.object({
   phone: z.string().trim().min(1).max(40),
   category: businessCategorySchema,
   // Locality: `cityCode` is the CBS code from GET /api/cities; the bilingual
-  // display pair is re-derived from it server-side (lib/cities).
-  city: z.string().trim().min(1).max(80),
+  // display pair is re-derived from it server-side (lib/cities). Optional, and
+  // an empty string CLEARS it — mirrors the public submit path, where a
+  // business need not belong to one locality.
+  city: z.string().trim().max(80).optional().default(''),
   cityCode: z.string().trim().max(20).optional().default(''),
   description: z.string().trim().min(10).max(1200),
   website: httpUrlSchema,

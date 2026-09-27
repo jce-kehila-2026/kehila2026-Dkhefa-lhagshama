@@ -229,10 +229,14 @@ const ANSWERS: AnswerSeed[] = [
 //  Shape mirrors GET /api/businesses (businesses.ts) + DirectoryPage.jsx.
 //  Route filters on `status === 'approved'` and orders by `createdAt desc`.
 //  Each doc MUST carry: status:'approved', approved:true, createdAt:<Timestamp>,
-//  name, ownerName, phone, category, city, description, tags, featured, rating, reviews.
+//  name, ownerName, phone, category, description, tags, featured, rating, reviews.
+//  `city` is OPTIONAL — a business need not belong to one locality; an empty
+//  bilingual pair renders as a card with no locality line.
 //
 //  `category` spans every business filter chip in DirectoryPage:
-//    food | services | health | education | beauty | tech
+//    food | services | health | education | beauty | tech | entertainment |
+//    tourism | other
+//  (must match the zod enum in backend/src/routes/businesses.ts)
 //  Translatable fields use the bilingual `{ he, en }` contract; `tags` is
 //  `{ he: string[], en: string[] }`. `category` stays an enum key.
 // ─────────────────────────────────────────────────────────────
@@ -247,7 +251,8 @@ interface BusinessSeed {
   ownerName: string;
   phone: string;
   category: string;
-  city: Bilingual;
+  /** Optional: a business need not belong to one locality. */
+  city?: Bilingual;
   description: Bilingual;
   tags: BilingualTags;
   featured: boolean;
@@ -413,6 +418,39 @@ const BUSINESSES: BusinessSeed[] = [
     },
     tags: { he: ['אתרים', 'אפליקציות', 'שיווק'], en: ['websites', 'apps', 'marketing'] },
     featured: true,
+    rating: 0,
+    reviews: 0,
+  },
+  {
+    id: 'biz-lalibela-travel',
+    name: { he: 'לליבלה טיולים', en: 'Lalibela Travel' },
+    ownerName: 'ברוק מנגיסטו | Baruch Mengistu',
+    phone: '09-555-4477',
+    category: 'tourism',
+    city: { he: 'נתניה', en: 'Netanya' },
+    description: {
+      he: 'ארגון טיולי שורשים לאתיופיה וטיולי מורשת בישראל לקבוצות מהקהילה.',
+      en: 'Heritage trips to Ethiopia and roots tours across Israel for community groups.',
+    },
+    tags: { he: ['טיולים', 'מורשת', 'קבוצות'], en: ['tours', 'heritage', 'groups'] },
+    featured: false,
+    rating: 0,
+    reviews: 0,
+  },
+  {
+    // Deliberately has NO `city`: a business need not belong to one locality.
+    // Keeps the city-less card path represented in the seeded directory.
+    id: 'biz-eskesta-live',
+    name: { he: 'אסקסטה הפקות', en: 'Eskesta Live' },
+    ownerName: 'טגיסט אלמו | Tigist Alemu',
+    phone: '050-555-6120',
+    category: 'entertainment',
+    description: {
+      he: 'להקת מחול ומוזיקה אתיופית להופעות באירועים, חתונות וימי קהילה בכל הארץ.',
+      en: 'Ethiopian dance and music ensemble performing at events, weddings and community days nationwide.',
+    },
+    tags: { he: ['מוזיקה', 'מחול', 'אירועים'], en: ['music', 'dance', 'events'] },
+    featured: false,
     rating: 0,
     reviews: 0,
   },

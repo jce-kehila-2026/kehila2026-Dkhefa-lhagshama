@@ -415,6 +415,18 @@ async function main(): Promise<void> {
     ownerId: e2e.owner ?? 'seed-user-0001', approved: false, status: 'pending',
     createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
   });
+  // Second pending business, deliberately with NO city and the catch-all
+  // category, so the approvals queue exercises both: an omitted locality (no
+  // city row) and a category outside the original six.
+  w.set(db().collection('businesses').doc(), {
+    name: { he: 'תיקונים בבית', en: 'Home Repairs On Call' },
+    ownerName: 'דניאל וונדמו', phone: '053-4445555', category: 'other',
+    city: { he: '', en: '' }, cityCode: null,
+    description: { he: 'שירותי תיקון ותחזוקה ניידים, ללא מיקום קבוע — שירות בכל הארץ.', en: 'Mobile repair and maintenance services with no fixed location — nationwide.' },
+    website: null, tags: { he: [], en: [] },
+    ownerId: e2e.owner ?? 'seed-user-0001', approved: false, status: 'pending',
+    createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+  });
   // Pending directory entry.
   w.set(db().collection('answers').doc(), {
     title: { he: 'תוכנית מנטורינג חדשה', en: 'New Mentoring Program' },

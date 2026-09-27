@@ -93,6 +93,11 @@ export default function AdminApprovalsPage() {
     owner: string; phone: string; category: string; city: string; type: string; website: string
     orgTypeLabels: Record<string, string>
   }
+  // Business categories are a static enum; the queue stores the raw key, so
+  // resolve it through the same bilingual label map the public directory and
+  // the admin directory table use. Answers carry the admin-managed taxonomy,
+  // which this screen does not load — those keep their raw key.
+  const bizCategories = t.directory.categories as Record<string, string>
   const { toast } = useApp()
 
   const [items, setItems] = useState<ApprovalItem[]>([])
@@ -267,7 +272,12 @@ export default function AdminApprovalsPage() {
                     const rows: Array<[string, string]> = []
                     if (item.ownerName) rows.push([f.owner, item.ownerName])
                     if (item.phone) rows.push([f.phone, item.phone])
-                    if (item.category) rows.push([f.category, item.category])
+                    if (item.category) {
+                      const catLabel = item.entityType === 'businesses'
+                        ? (bizCategories[item.category] || item.category)
+                        : item.category
+                      rows.push([f.category, catLabel])
+                    }
                     const cityStr = L(item.city, lang)
                     if (cityStr) rows.push([f.city, cityStr])
                     if (item.orgType) rows.push([f.type, f.orgTypeLabels[item.orgType] || item.orgType])

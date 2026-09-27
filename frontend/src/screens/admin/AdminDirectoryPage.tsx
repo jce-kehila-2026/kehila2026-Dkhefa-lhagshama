@@ -231,7 +231,9 @@ function DirectoryFormDialog({ catalog, item, busy, onClose, onSubmit }: FormDia
       return
     }
 
-    if (!name.trim() || !ownerName.trim() || !phone.trim() || !city.trim() || description.trim().length < 10) {
+    // `city` is intentionally not required — a business may have no locality,
+    // and clearing the picker on an existing entry must be a valid edit.
+    if (!name.trim() || !ownerName.trim() || !phone.trim() || description.trim().length < 10) {
       setFormError(dm.validationBusiness)
       return
     }
