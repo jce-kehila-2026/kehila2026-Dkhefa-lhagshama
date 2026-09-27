@@ -79,8 +79,8 @@ export default function Footer() {
           <div>
             <h4 className={styles.colHead}>{f.contact}</h4>
             {[
-              { Icon: Phone, text: f.phone, href: 'tel:+972546720113' },
-              { Icon: Mail,  text: 'info@push4ful.org.il', href: 'mailto:info@push4ful.org.il' },
+              { Icon: Phone, text: f.phone, href: 'tel:+972580812584' },
+              { Icon: Mail,  text: 'fulfillmentpush@gmail.com', href: 'mailto:fulfillmentpush@gmail.com' },
               { Icon: MapPin,text: f.address },
               { Icon: Clock, text: t.lang === 'he' ? 'א׳–ה׳ 9:00–18:00' : 'Sun–Thu 9:00–18:00' },
             ].map(({ Icon, text, href }, i) => (

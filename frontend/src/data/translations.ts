@@ -1039,14 +1039,14 @@ const base = {
       quickLinks: 'קישורים מהירים',
       services:   'שירותים',
       contact:    'צור קשר',
-      phone:      '054-672-0113',
+      phone:      '058-081-2584',
       address:    'אברהם אוליצור 4, ארנונה, ירושלים',
       legal:      'מידע משפטי',
       privacy:    'מדיניות פרטיות',
       terms:      'תנאי שימוש',
       accessibility: 'הצהרת נגישות',
       rights:     'כל הזכויות שמורות לעמותת דחיפה להגשמה',
-      reg:        'עמותה רשומה בישראל • ח.פ. 58-1234567',
+      reg:        'עמותה רשומה בישראל • ע"ר 580812584',
     },
 
     // ── 404 ───────────────────────────────────────────────────
@@ -1061,7 +1061,7 @@ const base = {
     accountDisabled: {
       title:        'החשבון שלך הושבת',
       body:         'הגישה לחשבון זה הושבתה. אם לדעתך מדובר בטעות, נשמח לעמוד לרשותך, אנא צרו קשר עם צוות העמותה ונסייע בהקדם.',
-      contactEmail: 'info@push4ful.org.il',
+      contactEmail: 'fulfillmentpush@gmail.com',
       backHome:     'חזרה לדף הבית',
     },
 
@@ -2335,14 +2335,14 @@ const base = {
       quickLinks: 'Quick Links',
       services:   'Services',
       contact:    'Contact',
-      phone:      '054-672-0113',
+      phone:      '058-081-2584',
       address:    'Avraham Olitzur 4, Arnona, Jerusalem',
       legal:      'Legal',
       privacy:    'Privacy Policy',
       terms:      'Terms of Use',
       accessibility: 'Accessibility Statement',
       rights:     'All rights reserved. Push for Fulfillment NGO',
-      reg:        'Registered NGO in Israel • Reg. No. 58-1234567',
+      reg:        'Registered NGO in Israel • Reg. No. 580812584',
     },
 
     notFound: {
@@ -2356,7 +2356,7 @@ const base = {
     accountDisabled: {
       title:        'Your account has been disabled',
       body:         'Access to this account has been disabled. If you believe this is a mistake, we are happy to help, please contact the team and we will sort it out as soon as we can.',
-      contactEmail: 'info@push4ful.org.il',
+      contactEmail: 'fulfillmentpush@gmail.com',
       backHome:     'Back to Home',
     },
 

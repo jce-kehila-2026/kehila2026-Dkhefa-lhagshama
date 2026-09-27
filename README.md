@@ -119,7 +119,7 @@ See [`DEPLOY.md`](DEPLOY.md) for the full runbook, selective deploys, and log vi
 ## Non-Profit
 
 - **Organization:** עמותת דחיפה להגשמה / Push for Fulfillment
-- **Contact:** info@push4ful.org.il
+- **Contact:** fulfillmentpush@gmail.com / 058-081-2584
 - **Key deliverable:** Assistance-request intake + community answers catalog + business directory, with an admin back office for approvals and impact reporting.
 
 ## Wiki
