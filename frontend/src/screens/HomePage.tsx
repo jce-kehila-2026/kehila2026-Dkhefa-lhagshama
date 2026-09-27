@@ -380,8 +380,8 @@ export default function HomePage() {
                 },
                 {
                   n: '2',
-                  he: { title: 'נציג חוזר אליך', desc: 'נציג מהעמותה יוצר קשר תוך 48 שעות.' },
-                  en: { title: 'A representative reaches out', desc: 'Someone from the team contacts you within 48 hours.' },
+                  he: { title: 'נציג חוזר אליך', desc: 'נציג מהעמותה יוצר קשר בשאיפה תוך 48 שעות.' },
+                  en: { title: 'A representative reaches out', desc: 'Someone from the team aims to contact you within 48 hours.' },
                 },
                 {
                   n: '3',
