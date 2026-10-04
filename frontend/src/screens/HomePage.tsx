@@ -180,7 +180,7 @@ export default function HomePage() {
             {/* Inline stat strip — woven into the hero, not a separate metric band */}
             <dl className={`hero-rise hero-stats-onphoto ${styles.heroStatsRise}`}>
               {[
-                { num: mockStats.beneficiaries, suffix: '',  label: t.hero.stats.beneficiaries },
+                { num: mockStats.beneficiaries, suffix: '+', label: t.hero.stats.beneficiaries },
                 { num: mockStats.volunteers,    suffix: '+', label: t.hero.stats.volunteers },
                 { num: mockStats.satisfaction,  suffix: '%', label: t.hero.stats.satisfaction },
                 { num: mockStats.yearsActive,   suffix: '',  label: t.hero.stats.years },

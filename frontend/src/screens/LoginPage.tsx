@@ -71,7 +71,7 @@ export default function LoginPage() {
   const trustPoints = [
     {
       icon: <Users size={18} strokeWidth={2.25} aria-hidden="true" />,
-      label: `${mockStats.beneficiaries.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')} ${t.hero.stats.beneficiaries}`,
+      label: `${mockStats.beneficiaries.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}+ ${t.hero.stats.beneficiaries}`,
     },
     {
       icon: <HeartHandshake size={18} strokeWidth={2.25} aria-hidden="true" />,
