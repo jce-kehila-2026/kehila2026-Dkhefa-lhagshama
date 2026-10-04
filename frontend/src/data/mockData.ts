@@ -140,8 +140,8 @@ export const mockStories: Story[] = [
 ]
 
 export const mockStats: MockStats = {
-  beneficiaries: 2840,
-  volunteers: 183,
+  beneficiaries: 500,
+  volunteers: 83,
   satisfaction: 97,
-  yearsActive: 12,
+  yearsActive: 2,
 }
